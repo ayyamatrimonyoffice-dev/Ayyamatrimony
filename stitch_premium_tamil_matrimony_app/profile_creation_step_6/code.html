@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Matrimony - Profile Creation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#b22b1d",
+                    "on-primary-container": "#ff8371",
+                    "tertiary-fixed": "#ffd9dd",
+                    "inverse-on-surface": "#e9f2fb",
+                    "on-surface-variant": "#5a413d",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-highest": "#dbe4ed",
+                    "primary-fixed-dim": "#ffb4a8",
+                    "on-tertiary-fixed-variant": "#70343e",
+                    "surface-bright": "#f6faff",
+                    "tertiary-fixed-dim": "#ffb2bc",
+                    "on-secondary-fixed": "#241a00",
+                    "error-container": "#ffdad6",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#fed65b",
+                    "tertiary": "#491520",
+                    "error": "#ba1a1a",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-fixed": "#3a0915",
+                    "surface-container-high": "#e0e9f2",
+                    "primary": "#570000",
+                    "on-primary-fixed": "#410000",
+                    "surface-container-low": "#ecf5fe",
+                    "primary-container": "#800000",
+                    "on-surface": "#141d23",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-container": "#745c00",
+                    "surface": "#f6faff",
+                    "primary-fixed": "#ffdad4",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#642a35",
+                    "inverse-primary": "#ffb4a8",
+                    "outline-variant": "#e2bfb9",
+                    "on-background": "#141d23",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#8e706c",
+                    "background": "#f6faff",
+                    "surface-dim": "#d2dbe4",
+                    "on-tertiary-container": "#e1929d",
+                    "on-secondary-fixed-variant": "#574500",
+                    "secondary-fixed-dim": "#e9c349",
+                    "secondary-fixed": "#ffe088",
+                    "secondary": "#735c00",
+                    "surface-variant": "#dbe4ed",
+                    "on-primary-fixed-variant": "#8f0f07",
+                    "inverse-surface": "#293138",
+                    "surface-container": "#e6eff8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "xl": "32px",
+                    "base": "4px",
+                    "gutter": "16px",
+                    "lg": "24px",
+                    "md": "16px",
+                    "xs": "8px",
+                    "container-margin": "20px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Playfair Display"],
+                    "label-sm": ["Inter"],
+                    "headline-lg-mobile": ["Playfair Display"],
+                    "display-lg": ["Playfair Display"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-lg": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "headline-md": ["Playfair Display"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .chip-selected {
+            border-color: #735c00 !important;
+            background-color: #ffe088 !important;
+            color: #241a00 !important;
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(115, 92, 0, 0.15);
+        }
+        .step-node-active {
+            box-shadow: 0 0 0 4px rgba(87, 0, 0, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col font-body-md overflow-x-hidden">
+<!-- Top AppBar - Following JSON Structure -->
+<nav class="fixed top-0 w-full z-50 backdrop-blur-md bg-surface/70 border-b border-outline-variant/20 shadow-sm">
+<div class="flex justify-between items-center px-container-margin py-xs max-w-7xl mx-auto">
+<div class="flex items-center gap-md">
+<button class="active:scale-95 duration-200 p-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-surface-tint">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md-mobile text-primary font-bold tracking-tight">Matrimony</h1>
+</div>
+<button class="font-label-lg text-label-lg text-primary-container hover:bg-surface-container-high transition-colors px-md py-xs rounded-lg active:scale-95 duration-200">
+                தமிழ்
+            </button>
+</div>
+</nav>
+<main class="flex-grow pt-24 pb-32 px-container-margin max-w-2xl mx-auto w-full">
+<!-- Progress Section -->
+<div class="mb-xl">
+<div class="flex justify-between items-end mb-xs">
+<span class="font-label-lg text-label-lg text-on-surface-variant">Step 6 of 9</span>
+<span class="font-label-lg text-label-lg text-primary font-bold">Interests</span>
+</div>
+<div class="h-2 w-full bg-secondary-fixed/30 rounded-full overflow-hidden relative">
+<div class="h-full bg-primary w-[66.6%] rounded-full transition-all duration-700 ease-out"></div>
+</div>
+</div>
+<!-- Headline -->
+<div class="text-center mb-xl">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-xs">What moves your soul?</h2>
+<p class="font-body-md text-body-md text-on-surface-variant opacity-80">Select your hobbies and interests to help us find the perfect resonance.</p>
+</div>
+<!-- Interests Grid (Bento Style) -->
+<div class="grid grid-cols-2 md:grid-cols-2 gap-md mb-xl" id="interests-grid">
+<!-- Music -->
+<button class="group flex flex-col items-center justify-center p-xl rounded-xl border border-outline-variant/30 bg-surface-container-lowest transition-all duration-300 hover:border-secondary hover:shadow-md active:scale-95" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-4xl mb-sm text-primary group-hover:scale-110 transition-transform">music_note</span>
+<span class="font-title-lg text-title-lg text-on-surface">Music</span>
+</button>
+<!-- Movies -->
+<button class="group flex flex-col items-center justify-center p-xl rounded-xl border border-outline-variant/30 bg-surface-container-lowest transition-all duration-300 hover:border-secondary hover:shadow-md active:scale-95" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-4xl mb-sm text-primary group-hover:scale-110 transition-transform">movie</span>
+<span class="font-title-lg text-title-lg text-on-surface">Movies</span>
+</button>
+<!-- Reading -->
+<button class="group flex flex-col items-center justify-center p-xl rounded-xl border border-outline-variant/30 bg-surface-container-lowest transition-all duration-300 hover:border-secondary hover:shadow-md active:scale-95" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-4xl mb-sm text-primary group-hover:scale-110 transition-transform">menu_book</span>
+<span class="font-title-lg text-title-lg text-on-surface">Reading</span>
+</button>
+<!-- Cooking -->
+<button class="group flex flex-col items-center justify-center p-xl rounded-xl border border-outline-variant/30 bg-surface-container-lowest transition-all duration-300 hover:border-secondary hover:shadow-md active:scale-95" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-4xl mb-sm text-primary group-hover:scale-110 transition-transform">restaurant</span>
+<span class="font-title-lg text-title-lg text-on-surface">Cooking</span>
+</button>
+<!-- Travel -->
+<button class="group flex flex-col items-center justify-center p-xl rounded-xl border border-outline-variant/30 bg-surface-container-lowest transition-all duration-300 hover:border-secondary hover:shadow-md active:scale-95" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-4xl mb-sm text-primary group-hover:scale-110 transition-transform">flight</span>
+<span class="font-title-lg text-title-lg text-on-surface">Travel</span>
+</button>
+<!-- Fitness -->
+<button class="group flex flex-col items-center justify-center p-xl rounded-xl border border-outline-variant/30 bg-surface-container-lowest transition-all duration-300 hover:border-secondary hover:shadow-md active:scale-95" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-4xl mb-sm text-primary group-hover:scale-110 transition-transform">fitness_center</span>
+<span class="font-title-lg text-title-lg text-on-surface">Fitness</span>
+</button>
+<!-- Technology -->
+<button class="group flex flex-col items-center justify-center p-xl rounded-xl border border-outline-variant/30 bg-surface-container-lowest transition-all duration-300 hover:border-secondary hover:shadow-md active:scale-95" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-4xl mb-sm text-primary group-hover:scale-110 transition-transform">devices</span>
+<span class="font-title-lg text-title-lg text-on-surface">Technology</span>
+</button>
+<!-- Spirituality -->
+<button class="group flex flex-col items-center justify-center p-xl rounded-xl border border-outline-variant/30 bg-surface-container-lowest transition-all duration-300 hover:border-secondary hover:shadow-md active:scale-95" onclick="toggleChip(this)">
+<span class="material-symbols-outlined text-4xl mb-sm text-primary group-hover:scale-110 transition-transform">self_improvement</span>
+<span class="font-title-lg text-title-lg text-on-surface">Spirituality</span>
+</button>
+</div>
+<!-- Atmospheric Background Element -->
+<div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -z-10 w-full h-full opacity-20 pointer-events-none">
+
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-md">
+<button class="w-full py-md bg-primary text-on-primary font-label-lg text-label-lg rounded-xl shadow-lg active:scale-[0.98] transition-transform flex items-center justify-center gap-sm">
+                Continue
+                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+<button class="w-full py-md bg-transparent border border-outline text-primary font-label-lg text-label-lg rounded-xl active:scale-[0.98] transition-transform">
+                Back
+            </button>
+</div>
+</main>
+<!-- Navigation suppression check: This is a linear onboarding page, thus no BottomNavBar -->
+<!-- Decorative Illustration -->
+<div class="hidden lg:block fixed right-12 top-1/2 -translate-y-1/2 w-80">
+<div class="relative p-gutter bg-surface-container-low rounded-3xl border border-secondary/20 shadow-xl overflow-hidden aspect-[3/4]">
+<img class="absolute inset-0 w-full h-full object-cover grayscale-[30%] opacity-90" data-alt="A premium, artistic photograph of a high-end wedding mandap with intricate gold details and soft maroon drapes. The scene is bathed in warm, soft-focus cinematic lighting, creating a dignified and aspirational mood that reflects traditional Tamil wedding values with a modern, luxurious aesthetic. The background is slightly blurred to keep focus on the elegant structural details of the mandap." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfbBC0i69fobNN8R3C4VLBufNPb6zLdDo6N-xJBRxLDhg-HvAF81G-O6HsSeubm4Rei8Ser34d_gGHxYiRmVzmMOxM9ngedHstyChbxpnHwdx3waDWoomT5sS69yZAVF0Ym0WsnYOsdw5qqim73jdyCwuFUhgFrflh1hVtt_3vsvqSlcAdaPZLVSwC0Vp0ERkeF-N8JSg1x55tFl_oUxufckbwSrejBKV1d3rZ8czLYZIR30vYjfZzgqQYwtiIzsrrGjAGY9RmD9yM"/>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent flex flex-col justify-end p-lg">
+<h3 class="font-headline-md text-white">Refining your journey</h3>
+<p class="text-white/80 font-body-md">Personal interests help us create deeper, more meaningful cultural connections.</p>
+</div>
+</div>
+</div>
+<script>
+        function toggleChip(btn) {
+            btn.classList.toggle('chip-selected');
+            const icon = btn.querySelector('.material-symbols-outlined');
+            
+            if (btn.classList.contains('chip-selected')) {
+                icon.style.fontVariationSettings = "'FILL' 1";
+                // Add a small haptic-like pulse
+                btn.style.animation = 'pulse 0.3s ease-out';
+                setTimeout(() => { btn.style.animation = ''; }, 300);
+            } else {
+                icon.style.fontVariationSettings = "'FILL' 0";
+            }
+        }
+
+        // Pulse animation keyframes injected via JS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+                100% { transform: scale(1.02); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body></html>

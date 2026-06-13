@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Matrimony - Education &amp; Career</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Playfair+Display:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#b22b1d",
+                        "on-primary-container": "#ff8371",
+                        "tertiary-fixed": "#ffd9dd",
+                        "inverse-on-surface": "#e9f2fb",
+                        "on-surface-variant": "#5a413d",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#dbe4ed",
+                        "primary-fixed-dim": "#ffb4a8",
+                        "on-tertiary-fixed-variant": "#70343e",
+                        "surface-bright": "#f6faff",
+                        "tertiary-fixed-dim": "#ffb2bc",
+                        "on-secondary-fixed": "#241a00",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#fed65b",
+                        "tertiary": "#491520",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#3a0915",
+                        "surface-container-high": "#e0e9f2",
+                        "primary": "#570000",
+                        "on-primary-fixed": "#410000",
+                        "surface-container-low": "#ecf5fe",
+                        "primary-container": "#800000",
+                        "on-surface": "#141d23",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#745c00",
+                        "surface": "#f6faff",
+                        "primary-fixed": "#ffdad4",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#642a35",
+                        "inverse-primary": "#ffb4a8",
+                        "outline-variant": "#e2bfb9",
+                        "on-background": "#141d23",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#8e706c",
+                        "background": "#f6faff",
+                        "surface-dim": "#d2dbe4",
+                        "on-tertiary-container": "#e1929d",
+                        "on-secondary-fixed-variant": "#574500",
+                        "secondary-fixed-dim": "#e9c349",
+                        "secondary-fixed": "#ffe088",
+                        "secondary": "#735c00",
+                        "surface-variant": "#dbe4ed",
+                        "on-primary-fixed-variant": "#8f0f07",
+                        "inverse-surface": "#293138",
+                        "surface-container": "#e6eff8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "8px",
+                        "container-margin": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Playfair Display"],
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "display-lg": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "headline-md": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .step-transition {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card {
+            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.7);
+        }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%235a413d'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.25em;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- Top App Bar (Shared Component Strategy) -->
+<header class="fixed top-0 w-full z-50 backdrop-blur-md bg-surface/70 border-b border-outline-variant/20 shadow-sm">
+<div class="flex justify-between items-center px-container-margin py-xs max-w-7xl mx-auto h-16">
+<div class="flex items-center gap-xs">
+<button class="p-xs hover:bg-surface-container-high transition-colors active:scale-95 duration-200 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-surface-tint">arrow_back</span>
+</button>
+<span class="font-headline-md text-headline-md-mobile text-primary font-bold tracking-tight">Matrimony</span>
+</div>
+<button class="font-label-lg text-label-lg text-primary px-sm py-xs hover:bg-surface-container-high rounded-lg transition-colors">தமிழ்</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow pt-24 pb-32 px-container-margin flex justify-center items-start">
+<div class="w-full max-w-xl animate-fade-in-up">
+<!-- Stepped Onboarding: Progress Indicator -->
+<div class="mb-xl">
+<div class="flex justify-between items-end mb-xs">
+<h1 class="font-headline-md text-headline-md-mobile text-primary">Education &amp; Career</h1>
+<span class="font-label-sm text-label-sm text-on-surface-variant opacity-70">Step 4 of 9</span>
+</div>
+<div class="h-1.5 w-full bg-secondary-fixed-dim/30 rounded-full overflow-hidden flex items-center">
+<div class="h-full bg-primary step-transition rounded-full" style="width: 44.44%;"></div>
+<div class="w-3 h-3 bg-secondary-container rounded-full border-2 border-white -ml-1 z-10"></div>
+</div>
+</div>
+<!-- Form Container -->
+<div class="space-y-lg">
+<!-- Visual Background Ornament -->
+<div class="relative overflow-hidden rounded-xl border border-[#D4AF37]/20 p-lg glass-card shadow-[0_15px_30px_-15px_rgba(0,0,0,0.04)]">
+<div class="absolute -right-12 -top-12 w-32 h-32 bg-primary/5 rounded-full blur-3xl"></div>
+<form class="space-y-lg relative z-10" id="education-career-form">
+<!-- Highest Education -->
+<div class="space-y-xs">
+<label class="block font-label-sm text-label-sm text-on-surface-variant px-1" for="education">Highest Education</label>
+<div class="relative">
+<select class="w-full h-14 px-md bg-surface-container-low border-none rounded-lg text-body-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200" id="education" name="education">
+<option disabled="" selected="" value="">Select your degree</option>
+<option value="bachelors">Bachelor's Degree</option>
+<option value="masters">Master's Degree</option>
+<option value="doctorate">Doctorate / PhD</option>
+<option value="diploma">Diploma</option>
+<option value="high-school">High School</option>
+<option value="other">Other Professional Qualification</option>
+</select>
+</div>
+</div>
+<!-- Occupation -->
+<div class="space-y-xs">
+<label class="block font-label-sm text-label-sm text-on-surface-variant px-1" for="occupation">Current Occupation</label>
+<div class="relative">
+<select class="w-full h-14 px-md bg-surface-container-low border-none rounded-lg text-body-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200" id="occupation" name="occupation">
+<option disabled="" selected="" value="">What do you do?</option>
+<option value="software">Software Professional</option>
+<option value="engineer">Engineer (Non-IT)</option>
+<option value="doctor">Healthcare / Doctor</option>
+<option value="teacher">Education / Teacher</option>
+<option value="business">Business / Entrepreneur</option>
+<option value="government">Government / Civil Services</option>
+<option value="creative">Creative / Arts / Media</option>
+<option value="banking">Banking / Finance</option>
+<option value="student">Student</option>
+<option value="other">Others</option>
+</select>
+</div>
+</div>
+<!-- Annual Income -->
+<div class="space-y-xs">
+<label class="block font-label-sm text-label-sm text-on-surface-variant px-1" for="income">Annual Income</label>
+<div class="relative">
+<select class="w-full h-14 px-md bg-surface-container-low border-none rounded-lg text-body-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200" id="income" name="income">
+<option disabled="" selected="" value="">Select income range</option>
+<option value="0-3">Less than ₹3 Lakhs</option>
+<option value="3-5">₹3 Lakhs - ₹5 Lakhs</option>
+<option value="5-10">₹5 Lakhs - ₹10 Lakhs</option>
+<option value="10-20">₹10 Lakhs - ₹20 Lakhs</option>
+<option value="20-35">₹20 Lakhs - ₹35 Lakhs</option>
+<option value="35-50">₹35 Lakhs - ₹50 Lakhs</option>
+<option value="50+">₹50 Lakhs +</option>
+<option value="not-specified">Prefer not to say</option>
+</select>
+</div>
+</div>
+</form>
+</div>
+<!-- Guidance Note -->
+<div class="flex items-start gap-sm p-md bg-surface-container-high/50 rounded-lg border border-outline-variant/10">
+<span class="material-symbols-outlined text-surface-tint text-[20px]">info</span>
+<p class="text-body-md text-on-surface-variant leading-relaxed">
+                        Educational and career details help us find matches with similar lifestyle and aspirations. This information is highly valued by prospective families.
+                    </p>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Actions -->
+<nav class="fixed bottom-0 w-full z-50 backdrop-blur-md bg-surface/70 border-t border-outline-variant/20 shadow-lg">
+<div class="flex justify-between items-center w-full px-container-margin py-md max-w-xl mx-auto">
+<!-- Secondary Action (Back) -->
+<button class="flex items-center justify-center h-12 px-lg border border-outline text-primary font-label-lg rounded-full hover:bg-surface-container-high active:scale-95 transition-all duration-200">
+                Back
+            </button>
+<!-- Primary Action (Next) -->
+<button class="flex items-center justify-center h-12 px-xl bg-primary text-white font-label-lg rounded-full shadow-md hover:shadow-lg active:scale-95 transition-all duration-200 group">
+<span>Continue</span>
+<span class="material-symbols-outlined ml-xs text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</nav>
+<!-- Background Decorative Elements -->
+<div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+<div class="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] -mr-64 -mt-64"></div>
+<div class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-secondary-container/10 rounded-full blur-[150px] -ml-64 -mb-64"></div>
+</div>
+<script>
+        // Micro-interactions for form fields
+        const selects = document.querySelectorAll('select');
+        selects.forEach(select => {
+            select.addEventListener('focus', () => {
+                select.parentElement.parentElement.classList.add('scale-[1.02]');
+                select.parentElement.parentElement.classList.add('transition-transform');
+            });
+            select.addEventListener('blur', () => {
+                select.parentElement.parentElement.classList.remove('scale-[1.02]');
+            });
+        });
+
+        // Simple validation visualization
+        const nextBtn = document.querySelector('button.bg-primary');
+        nextBtn.addEventListener('click', (e) => {
+            const allSelected = Array.from(selects).every(s => s.value !== "");
+            if (!allSelected) {
+                // Shake effect or simple console feedback for this demo
+                const container = document.querySelector('.glass-card');
+                container.classList.add('animate-shake');
+                setTimeout(() => container.classList.remove('animate-shake'), 500);
+            } else {
+                // Visual feedback for successful step completion
+                nextBtn.innerHTML = '<span class="material-symbols-outlined animate-spin">progress_activity</span>';
+                setTimeout(() => {
+                    alert('Moving to Step 5: Family Details');
+                    location.reload(); // Refresh for demo purpose
+                }, 800);
+            }
+        });
+    </script>
+<style>
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fade-in-up 0.6s ease-out forwards;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+        .animate-shake {
+            animation: shake 0.2s ease-in-out 0s 2;
+        }
+    </style>
+</body></html>

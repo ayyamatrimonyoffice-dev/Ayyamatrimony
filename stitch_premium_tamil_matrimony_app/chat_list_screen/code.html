@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#b22b1d",
+                    "on-primary-container": "#ff8371",
+                    "tertiary-fixed": "#ffd9dd",
+                    "inverse-on-surface": "#e9f2fb",
+                    "on-surface-variant": "#5a413d",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-highest": "#dbe4ed",
+                    "primary-fixed-dim": "#ffb4a8",
+                    "on-tertiary-fixed-variant": "#70343e",
+                    "surface-bright": "#f6faff",
+                    "tertiary-fixed-dim": "#ffb2bc",
+                    "on-secondary-fixed": "#241a00",
+                    "error-container": "#ffdad6",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#fed65b",
+                    "tertiary": "#491520",
+                    "error": "#ba1a1a",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-fixed": "#3a0915",
+                    "surface-container-high": "#e0e9f2",
+                    "primary": "#570000",
+                    "on-primary-fixed": "#410000",
+                    "surface-container-low": "#ecf5fe",
+                    "primary-container": "#800000",
+                    "on-surface": "#141d23",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-container": "#745c00",
+                    "surface": "#f6faff",
+                    "primary-fixed": "#ffdad4",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#642a35",
+                    "inverse-primary": "#ffb4a8",
+                    "outline-variant": "#e2bfb9",
+                    "on-background": "#141d23",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#8e706c",
+                    "background": "#f6faff",
+                    "surface-dim": "#d2dbe4",
+                    "on-tertiary-container": "#e1929d",
+                    "on-secondary-fixed-variant": "#574500",
+                    "secondary-fixed-dim": "#e9c349",
+                    "secondary-fixed": "#ffe088",
+                    "secondary": "#735c00",
+                    "surface-variant": "#dbe4ed",
+                    "on-primary-fixed-variant": "#8f0f07",
+                    "inverse-surface": "#293138",
+                    "surface-container": "#e6eff8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "xl": "32px",
+                    "base": "4px",
+                    "gutter": "16px",
+                    "lg": "24px",
+                    "md": "16px",
+                    "xs": "8px",
+                    "container-margin": "20px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Playfair Display"],
+                    "label-sm": ["Inter"],
+                    "headline-lg-mobile": ["Playfair Display"],
+                    "display-lg": ["Playfair Display"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-lg": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "headline-md": ["Playfair Display"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .online-indicator {
+            box-shadow: 0 0 0 2px white;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md min-h-screen pb-24">
+<!-- TopAppBar -->
+<nav class="fixed top-0 w-full z-50 backdrop-blur-md bg-surface/70 border-b border-outline-variant/20 shadow-sm">
+<div class="flex justify-between items-center px-container-margin py-xs max-w-7xl mx-auto">
+<div class="flex items-center gap-md">
+<button class="active:scale-95 duration-200 text-surface-tint">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md-mobile text-primary font-bold tracking-tight">Matrimony</h1>
+</div>
+<button class="font-label-lg text-label-lg text-surface-tint active:scale-95 duration-200">தமிழ்</button>
+</div>
+</nav>
+<!-- Content Canvas -->
+<main class="pt-20 px-container-margin max-w-2xl mx-auto">
+<!-- Header Section -->
+<header class="mb-lg mt-sm flex items-center justify-between">
+<h2 class="font-headline-md text-headline-md text-on-surface">Messages</h2>
+<div class="flex gap-sm">
+<button class="p-xs bg-surface-container-high rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="p-xs bg-surface-container-high rounded-full text-on-surface-variant hover:bg-surface-variant transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<!-- Active Chats List -->
+<section class="space-y-sm">
+<!-- Chat Item 1: Active/Unread -->
+<div class="glass-card p-md rounded-xl flex gap-md items-center transition-all hover:shadow-md cursor-pointer group active:scale-[0.98]">
+<div class="relative flex-shrink-0">
+<img alt="Priya Mani" class="w-14 h-14 rounded-full object-cover" data-alt="A portrait of a beautiful South Asian woman with traditional gold jewelry and a serene expression, captured in soft, high-key natural lighting. The image evokes a sense of premium dignity and trust, fitting for a high-end matrimony app. The background is a soft-focus garden, maintaining a light-mode aesthetic with warm, elegant tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpEqF52q9dT90dOopi13O-ntPtrOXfkaK2tozGum728mXq2ZIzh6Qm5eXG9ecMHWhAJl9030ck8p1Ca4rSX5RPcDWkl2T75W_ZPEUOEUN3b5mJyF0OWp29DSfxdRCLiTGGlFBcmoff3kfMVWi8kWPNekk_C7rfIbCT676SvZJhLfCdsByUet9-oGC8krmBSJZZdiJvpa71hY5rePRF4D7g_kLr9TcyXB9gtnm1vGoBiIe6GY3H72AC67hNzTp9ok0sSqCnxU_LSSR1"/>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full online-indicator"></div>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-baseline mb-base">
+<h3 class="font-title-lg text-on-surface truncate pr-sm">Priya Mani</h3>
+<span class="text-label-sm text-surface-tint">10:45 AM</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-body-md text-on-surface-variant truncate pr-sm font-medium">I spoke with my parents, they liked...</p>
+<span class="bg-primary text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">2</span>
+</div>
+</div>
+</div>
+<!-- Chat Item 2: Read -->
+<div class="glass-card p-md rounded-xl flex gap-md items-center transition-all hover:shadow-md cursor-pointer group active:scale-[0.98]">
+<div class="relative flex-shrink-0">
+<img alt="Anand Raghavan" class="w-14 h-14 rounded-full object-cover" data-alt="A professional headshot of a handsome South Asian man wearing a crisp white shirt, radiating confidence and sincerity. The lighting is soft and even, highlighting a clean, modern aesthetic. The background is a subtle, high-end neutral grey, aligned with the 'Quiet Luxury' brand identity of a premium matchmaking service." src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_LtIADEWI4w5JiP6vYN_UStIEeA2r2ErK4Ao4qclY7FuiCh5LCRV5i8bGP-FEehXi5BXN4dq9qgFr8rFdHqeZfEN_Sddkx5YjLan3YXSYuGMEhR_7SQh0o8Jo26oP7mWyZP8VF2h104V_x3JyzQ4knbJ630FFcOqLeq2QXlzqB5v5E9tPVZmFHN8EtXQeTrcghwCUXKFF69QS_GImYAGuuNBexvtDA9e2k69BcSZ4jTas9WrGuNjSX_aM1IK1AFkejknke3lpZzD-"/>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full online-indicator"></div>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-baseline mb-base">
+<h3 class="font-title-lg text-on-surface truncate pr-sm">Anand Raghavan</h3>
+<span class="text-label-sm text-on-surface-variant/60">Yesterday</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-body-md text-on-surface-variant truncate pr-sm">Shall we meet this weekend in Chennai?</p>
+<span class="material-symbols-outlined text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;">done_all</span>
+</div>
+</div>
+</div>
+<!-- Chat Item 3: Unread -->
+<div class="glass-card p-md rounded-xl flex gap-md items-center transition-all hover:shadow-md cursor-pointer group active:scale-[0.98]">
+<div class="relative flex-shrink-0">
+<img alt="Deepika V." class="w-14 h-14 rounded-full object-cover" data-alt="A radiant South Asian woman smiling warmly, wearing elegant silk attire. The photography captures a bright, airy mood with a premium finish. The lighting is cinematic yet natural, creating a soft glow that emphasizes trust and familial respect. The color palette is composed of soft creams and deep maroon accents, consistent with the brand's heritage style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAH4fDAqmss6if62yiFR-V5SjFseb142XrNlhwFjdSQO3lVW8DUrQaQBXlfiwItz_h7_raveDuUN_Kg8UK5WHuIvvqza1oV1aD7gVcyRxfRHfKhDFAoRQlnJHlD5fXavOarTbIChxeFlNVzoNw8CqV9k-KKFzvu3x4HS8jLq7ganJxJ-qrdi42-Wfkf4C9TXxaMwKbEn9KQ9CGVfX8mCJlcP1GRO2UC-LlKAmB5P8E4K46dHkVIuIC2XyEX0MTTZIYft7DkyPjOiE7O"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-baseline mb-base">
+<h3 class="font-title-lg text-on-surface truncate pr-sm">Deepika V.</h3>
+<span class="text-label-sm text-surface-tint">Wed</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-body-md text-on-surface-variant truncate pr-sm font-medium">Vanakkam! How are you doing?</p>
+<span class="bg-primary text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">1</span>
+</div>
+</div>
+</div>
+<!-- Chat Item 4 -->
+<div class="glass-card p-md rounded-xl flex gap-md items-center transition-all hover:shadow-md cursor-pointer group active:scale-[0.98]">
+<div class="relative flex-shrink-0">
+<img alt="Sathish Kumar" class="w-14 h-14 rounded-full object-cover" data-alt="A sophisticated portrait of a South Asian professional man in his early 30s, looking approachable and dignified. The lighting is professional and soft, using a multi-layered shadow technique to create depth. The overall aesthetic is one of aspiration and familial respect, presented within a clean, light-mode UI context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAv-cOp6cA7RJwn9zOxJDlwvwbW2nd0QXwxvki74ygKE_aS5GFOXNN_eFRGv5wlcGjgltJnq7nuGwBaLnWniad2tgsPOBSHY29RqXNWEevBD6t7u4tQgwBDCIk96NEZIc3TVvW0UOlt66i0Wpzsan2xBDTg-dgeCPgnQ4yxr1LaKs9QaWCJ9ktbBs5rHniLz8VT5D24nR4ANu8YM4zJdFLhzVtGKua8b9VXayRCg_nMnj6ks4VcnPnn0Glv-cEK6GnQ30TJ48YA7LQh"/>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-baseline mb-base">
+<h3 class="font-title-lg text-on-surface truncate pr-sm">Sathish Kumar</h3>
+<span class="text-label-sm text-on-surface-variant/60">Tue</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-body-md text-on-surface-variant truncate pr-sm">I've shared my horoscope with you.</p>
+</div>
+</div>
+</div>
+<!-- Chat Item 5 -->
+<div class="glass-card p-md rounded-xl flex gap-md items-center transition-all hover:shadow-md cursor-pointer group active:scale-[0.98]">
+<div class="relative flex-shrink-0">
+<img alt="Meera Krishnan" class="w-14 h-14 rounded-full object-cover" data-alt="A close-up portrait of an elegant South Asian woman with a traditional bindi and sophisticated styling. The shot uses a shallow depth of field to keep the focus on her warm expression. The lighting is soft and golden, suggesting high-end, bespoke services. The palette uses ivory and deep maroon to reflect the Modern Heritage design theme." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCzcVg-YwiQgB2JwHz57aPioeZOE_XW3Uv1vBTXzgT6MIw3wkvVrQBa1MKXFiTB_PBy-DRjWaW4RwIboIctHM32kJChkGuI_Pf2x5FlPcWfh5xhY1rDFubzdiOWaSgdkA2lhwScZSJskXL3La95wSHIsBMZVZhau0n63_D455fkWgVB603_JWoxU4pw6fHE-RURz-kwWw4ylF8Xqzxd5cdZovCB31-1cIr-S8H1Yjg0muJwWoTFiBluoMOZfm7FpbEXemjsJPNPo54S"/>
+<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 rounded-full online-indicator"></div>
+</div>
+<div class="flex-grow min-w-0">
+<div class="flex justify-between items-baseline mb-base">
+<h3 class="font-title-lg text-on-surface truncate pr-sm">Meera Krishnan</h3>
+<span class="text-label-sm text-on-surface-variant/60">Mon</span>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-body-md text-on-surface-variant truncate pr-sm">It was nice talking to you today.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Premium Upsell Banner (Asymmetric Layout) -->
+<div class="mt-xl p-lg rounded-2xl bg-gradient-to-br from-primary to-tertiary relative overflow-hidden shadow-xl">
+<div class="relative z-10 max-w-[70%]">
+<h4 class="font-headline-md text-white text-headline-md-mobile mb-xs">Unlock Direct Chats</h4>
+<p class="text-on-primary-container text-body-md mb-md">Upgrade to Premium to message anyone instantly without waiting for a match.</p>
+<button class="bg-secondary-container text-on-secondary-container px-lg py-sm rounded-full font-label-lg transition-transform active:scale-95">Upgrade Now</button>
+</div>
+<div class="absolute -right-8 -bottom-8 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+<div class="absolute top-4 right-4">
+<span class="material-symbols-outlined text-secondary-fixed text-display-lg opacity-40">workspace_premium</span>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 backdrop-blur-md bg-surface/70 border-t border-outline-variant/20 shadow-lg">
+<div class="flex justify-around items-center w-full px-xs pb-safe py-sm max-w-7xl mx-auto">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm mt-1">Home</span>
+</a>
+<!-- Matches -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">favorite</span>
+<span class="font-label-sm text-label-sm mt-1">Matches</span>
+</a>
+<!-- Interests -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">star</span>
+<span class="font-label-sm text-label-sm mt-1">Interests</span>
+</a>
+<!-- Chat (Active) -->
+<a class="flex flex-col items-center justify-center text-surface-tint relative after:content-[''] after:w-1 after:h-1 after:bg-secondary-container after:rounded-full after:mt-1 active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">chat</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm mt-1">Profile</span>
+</a>
+</div>
+</nav>
+<script>
+        // Simple micro-interaction for chat items
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove unread count visually if clicked (just for demo)
+                const bubble = this.querySelector('.bg-primary');
+                if (bubble) {
+                    bubble.style.display = 'none';
+                    this.querySelector('.font-medium')?.classList.remove('font-medium');
+                }
+            });
+        });
+
+        // Pull to refresh effect mockup
+        let startY;
+        document.addEventListener('touchstart', e => startY = e.touches[0].pageY);
+        document.addEventListener('touchmove', e => {
+            const y = e.touches[0].pageY;
+            if (window.scrollY === 0 && y > startY + 50) {
+                // Potential refresh trigger
+            }
+        });
+    </script>
+</body></html>

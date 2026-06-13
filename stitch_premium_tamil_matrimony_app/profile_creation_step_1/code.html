@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Matrimony - Profile Creation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#b22b1d",
+                        "on-primary-container": "#ff8371",
+                        "tertiary-fixed": "#ffd9dd",
+                        "inverse-on-surface": "#e9f2fb",
+                        "on-surface-variant": "#5a413d",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#dbe4ed",
+                        "primary-fixed-dim": "#ffb4a8",
+                        "on-tertiary-fixed-variant": "#70343e",
+                        "surface-bright": "#f6faff",
+                        "tertiary-fixed-dim": "#ffb2bc",
+                        "on-secondary-fixed": "#241a00",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#fed65b",
+                        "tertiary": "#491520",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#3a0915",
+                        "surface-container-high": "#e0e9f2",
+                        "primary": "#570000",
+                        "on-primary-fixed": "#410000",
+                        "surface-container-low": "#ecf5fe",
+                        "primary-container": "#800000",
+                        "on-surface": "#141d23",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#745c00",
+                        "surface": "#f6faff",
+                        "primary-fixed": "#ffdad4",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#642a35",
+                        "inverse-primary": "#ffb4a8",
+                        "outline-variant": "#e2bfb9",
+                        "on-background": "#141d23",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#8e706c",
+                        "background": "#f6faff",
+                        "surface-dim": "#d2dbe4",
+                        "on-tertiary-container": "#e1929d",
+                        "on-secondary-fixed-variant": "#574500",
+                        "secondary-fixed-dim": "#e9c349",
+                        "secondary-fixed": "#ffe088",
+                        "secondary": "#735c00",
+                        "surface-variant": "#dbe4ed",
+                        "on-primary-fixed-variant": "#8f0f07",
+                        "inverse-surface": "#293138",
+                        "surface-container": "#e6eff8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "8px",
+                        "container-margin": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Playfair Display"],
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "display-lg": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "headline-md": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .step-transition {
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s ease;
+        }
+        .luxury-card {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+            transition: all 0.3s ease;
+        }
+        .luxury-card.active {
+            border-color: #570000;
+            background-color: #fef8f8;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(87, 0, 0, 0.08);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md min-h-screen flex flex-col">
+<!-- Top AppBar (from Shared Components) -->
+<header class="fixed top-0 w-full z-50 backdrop-blur-md bg-surface/70 border-b border-outline-variant/20 shadow-sm">
+<div class="flex justify-between items-center px-container-margin py-xs max-w-7xl mx-auto">
+<div class="flex items-center gap-xs">
+<button class="active:scale-95 duration-200 p-base rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-surface-tint">arrow_back</span>
+</button>
+</div>
+<h1 class="font-headline-md text-headline-md-mobile text-primary font-bold tracking-tight">Matrimony</h1>
+<div class="flex items-center">
+<button class="font-label-lg text-label-lg text-surface-tint active:scale-95 duration-200 px-sm py-base rounded-lg hover:bg-surface-container-high">தமிழ்</button>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-grow pt-24 pb-32 px-container-margin max-w-2xl mx-auto w-full">
+<!-- Progress Section -->
+<div class="mb-xl">
+<div class="flex justify-between items-center mb-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Step 1 of 9</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">11% Complete</span>
+</div>
+<div class="h-1.5 w-full bg-[#F5E6D3] rounded-full overflow-hidden flex items-center relative">
+<div class="h-full bg-primary transition-all duration-700 ease-out" style="width: 11.11%;"></div>
+<div class="absolute left-[11.11%] w-2.5 h-2.5 bg-primary border-2 border-white rounded-full -ml-1 shadow-sm"></div>
+</div>
+</div>
+<!-- Question Section -->
+<div class="mb-xl text-center">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile md:font-headline-lg md:text-headline-lg text-on-surface mb-xs">Who are you creating this profile for?</h2>
+<p class="text-on-surface-variant font-body-md max-w-sm mx-auto">Select the relationship that best describes your bond with the person seeking a match.</p>
+</div>
+<!-- Selection Grid -->
+<div class="grid grid-cols-2 md:grid-cols-3 gap-md mb-xl" id="relationshipGrid">
+<!-- Myself -->
+<button class="luxury-card group flex flex-col items-center justify-center p-lg bg-surface border border-outline-variant/30 rounded-xl hover:bg-surface-container-low active:scale-95 duration-200" data-value="Myself" onclick="selectCard(this)">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-sm group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-primary text-[28px]">person</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant group-hover:text-primary transition-colors">Myself</span>
+</button>
+<!-- Son -->
+<button class="luxury-card group flex flex-col items-center justify-center p-lg bg-surface border border-outline-variant/30 rounded-xl hover:bg-surface-container-low active:scale-95 duration-200" data-value="Son" onclick="selectCard(this)">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-sm group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-primary text-[28px]">face</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant group-hover:text-primary transition-colors">Son</span>
+</button>
+<!-- Daughter -->
+<button class="luxury-card group flex flex-col items-center justify-center p-lg bg-surface border border-outline-variant/30 rounded-xl hover:bg-surface-container-low active:scale-95 duration-200" data-value="Daughter" onclick="selectCard(this)">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-sm group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-primary text-[28px]">face_3</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant group-hover:text-primary transition-colors">Daughter</span>
+</button>
+<!-- Brother -->
+<button class="luxury-card group flex flex-col items-center justify-center p-lg bg-surface border border-outline-variant/30 rounded-xl hover:bg-surface-container-low active:scale-95 duration-200" data-value="Brother" onclick="selectCard(this)">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-sm group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-primary text-[28px]">boy</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant group-hover:text-primary transition-colors">Brother</span>
+</button>
+<!-- Sister -->
+<button class="luxury-card group flex flex-col items-center justify-center p-lg bg-surface border border-outline-variant/30 rounded-xl hover:bg-surface-container-low active:scale-95 duration-200" data-value="Sister" onclick="selectCard(this)">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-sm group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-primary text-[28px]">girl</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant group-hover:text-primary transition-colors">Sister</span>
+</button>
+<!-- Relative -->
+<button class="luxury-card group flex flex-col items-center justify-center p-lg bg-surface border border-outline-variant/30 rounded-xl hover:bg-surface-container-low active:scale-95 duration-200" data-value="Relative" onclick="selectCard(this)">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-sm group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-primary text-[28px]">groups</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant group-hover:text-primary transition-colors">Relative</span>
+</button>
+<!-- Friend (Centered in 2nd row for mobile or next row for desktop) -->
+<button class="luxury-card group flex flex-col items-center justify-center p-lg bg-surface border border-outline-variant/30 rounded-xl hover:bg-surface-container-low active:scale-95 duration-200 col-span-2 md:col-span-1" data-value="Friend" onclick="selectCard(this)">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center mb-sm group-hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-primary text-[28px]">diversity_1</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant group-hover:text-primary transition-colors">Friend</span>
+</button>
+</div>
+<!-- Action Section -->
+<div class="flex flex-col items-center gap-md">
+<button class="w-full max-w-sm py-md px-xl bg-primary text-white rounded-full font-title-lg opacity-50 cursor-not-allowed transition-all duration-300 hover:shadow-lg active:scale-95 disabled:hover:shadow-none" disabled="" id="nextBtn">
+                Next
+            </button>
+<p class="font-label-sm text-label-sm text-on-surface-variant opacity-60">Step 1 of 9: Basic Information</p>
+</div>
+</main>
+<!-- Visual Element: Subtle background texture/gradient -->
+<div class="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+<div class="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 rounded-full blur-[100px]"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[30%] h-[30%] bg-secondary-container/10 rounded-full blur-[80px]"></div>
+</div>
+<!-- Interactive Logic -->
+<script>
+        let selectedValue = null;
+
+        function selectCard(element) {
+            // Remove active class from all
+            const cards = document.querySelectorAll('.luxury-card');
+            cards.forEach(card => card.classList.remove('active'));
+            
+            // Add to selected
+            element.classList.add('active');
+            selectedValue = element.getAttribute('data-value');
+            
+            // Enable next button
+            const nextBtn = document.getElementById('nextBtn');
+            nextBtn.disabled = false;
+            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            // Subtle haptic feedback feel
+            if (window.navigator && window.navigator.vibrate) {
+                window.navigator.vibrate(10);
+            }
+        }
+
+        // Handle the "Next" button click
+        document.getElementById('nextBtn').addEventListener('click', function() {
+            if (!selectedValue) return;
+            
+            // Visual feedback for progression
+            this.innerHTML = `<span class="inline-block animate-spin mr-2">
+                <span class="material-symbols-outlined text-white">progress_activity</span>
+            </span> Proceeding...`;
+            
+            setTimeout(() => {
+                alert(`Transitioning to Step 2: Details for ${selectedValue}`);
+                this.innerHTML = "Next";
+            }, 800);
+        });
+    </script>
+</body></html>

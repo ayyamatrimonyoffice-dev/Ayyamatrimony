@@ -1,0 +1,13 @@
+{
+  "name": "matrimony-workspace",
+  "private": true,
+  "description": "Run the Expo app from matrimony-app — not from stitch HTML mockups or other folders.",
+  "scripts": {
+    "start": "npm --prefix matrimony-app start",
+    "web": "npm --prefix matrimony-app run web",
+    "web:clean": "npm --prefix matrimony-app run web:clean",
+    "android": "npm --prefix matrimony-app run android",
+    "ios": "npm --prefix matrimony-app run ios",
+    "deploy": "npm --prefix matrimony-app run deploy"
+  }
+}

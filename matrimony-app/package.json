@@ -1,0 +1,47 @@
+{
+  "name": "matrimony-app",
+  "version": "1.0.0",
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start --port 8085",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web --port 8085",
+    "web:clean": "expo start --web --clear --port 8085",
+    "build:web": "expo export --platform web",
+    "deploy": "npm run build:web && firebase deploy --only hosting"
+  },
+  "dependencies": {
+    "@expo-google-fonts/inter": "^0.2.3",
+    "@expo-google-fonts/playfair-display": "^0.2.3",
+    "@expo/vector-icons": "^14.0.4",
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@react-native-community/datetimepicker": "8.2.0",
+    "expo": "~52.0.46",
+    "expo-asset": "~11.0.5",
+    "expo-constants": "~17.0.8",
+    "expo-file-system": "~18.0.12",
+    "expo-font": "~13.0.4",
+    "expo-linear-gradient": "~14.0.2",
+    "expo-linking": "~7.0.5",
+    "expo-router": "~4.0.20",
+    "expo-splash-screen": "~0.29.24",
+    "expo-status-bar": "~2.0.1",
+    "firebase": "^12.14.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-native": "0.76.9",
+    "react-native-gesture-handler": "~2.20.2",
+    "react-native-reanimated": "~3.16.7",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.4.0",
+    "react-native-web": "~0.19.13"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~18.3.12",
+    "firebase-tools": "^14.27.0",
+    "typescript": "~5.3.3"
+  },
+  "private": true
+}

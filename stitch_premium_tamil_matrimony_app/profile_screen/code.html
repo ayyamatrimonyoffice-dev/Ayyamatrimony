@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile Detail | Matrimony</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#b22b1d",
+                    "on-primary-container": "#ff8371",
+                    "tertiary-fixed": "#ffd9dd",
+                    "inverse-on-surface": "#e9f2fb",
+                    "on-surface-variant": "#5a413d",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-highest": "#dbe4ed",
+                    "primary-fixed-dim": "#ffb4a8",
+                    "on-tertiary-fixed-variant": "#70343e",
+                    "surface-bright": "#f6faff",
+                    "tertiary-fixed-dim": "#ffb2bc",
+                    "on-secondary-fixed": "#241a00",
+                    "error-container": "#ffdad6",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#fed65b",
+                    "tertiary": "#491520",
+                    "error": "#ba1a1a",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-fixed": "#3a0915",
+                    "surface-container-high": "#e0e9f2",
+                    "primary": "#570000",
+                    "on-primary-fixed": "#410000",
+                    "surface-container-low": "#ecf5fe",
+                    "primary-container": "#800000",
+                    "on-surface": "#141d23",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-container": "#745c00",
+                    "surface": "#f6faff",
+                    "primary-fixed": "#ffdad4",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#642a35",
+                    "inverse-primary": "#ffb4a8",
+                    "outline-variant": "#e2bfb9",
+                    "on-background": "#141d23",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#8e706c",
+                    "background": "#f6faff",
+                    "surface-dim": "#d2dbe4",
+                    "on-tertiary-container": "#e1929d",
+                    "on-secondary-fixed-variant": "#574500",
+                    "secondary-fixed-dim": "#e9c349",
+                    "secondary-fixed": "#ffe088",
+                    "secondary": "#735c00",
+                    "surface-variant": "#dbe4ed",
+                    "on-primary-fixed-variant": "#8f0f07",
+                    "inverse-surface": "#293138",
+                    "surface-container": "#e6eff8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "xl": "32px",
+                    "base": "4px",
+                    "gutter": "16px",
+                    "lg": "24px",
+                    "md": "16px",
+                    "xs": "8px",
+                    "container-margin": "20px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Playfair Display"],
+                    "label-sm": ["Inter"],
+                    "headline-lg-mobile": ["Playfair Display"],
+                    "display-lg": ["Playfair Display"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-lg": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "headline-md": ["Playfair Display"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { -webkit-tap-highlight-color: transparent; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .collapse-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .collapse-open .collapse-content {
+            max-height: 500px;
+        }
+        .collapse-open .arrow-icon {
+            transform: rotate(180deg);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md selection:bg-secondary-container">
+<!-- Top AppBar -->
+<header class="fixed top-0 w-full z-50 backdrop-blur-md bg-surface/70 border-b border-outline-variant/20 shadow-sm">
+<div class="flex justify-between items-center px-container-margin py-xs max-w-7xl mx-auto">
+<button class="flex items-center justify-center w-10 h-10 active:scale-95 duration-200 hover:bg-surface-container-high transition-colors rounded-full">
+<span class="material-symbols-outlined text-surface-tint">arrow_back</span>
+</button>
+<h1 class="font-headline-md text-headline-md-mobile text-primary font-bold tracking-tight">Matrimony</h1>
+<button class="font-label-lg text-label-lg text-surface-tint hover:bg-surface-container-high transition-colors px-sm py-xs rounded-lg active:scale-95 duration-200">
+                தமிழ்
+            </button>
+</div>
+</header>
+<main class="pt-16 pb-24 max-w-2xl mx-auto min-h-screen px-container-margin">
+<!-- Profile Header Section -->
+<section class="mt-xl relative">
+<div class="relative w-full aspect-[4/5] rounded-xl overflow-hidden shadow-sm group">
+<img alt="Profile Photo" class="w-full h-full object-cover" data-alt="A dignified and professionally dressed South Indian man in his late 20s, smiling warmly against a soft-focus architectural background with warm sunset lighting. The image captures a sense of modern heritage, featuring premium textures and a rich, warm color palette of deep maroons and golden tones, consistent with a high-end matrimony profile aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCbGcxdfWEkn_Dpylx4lgagrs0EEYpNaw_mCXaJKZ2KtJ7FYxVe7udIQJT5yz-e04EypVg66lPURgO3sAUkOl-k7ij5zDnqejVMZ-XnJhAyHkNnjiVM4XP-G-4nFjVcA7AsROoCWC7d4rn6Nj8KBNNeY6GWy_sqbGj0r8d2VcXigIrz-WNaMxIhh5OQpYF5u6bjBFaF4SqG88iZOmi1zszUc-Qa5tdcsGi1ut5bWerbZtH24bzh5AVRVuYDItVyWnTvLBIoM41ncEGo"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+<!-- Edit Overlay -->
+<button class="absolute bottom-md right-md bg-white/20 backdrop-blur-md border border-white/30 text-white flex items-center gap-xs px-md py-sm rounded-full active:scale-95 transition-all shadow-lg">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+<span class="font-label-lg">Edit Profile</span>
+</button>
+</div>
+<!-- Identity Info -->
+<div class="mt-lg">
+<div class="flex justify-between items-start">
+<div>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Anand Krishnan</h2>
+<p class="font-label-sm text-label-sm text-outline tracking-wider mt-xs">ID: M-4592031</p>
+</div>
+<div class="bg-secondary-container px-sm py-base rounded-lg shadow-sm">
+<span class="text-on-secondary-container font-label-sm">Active Now</span>
+</div>
+</div>
+<!-- Basic Stats Chips -->
+<div class="flex flex-wrap gap-sm mt-md">
+<div class="flex items-center gap-xs bg-surface-container px-md py-sm rounded-lg border border-outline-variant/30">
+<span class="material-symbols-outlined text-[18px] text-surface-tint">calendar_today</span>
+<span class="font-body-md text-on-surface-variant">28 Years</span>
+</div>
+<div class="flex items-center gap-xs bg-surface-container px-md py-sm rounded-lg border border-outline-variant/30">
+<span class="material-symbols-outlined text-[18px] text-surface-tint">height</span>
+<span class="font-body-md text-on-surface-variant">5'10"</span>
+</div>
+<div class="flex items-center gap-xs bg-surface-container px-md py-sm rounded-lg border border-outline-variant/30">
+<span class="material-symbols-outlined text-[18px] text-surface-tint">location_on</span>
+<span class="font-body-md text-on-surface-variant">Chennai, India</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Quick Links -->
+<div class="mt-xl grid grid-cols-2 gap-md">
+<button class="flex items-center justify-center gap-sm bg-white border border-outline-variant/40 py-md rounded-xl shadow-sm hover:bg-surface-container-low transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-surface-tint">settings</span>
+<span class="font-label-lg text-on-surface">Settings</span>
+</button>
+<button class="flex items-center justify-center gap-sm bg-white border border-outline-variant/40 py-md rounded-xl shadow-sm hover:bg-surface-container-low transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined text-error">logout</span>
+<span class="font-label-lg text-error">Logout</span>
+</button>
+</div>
+<!-- Collapsible Content Sections -->
+<div class="mt-xl space-y-md">
+<!-- About Me -->
+<div class="collapse-section border border-outline-variant/30 bg-white rounded-xl shadow-sm transition-all">
+<button class="w-full flex items-center justify-between px-md py-lg" onclick="toggleCollapse(this)">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary">person</span>
+<span class="font-title-lg text-title-lg text-primary">About Me</span>
+</div>
+<span class="material-symbols-outlined arrow-icon transition-transform text-outline">expand_more</span>
+</button>
+<div class="collapse-content">
+<div class="px-md pb-lg pt-base border-t border-outline-variant/10">
+<p class="text-body-lg font-body-lg text-on-surface-variant leading-relaxed">
+                            A software engineer by profession, I value traditional roots while maintaining a modern outlook on life. I enjoy Carnatic music, weekend travels, and spending quality time with family. Looking for a partner who is compassionate and shares similar values.
+                        </p>
+</div>
+</div>
+</div>
+<!-- Basic Details -->
+<div class="collapse-section border border-outline-variant/30 bg-white rounded-xl shadow-sm transition-all">
+<button class="w-full flex items-center justify-between px-md py-lg" onclick="toggleCollapse(this)">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary">info</span>
+<span class="font-title-lg text-title-lg text-primary">Basic Details</span>
+</div>
+<span class="material-symbols-outlined arrow-icon transition-transform text-outline">expand_more</span>
+</button>
+<div class="collapse-content">
+<div class="px-md pb-lg pt-base border-t border-outline-variant/10 space-y-sm">
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Marital Status</span>
+<span class="text-on-surface font-body-lg">Never Married</span>
+</div>
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Diet</span>
+<span class="text-on-surface font-body-lg">Vegetarian</span>
+</div>
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Mother Tongue</span>
+<span class="text-on-surface font-body-lg">Tamil</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Religion -->
+<div class="collapse-section border border-outline-variant/30 bg-white rounded-xl shadow-sm transition-all">
+<button class="w-full flex items-center justify-between px-md py-lg" onclick="toggleCollapse(this)">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary">temple_hindu</span>
+<span class="font-title-lg text-title-lg text-primary">Religion</span>
+</div>
+<span class="material-symbols-outlined arrow-icon transition-transform text-outline">expand_more</span>
+</button>
+<div class="collapse-content">
+<div class="px-md pb-lg pt-base border-t border-outline-variant/10 space-y-sm">
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Religion</span>
+<span class="text-on-surface font-body-lg">Hindu</span>
+</div>
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Caste</span>
+<span class="text-on-surface font-body-lg">Brahmin - Iyer</span>
+</div>
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Gothram</span>
+<span class="text-on-surface font-body-lg">Bharadwaj</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Education & Career -->
+<div class="collapse-section border border-outline-variant/30 bg-white rounded-xl shadow-sm transition-all">
+<button class="w-full flex items-center justify-between px-md py-lg" onclick="toggleCollapse(this)">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary">school</span>
+<span class="font-title-lg text-title-lg text-primary">Education &amp; Career</span>
+</div>
+<span class="material-symbols-outlined arrow-icon transition-transform text-outline">expand_more</span>
+</button>
+<div class="collapse-content">
+<div class="px-md pb-lg pt-base border-t border-outline-variant/10 space-y-sm">
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Education</span>
+<span class="text-on-surface font-body-lg text-right">B.E. Computer Science</span>
+</div>
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Occupation</span>
+<span class="text-on-surface font-body-lg">Senior Developer</span>
+</div>
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Annual Income</span>
+<span class="text-on-surface font-body-lg">₹15 - 20 Lakhs</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Family -->
+<div class="collapse-section border border-outline-variant/30 bg-white rounded-xl shadow-sm transition-all">
+<button class="w-full flex items-center justify-between px-md py-lg" onclick="toggleCollapse(this)">
+<div class="flex items-center gap-md">
+<span class="material-symbols-outlined text-primary">family_restroom</span>
+<span class="font-title-lg text-title-lg text-primary">Family</span>
+</div>
+<span class="material-symbols-outlined arrow-icon transition-transform text-outline">expand_more</span>
+</button>
+<div class="collapse-content">
+<div class="px-md pb-lg pt-base border-t border-outline-variant/10 space-y-sm">
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Father's Occupation</span>
+<span class="text-on-surface font-body-lg">Retired Professor</span>
+</div>
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Mother's Occupation</span>
+<span class="text-on-surface font-body-lg">Homemaker</span>
+</div>
+<div class="flex justify-between py-xs">
+<span class="text-outline font-label-lg">Siblings</span>
+<span class="text-on-surface font-body-lg">1 Younger Sister</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Premium Banner -->
+<div class="mt-xl bg-primary text-white p-lg rounded-xl flex items-center justify-between shadow-lg relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="font-title-lg text-title-lg mb-base">Unlock More Matches</h3>
+<p class="text-white/80 font-body-md">Get 3x more profile views today.</p>
+</div>
+<button class="relative z-10 bg-secondary-fixed text-on-secondary-fixed px-lg py-sm rounded-full font-label-lg shadow-md active:scale-95 duration-200">
+                Upgrade
+            </button>
+<!-- Decorative Gold Accents -->
+<div class="absolute -right-8 -bottom-8 w-32 h-32 bg-secondary-container opacity-20 rounded-full blur-2xl"></div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 backdrop-blur-md bg-surface/70 border-t border-outline-variant/20 shadow-lg">
+<div class="flex justify-around items-center w-full px-xs pb-safe py-sm">
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">favorite</span>
+<span class="font-label-sm text-label-sm">Matches</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">star</span>
+<span class="font-label-sm text-label-sm">Interests</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">chat</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</button>
+<button class="flex flex-col items-center justify-center text-surface-tint relative after:content-[''] after:w-1 after:h-1 after:bg-secondary-container after:rounded-full after:mt-1 active:scale-90 duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</button>
+</div>
+</nav>
+<script>
+        function toggleCollapse(btn) {
+            const parent = btn.parentElement;
+            const isOpen = parent.classList.contains('collapse-open');
+            
+            // Close all other sections
+            document.querySelectorAll('.collapse-section').forEach(section => {
+                section.classList.remove('collapse-open');
+            });
+
+            // Toggle current section
+            if (!isOpen) {
+                parent.classList.add('collapse-open');
+            }
+        }
+
+        // Initialize first section open
+        window.addEventListener('DOMContentLoaded', () => {
+            const firstSection = document.querySelector('.collapse-section');
+            if (firstSection) {
+                firstSection.classList.add('collapse-open');
+            }
+        });
+    </script>
+</body></html>

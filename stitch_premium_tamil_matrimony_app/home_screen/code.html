@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Matrimony - Premium Home</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#b22b1d",
+                        "on-primary-container": "#ff8371",
+                        "tertiary-fixed": "#ffd9dd",
+                        "inverse-on-surface": "#e9f2fb",
+                        "on-surface-variant": "#5a413d",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#dbe4ed",
+                        "primary-fixed-dim": "#ffb4a8",
+                        "on-tertiary-fixed-variant": "#70343e",
+                        "surface-bright": "#f6faff",
+                        "tertiary-fixed-dim": "#ffb2bc",
+                        "on-secondary-fixed": "#241a00",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#fed65b",
+                        "tertiary": "#491520",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#3a0915",
+                        "surface-container-high": "#e0e9f2",
+                        "primary": "#570000",
+                        "on-primary-fixed": "#410000",
+                        "surface-container-low": "#ecf5fe",
+                        "primary-container": "#800000",
+                        "on-surface": "#141d23",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#745c00",
+                        "surface": "#f6faff",
+                        "primary-fixed": "#ffdad4",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#642a35",
+                        "inverse-primary": "#ffb4a8",
+                        "outline-variant": "#e2bfb9",
+                        "on-background": "#141d23",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#8e706c",
+                        "background": "#f6faff",
+                        "surface-dim": "#d2dbe4",
+                        "on-tertiary-container": "#e1929d",
+                        "on-secondary-fixed-variant": "#574500",
+                        "secondary-fixed-dim": "#e9c349",
+                        "secondary-fixed": "#ffe088",
+                        "secondary": "#735c00",
+                        "surface-variant": "#dbe4ed",
+                        "on-primary-fixed-variant": "#8f0f07",
+                        "inverse-surface": "#293138",
+                        "surface-container": "#e6eff8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "8px",
+                        "container-margin": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Playfair Display"],
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "display-lg": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "headline-md": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .premium-card-border {
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        .glass-nav {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .custom-shadow {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.04);
+        }
+        .scroll-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scroll-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-md antialiased mb-24">
+<!-- TopAppBar Shell -->
+<header class="fixed top-0 w-full z-50 backdrop-blur-md bg-surface/70 border-b border-outline-variant/20 shadow-sm h-16">
+<div class="flex justify-between items-center px-container-margin py-xs max-w-7xl mx-auto h-full">
+<div class="flex items-center gap-sm">
+<button class="material-symbols-outlined text-surface-tint active:scale-95 duration-200">arrow_back</button>
+<h1 class="font-headline-md text-headline-md-mobile text-primary font-bold tracking-tight">Matrimony</h1>
+</div>
+<button class="font-label-lg text-label-lg text-surface-tint hover:bg-surface-container-high transition-colors px-md py-xs rounded-full active:scale-95 duration-200">
+                தமிழ்
+            </button>
+</div>
+</header>
+<main class="pt-20 max-w-7xl mx-auto">
+<!-- Welcome Section -->
+<section class="px-container-margin py-xl">
+<div class="flex flex-col gap-sm">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Hello, Ananya!</h2>
+<div class="bg-surface-container-low p-lg rounded-xl premium-card-border relative overflow-hidden">
+<div class="flex justify-between items-end mb-xs">
+<span class="font-label-lg text-label-lg text-on-surface-variant">Your profile is 85% complete.</span>
+<span class="font-label-sm text-label-sm text-primary-fixed-dim font-bold">85%</span>
+</div>
+<!-- Progress Bar (Modern Heritage: Champagne to Maroon) -->
+<div class="w-full h-2 bg-secondary-fixed rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[85%] rounded-full relative">
+<div class="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-primary rounded-full shadow-sm"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Premium Profiles - Horizontal Scroll -->
+<section class="py-xl">
+<div class="flex justify-between items-center px-container-margin mb-md">
+<h3 class="font-title-lg text-title-lg text-on-surface flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">stars</span>
+                    Premium Profiles
+                </h3>
+<button class="text-surface-tint font-label-lg text-label-lg hover:underline">View All</button>
+</div>
+<div class="flex overflow-x-auto gap-md px-container-margin scroll-hide pb-base">
+<!-- Premium Card 1 -->
+<div class="min-w-[200px] w-[200px] aspect-[3/4] rounded-xl overflow-hidden relative premium-card-border shadow-md active:scale-95 transition-transform duration-200 group">
+<img class="w-full h-full object-cover" data-alt="A professional portrait of a handsome Indian groom dressed in a luxurious deep maroon traditional sherwani with intricate gold embroidery. The lighting is warm and dramatic, highlighting the rich textures of the fabric against a soft, out-of-focus heritage background. The mood is dignified and premium, capturing a sense of traditional elegance and modern sophistication in a high-key studio setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCu1lJkM1e7OHK4g6GZvgGVbLUyf0b6pV-1DBMrfI3kzA2lX6GLcA_eGiHWTn-equ4zvcTrrl5a_GnmH2APC4ANpL9MP0U-4l7UrmVnc_LqH6MxjM5PYEKogVTKRGrs7uh7OEjdnHNuj_PJ68yQ-QWTz_vxppNjJxCjsrTAsU1Zz0Zp-Qgm0UJ8busxpZlDw86wCNbpYmWKvxyZsV7zCo2n29QPPxNwKS2Zbl33kqp5Bhu-fNpjG0eDg04LDQDYRHGKGOrAQbNRR1vI"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-md w-full">
+<p class="text-white font-headline-md text-headline-md-mobile truncate">Arjun Raman</p>
+<p class="text-white/80 font-label-sm text-label-sm">Software Architect</p>
+</div>
+<div class="absolute top-xs right-xs bg-secondary/90 text-on-secondary px-xs py-[2px] rounded-full text-[10px] font-bold">PREMIUM</div>
+</div>
+<!-- Premium Card 2 -->
+<div class="min-w-[200px] w-[200px] aspect-[3/4] rounded-xl overflow-hidden relative premium-card-border shadow-md active:scale-95 transition-transform duration-200 group">
+<img class="w-full h-full object-cover" data-alt="A beautiful Indian bride wearing a traditional silk saree in shades of champagne and rose gold, adorned with delicate gold jewelry. The setting is a bright, minimalist modern room with soft natural lighting entering through large windows. The overall aesthetic is quiet luxury, emphasizing elegance and familial respect through a balanced, airy composition." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAZLg2ngRoOPmlinVk-jGYqkhLc6Oh2bc-aI6sA1TvZK_DkKZdhO549mKyhl8oHLfXUyf3susEyXiogFSvuRuEFzTVV5q6DJ6PgOqSd_q54adLHshzuxUAA0NsClPklJHWOyGQB3NBP0lAlzkQKqMjxL2jqPCOSt2zlp_GjYJWvRHTo0SC6CX8MCH2-ho8coGKAh8B2JzuW-1CL2-hyrafXNEcSpTkKmF6pqHV9AFAzMNQkEycVGY4pYCF5gatJeIdQacb5cyNFqLCU"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-md w-full">
+<p class="text-white font-headline-md text-headline-md-mobile truncate">Siddharth V.</p>
+<p class="text-white/80 font-label-sm text-label-sm">Medical Specialist</p>
+</div>
+</div>
+<!-- Premium Card 3 -->
+<div class="min-w-[200px] w-[200px] aspect-[3/4] rounded-xl overflow-hidden relative premium-card-border shadow-md active:scale-95 transition-transform duration-200 group">
+<img class="w-full h-full object-cover" data-alt="A portrait of a confident young South Indian professional man in a sharp navy blue suit, standing in a modern office environment with warm wooden accents. The photography style is high-end digital, using a shallow depth of field to create a sophisticated and trustworthy aura. The lighting is soft and even, highlighting the clean and minimalist design ethos of the app." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDji6MuBPDi2cTRV1h9hkAP_sGBqn8AWZeqOsrTIGefkWkZ-qMtqTa6B9khG6uN-xiYZ7biv_iKPc4uznAWfcIl7OiUWk2397ZdZtqX-fQMBo-x-BgVKVSDXI88D3H6D39vqfpqP4_NuS3RZ9DGCf34oI425bEDE9R_HbWRScZwPkliqTvl_ORzdksMds0T7gpgNdaHfuTvmcrCbYoUYUSqwP7wMpkcneg4dq5v23OrKyWQkfEd-XTnSj2UsiNFqyIWb5RO3aLVBgYl"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+<div class="absolute bottom-0 left-0 p-md w-full">
+<p class="text-white font-headline-md text-headline-md-mobile truncate">Karthik Raja</p>
+<p class="text-white/80 font-label-sm text-label-sm">Tech Lead</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Recommended Matches - Vertical List -->
+<section class="px-container-margin py-xl">
+<h3 class="font-title-lg text-title-lg text-on-surface mb-lg">Recommended Matches</h3>
+<div class="flex flex-col gap-lg">
+<!-- Match Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm premium-card-border group">
+<div class="flex h-44">
+<div class="w-1/3 relative">
+<img class="w-full h-full object-cover" data-alt="A warm, professional headshot of a middle-aged South Indian man in traditional festive attire, sitting in a serene temple courtyard during golden hour. The soft, sun-drenched lighting creates a feeling of peace and tradition. The color palette features deep maroon and golden tones, aligning with the brand's heritage identity. The image feels authentic and respectful." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBcUwfn62lPYxYn7QyUYJUAIQJ9W8jBx7kI9l5lkPgekTiWNEwoIhhGJXzziYekXF6XzQbA3-q8BXLpFGv7Bv2Q-kMfEyQcmB0a1Rh-B3yVOEsnzED66_7svbKwqKjln6vaTPBe8NoUVXiOeBBcsYGRPDHSQi4J9Z4V8f8kImtqzmkL6V40iOmUjusUvgh-kv5j9OymQFWJ-mVI1YF_FXrC5tnqjy1LNi8DuJMOXPYGRzS1IOidoBNxIOqM2wlh8uG4SFnsphY02-9"/>
+</div>
+<div class="w-2/3 p-md flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-headline-md text-headline-md-mobile text-primary">Raghavan Iyer</h4>
+<span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container-high px-xs py-1 rounded">New</span>
+</div>
+<div class="mt-xs space-y-1">
+<div class="flex items-center gap-xs text-on-surface-variant font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span>32 Years, 5'11"</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-[18px]">diversity_3</span>
+<span>Iyer, Brahacharanam</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span>Chennai, Tamil Nadu</span>
+</div>
+</div>
+</div>
+<div class="flex gap-md border-t border-outline-variant/20 pt-sm mt-xs">
+<button class="flex-1 flex items-center justify-center gap-xs py-sm border border-outline-variant/30 rounded-lg text-primary hover:bg-surface-container-low transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined">star</span>
+<span class="font-label-lg text-label-lg">Shortlist</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-xs py-sm bg-primary text-white rounded-lg hover:shadow-md transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined">favorite</span>
+<span class="font-label-lg text-label-lg">Interest</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Match Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm premium-card-border group">
+<div class="flex h-44">
+<div class="w-1/3 relative">
+<img class="w-full h-full object-cover" data-alt="A portrait of a young Indian man in a smart casual white linen shirt, looking thoughtfully into the distance. The setting is a minimalist, brightly lit room with a soft, clean aesthetic. The lighting is natural and diffuse, highlighting the character's friendly and open personality. The overall visual style is modern, premium, and sophisticated, reflecting high-end digital matchmaking services." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAvXTF-XSYl3InCvGzjgi6pAZI8Ae1WMXR5_zz4Pt0dGaGVlyQLnBTq3xv6DPHFzTlc3E9lu8XuuULZUbj3GwP_dx2qweyRzXFiEPs0t6S3IulZtyHpoSi6DDU9DojGw9mbMpAuhweVlOqrKJJmzbq-BKp6J43CTNjkyYqR8CxnQ2lSOT8g5ELwlr-jZy7-K9ZjaW2r5HvvV7pz15EqEIT2H8VD9saFUk8Zm4sTAMKEU5NuZQttCSlZNCvpfByxTLZ3rjv96_vKTAyR"/>
+</div>
+<div class="w-2/3 p-md flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-headline-md text-headline-md-mobile text-primary">Sanjay Kumar</h4>
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">verified</span>
+</div>
+<div class="mt-xs space-y-1">
+<div class="flex items-center gap-xs text-on-surface-variant font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span>29 Years, 5'9"</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-[18px]">diversity_3</span>
+<span>Pillai, Saiva Pillai</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span>Madurai, Tamil Nadu</span>
+</div>
+</div>
+</div>
+<div class="flex gap-md border-t border-outline-variant/20 pt-sm mt-xs">
+<button class="flex-1 flex items-center justify-center gap-xs py-sm border border-outline-variant/30 rounded-lg text-primary hover:bg-surface-container-low transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined">star</span>
+<span class="font-label-lg text-label-lg">Shortlist</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-xs py-sm bg-primary text-white rounded-lg hover:shadow-md transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined">favorite</span>
+<span class="font-label-lg text-label-lg">Interest</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Match Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm premium-card-border group">
+<div class="flex h-44">
+<div class="w-1/3 relative">
+<img class="w-full h-full object-cover" data-alt="A studio portrait of an Indian gentleman in a formal silk vest, set against a dark, moody background with subtle gold highlights. The lighting is sophisticated and directional, creating a premium and aspirational feel. The subject exudes dignity and trust, reflecting the brand's core values. The high-contrast aesthetic creates a dramatic and luxurious visual impact." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtZHAw3b_HPrs2IW-p8Uq6ULdS3PMCraLB5GcrMxeFsONuWreoTozEXl8K2UPfpOGkgjE1HUzI4A3q46iQFtwcOjZxXHSxrtY436EO_zkAQUFTOaTUfJXRaTOWYOWomZtgbR4BDz7Bz_ejpaOT1N5bleDKKrq5-zaJCl_ZFa8qzTPXC35qn7WbWNJm69zoWZRJyE6_057A8kmiK6Mm8rTdTirDvXtrDSjFvr6kCTOpj46KkRM1hUEpjpxCLyYYEoiWybM1kF32Wymj"/>
+</div>
+<div class="w-2/3 p-md flex flex-col justify-between">
+<div>
+<div class="flex justify-between items-start">
+<h4 class="font-headline-md text-headline-md-mobile text-primary">Vignesh Mani</h4>
+</div>
+<div class="mt-xs space-y-1">
+<div class="flex items-center gap-xs text-on-surface-variant font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+<span>30 Years, 5'8"</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-[18px]">diversity_3</span>
+<span>Vanniyar, Kula</span>
+</div>
+<div class="flex items-center gap-xs text-on-surface-variant font-label-lg text-label-lg">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+<span>Coimbatore, Tamil Nadu</span>
+</div>
+</div>
+</div>
+<div class="flex gap-md border-t border-outline-variant/20 pt-sm mt-xs">
+<button class="flex-1 flex items-center justify-center gap-xs py-sm border border-outline-variant/30 rounded-lg text-primary hover:bg-surface-container-low transition-colors active:scale-95 duration-200">
+<span class="material-symbols-outlined">star</span>
+<span class="font-label-lg text-label-lg">Shortlist</span>
+</button>
+<button class="flex-1 flex items-center justify-center gap-xs py-sm bg-primary text-white rounded-lg hover:shadow-md transition-all active:scale-95 duration-200">
+<span class="material-symbols-outlined">favorite</span>
+<span class="font-label-lg text-label-lg">Interest</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar Shell -->
+<nav class="fixed bottom-0 w-full z-50 glass-nav bg-surface/70 border-t border-outline-variant/20 shadow-lg">
+<div class="flex justify-around items-center w-full px-xs pb-6 py-sm">
+<!-- Home (Active) -->
+<button class="flex flex-col items-center justify-center text-surface-tint relative after:content-[''] after:w-1 after:h-1 after:bg-secondary-container after:rounded-full after:mt-1 active:scale-90 duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</button>
+<!-- Matches -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">favorite</span>
+<span class="font-label-sm text-label-sm">Matches</span>
+</button>
+<!-- Interests -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">star</span>
+<span class="font-label-sm text-label-sm">Interests</span>
+</button>
+<!-- Chat -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">chat</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</button>
+<!-- Profile -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</button>
+</div>
+</nav>
+<script>
+        // Micro-interaction for buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                if (this.querySelector('.material-symbols-outlined')) {
+                    const icon = this.querySelector('.material-symbols-outlined');
+                    icon.style.transform = 'scale(1.2)';
+                    setTimeout(() => icon.style.transform = 'scale(1)', 200);
+                }
+            });
+        });
+    </script>
+</body></html>

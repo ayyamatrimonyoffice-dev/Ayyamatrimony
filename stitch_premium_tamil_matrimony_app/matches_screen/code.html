@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Matrimony - Matches</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#b22b1d",
+                    "on-primary-container": "#ff8371",
+                    "tertiary-fixed": "#ffd9dd",
+                    "inverse-on-surface": "#e9f2fb",
+                    "on-surface-variant": "#5a413d",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container-highest": "#dbe4ed",
+                    "primary-fixed-dim": "#ffb4a8",
+                    "on-tertiary-fixed-variant": "#70343e",
+                    "surface-bright": "#f6faff",
+                    "tertiary-fixed-dim": "#ffb2bc",
+                    "on-secondary-fixed": "#241a00",
+                    "error-container": "#ffdad6",
+                    "on-error": "#ffffff",
+                    "secondary-container": "#fed65b",
+                    "tertiary": "#491520",
+                    "error": "#ba1a1a",
+                    "on-primary": "#ffffff",
+                    "on-tertiary-fixed": "#3a0915",
+                    "surface-container-high": "#e0e9f2",
+                    "primary": "#570000",
+                    "on-primary-fixed": "#410000",
+                    "surface-container-low": "#ecf5fe",
+                    "primary-container": "#800000",
+                    "on-surface": "#141d23",
+                    "on-secondary": "#ffffff",
+                    "on-secondary-container": "#745c00",
+                    "surface": "#f6faff",
+                    "primary-fixed": "#ffdad4",
+                    "on-error-container": "#93000a",
+                    "tertiary-container": "#642a35",
+                    "inverse-primary": "#ffb4a8",
+                    "outline-variant": "#e2bfb9",
+                    "on-background": "#141d23",
+                    "on-tertiary": "#ffffff",
+                    "outline": "#8e706c",
+                    "background": "#f6faff",
+                    "surface-dim": "#d2dbe4",
+                    "on-tertiary-container": "#e1929d",
+                    "on-secondary-fixed-variant": "#574500",
+                    "secondary-fixed-dim": "#e9c349",
+                    "secondary-fixed": "#ffe088",
+                    "secondary": "#735c00",
+                    "surface-variant": "#dbe4ed",
+                    "on-primary-fixed-variant": "#8f0f07",
+                    "inverse-surface": "#293138",
+                    "surface-container": "#e6eff8"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "sm": "12px",
+                    "xl": "32px",
+                    "base": "4px",
+                    "gutter": "16px",
+                    "lg": "24px",
+                    "md": "16px",
+                    "xs": "8px",
+                    "container-margin": "20px"
+            },
+            "fontFamily": {
+                    "headline-lg": ["Playfair Display"],
+                    "label-sm": ["Inter"],
+                    "headline-lg-mobile": ["Playfair Display"],
+                    "display-lg": ["Playfair Display"],
+                    "body-md": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "label-lg": ["Inter"],
+                    "title-lg": ["Inter"],
+                    "headline-md": ["Playfair Display"]
+            },
+            "fontSize": {
+                    "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .card-gold-border {
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        .premium-gradient-overlay {
+            background: linear-gradient(0deg, rgba(87, 0, 0, 0.9) 0%, rgba(87, 0, 0, 0) 60%);
+        }
+        body {
+            background-color: #f6faff;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 backdrop-blur-md bg-surface/70 border-b border-outline-variant/20 shadow-sm">
+<div class="flex justify-between items-center px-container-margin py-xs max-w-7xl mx-auto h-16">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-surface-tint">arrow_back</span>
+<h1 class="font-headline-md text-headline-md-mobile text-primary font-bold tracking-tight">Matrimony</h1>
+</div>
+<div class="flex items-center gap-sm">
+<div class="hidden md:flex items-center bg-surface-container-low px-sm py-1.5 rounded-full border border-outline-variant/30">
+<span class="material-symbols-outlined text-on-surface-variant text-sm" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-lg px-xs py-0 w-48" placeholder="Search profiles..." type="text"/>
+</div>
+<button class="flex items-center justify-center p-xs hover:bg-surface-container-high transition-colors rounded-full active:scale-95 duration-200">
+<span class="material-symbols-outlined text-surface-tint">tune</span>
+</button>
+<button class="font-label-lg text-label-lg text-surface-tint px-sm py-1">தமிழ்</button>
+</div>
+</div>
+<!-- Search Bar (Mobile Only) -->
+<div class="px-container-margin pb-sm md:hidden">
+<div class="flex items-center bg-surface-container-low px-sm py-2 rounded-xl border border-outline-variant/30">
+<span class="material-symbols-outlined text-on-surface-variant mr-xs" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-label-lg p-0 w-full" placeholder="Find your perfect match..." type="text"/>
+</div>
+</div>
+<!-- Tabs -->
+<nav class="flex w-full px-container-margin overflow-x-auto no-scrollbar scroll-smooth gap-lg border-t border-outline-variant/10">
+<button class="py-sm border-b-2 border-primary text-primary font-label-lg text-label-lg whitespace-nowrap">New Matches</button>
+<button class="py-sm border-b-2 border-transparent text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap opacity-70">Best Matches</button>
+<button class="py-sm border-b-2 border-transparent text-on-surface-variant font-label-lg text-label-lg whitespace-nowrap opacity-70">Mutual Matches</button>
+</nav>
+</header>
+<!-- Main Content -->
+<main class="mt-44 md:mt-32 pb-32 px-container-margin max-w-7xl mx-auto">
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+<!-- Profile Card 1 -->
+<div class="relative group rounded-xl overflow-hidden shadow-sm bg-white card-gold-border hover:shadow-md transition-all duration-300">
+<div class="relative aspect-[4/5] w-full overflow-hidden">
+<img alt="Priya" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A portrait of a sophisticated South Asian woman in her late 20s, wearing elegant gold traditional jewelry and a deep maroon silk saree. She is standing in a brightly lit, modern architectural space with warm sunlight filtering through. The mood is dignified and premium, following a 'Quiet Luxury' aesthetic with high-key lighting and soft shadows. Her expression is graceful and confident, reflecting cultural pride and modern refinement." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCr2vCflREszimOHpu6vZqOfzxmq1-HXWecn1l41B8fjlWhqYKp1wqbyuGVsyAOKhgbsillnzjLHFGyVz5PZTmkJ4SRyoX1n2ZtiTMjXYfStAEQwf0mY_5DjENMMcgVemkZ0ys97gr4OEeH53zbxvy0c1Mv9WJl3UVS6Vp5-eyWLblNQrE9jwPbIh0XXK1r0gMuCyDL0PbCwudjKR63Lq9m4hF5_efQGvMpiBmtxaZznkTXfPrUysViUvs8N2rAfWRVoTlcCwrsPPUR"/>
+<div class="absolute inset-0 premium-gradient-overlay"></div>
+<div class="absolute bottom-0 left-0 p-md w-full">
+<div class="flex justify-between items-end">
+<div>
+<h3 class="font-headline-md text-white">Priya, 26</h3>
+<p class="text-white/80 font-label-sm text-label-sm">Chennai, India</p>
+</div>
+<button class="bg-white/20 backdrop-blur-md p-xs rounded-full border border-white/30 text-white active:scale-90 duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+</div>
+</div>
+<div class="p-md space-y-sm">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">school</span>
+<span class="text-body-md font-body-md text-on-surface-variant">M.S. Computer Science</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">work</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Senior Software Engineer at TechCorp</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">auto_awesome</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Pooradam / Dhanusu Raasi</span>
+</div>
+<div class="pt-sm flex gap-sm">
+<button class="flex-1 py-xs bg-primary text-white rounded-lg font-label-lg text-label-lg active:scale-95 transition-transform">Connect Now</button>
+<button class="p-xs border border-outline-variant rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-surface-tint">chat</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Profile Card 2 -->
+<div class="relative group rounded-xl overflow-hidden shadow-sm bg-white card-gold-border hover:shadow-md transition-all duration-300">
+<div class="relative aspect-[4/5] w-full overflow-hidden">
+<img alt="Arjun" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A portrait of a professional Indian man in a charcoal gray tailored suit, standing in a sleek, minimalist corporate lobby with marble floors and soft, diffused natural light. The environment feels high-end and aspirational. He has a warm yet formal smile, representing dignity and professional success. The color palette is dominated by neutral tones with subtle accents of warm gold in the background lighting, consistent with a premium matchmaking service aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1xXHSmG6PZEoqAbovAcZwi8Km5BS4enySx8qivccVAmDvq01iLUr9zEZ7XlQdOFvgxeb2xlHUW7O35PTBfYRctdyB_B1uHONaQoEZMfcCGnlD2a9hFRF8SAuI9cliK5Xb8_Jtb1wlm4eO8FQ81s5P4A_489bTLEy8BfosroH4WgtngceI4JifmrPJ6UWM1FwNCeTPZ76jOVyWjDS030JTcqZw1knIHTNgg-IvIzafB02WGuWYq674X7ZDU3aJONVBxIoKV-pD5jMQ"/>
+<div class="absolute inset-0 premium-gradient-overlay"></div>
+<div class="absolute bottom-0 left-0 p-md w-full">
+<div class="flex justify-between items-end">
+<div>
+<h3 class="font-headline-md text-white">Arjun, 29</h3>
+<p class="text-white/80 font-label-sm text-label-sm">Coimbatore, India</p>
+</div>
+<button class="bg-white/20 backdrop-blur-md p-xs rounded-full border border-white/30 text-white active:scale-90 duration-200">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</div>
+</div>
+<div class="p-md space-y-sm">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">school</span>
+<span class="text-body-md font-body-md text-on-surface-variant">MBA, IIM Bangalore</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">work</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Product Manager at FinTech</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">auto_awesome</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Rohini / Rishabham Raasi</span>
+</div>
+<div class="pt-sm flex gap-sm">
+<button class="flex-1 py-xs bg-primary text-white rounded-lg font-label-lg text-label-lg active:scale-95 transition-transform">Connect Now</button>
+<button class="p-xs border border-outline-variant rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-surface-tint">chat</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Profile Card 3 -->
+<div class="relative group rounded-xl overflow-hidden shadow-sm bg-white card-gold-border hover:shadow-md transition-all duration-300">
+<div class="relative aspect-[4/5] w-full overflow-hidden">
+<img alt="Ananya" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A graceful South Asian woman captured in a candid, joyful moment in a lush, green garden setting with golden hour sunlight creating a soft, warm glow. She is wearing a contemporary yet traditional rose gold embroidered dress. The photography style is high-end and editorial, focusing on authentic emotion and premium details. The background is softly blurred to emphasize her elegant profile and friendly expression." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBslUiFtFOEb09KL77u5CwJ5ZGI8nXpvgnguQjYlTj6VB9U2_wqEamS3BssX4vftGiCj5H9qSH_n4-XDklGvOAoSGJxbAaAe_fypn_dP9tX10QygFuana74rAvlM6Mj8p8_j7V-Q-yK8BaIhr02OTQLkZB_rapZF9GSUzHuRyWGT2V2kMqmtE1-4vekmVIZbqjtppBJ9X5D9DCuyuZeHRcDZkHAMc0BWvyhA0aEjxEiGpGd573PWkqtYmQ6nAblxrmWwsbcisO_fU9X"/>
+<div class="absolute inset-0 premium-gradient-overlay"></div>
+<div class="absolute bottom-0 left-0 p-md w-full">
+<div class="flex justify-between items-end">
+<div>
+<h3 class="font-headline-md text-white">Ananya, 25</h3>
+<p class="text-white/80 font-label-sm text-label-sm">Madurai, India</p>
+</div>
+<button class="bg-white/20 backdrop-blur-md p-xs rounded-full border border-white/30 text-white active:scale-90 duration-200">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</div>
+</div>
+<div class="p-md space-y-sm">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">school</span>
+<span class="text-body-md font-body-md text-on-surface-variant">MBBS, Doctor</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">work</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Resident Physician at Apollo</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">auto_awesome</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Ashwini / Mesham Raasi</span>
+</div>
+<div class="pt-sm flex gap-sm">
+<button class="flex-1 py-xs bg-primary text-white rounded-lg font-label-lg text-label-lg active:scale-95 transition-transform">Connect Now</button>
+<button class="p-xs border border-outline-variant rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-surface-tint">chat</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Profile Card 4 (Asymmetric Content) -->
+<div class="relative group rounded-xl overflow-hidden shadow-sm bg-white card-gold-border hover:shadow-md transition-all duration-300 lg:col-span-2 flex flex-col md:flex-row">
+<div class="relative w-full md:w-1/2 aspect-[4/5] md:aspect-auto overflow-hidden">
+<img alt="Vikram" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A close-up portrait of a mature Indian professional man with a neatly trimmed beard, wearing a classic white linen shirt. He is standing in a minimalist art gallery with soft, even lighting and neutral-colored walls. The style is understated luxury, conveying a sense of calm and established success. The lighting highlights the fine textures and creates a sophisticated atmosphere." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAeu8btHTixNTTl2l5NQR-VEdDbJL1b1lkNYSMRIe_XAOezqZm3oFKPJ1nCpoXyTf3USZG_8q_yRPrtTbEkE5pOHRlI0NSc1ZFdJtWygsdiPhWMkNyFj1cUzlaWheX4QAHJFxaDfxdsAClw315bZ6AvB9hI9AK0ELaIjRNkyswFOD8ikvmLANB6UDxfypyRU5LMosXBacGTWwJ_a0x1KQYszSvf4Pp-ekRSYb0m4IMuxiIxX_BKTUe1EOi9he7G9vpi6XCRiNJZmX5F"/>
+<div class="absolute inset-0 premium-gradient-overlay md:hidden"></div>
+<div class="absolute bottom-0 left-0 p-md w-full md:hidden">
+<h3 class="font-headline-md text-white">Vikram, 31</h3>
+</div>
+</div>
+<div class="w-full md:w-1/2 p-lg flex flex-col justify-center space-y-md">
+<div class="hidden md:block">
+<h3 class="font-headline-lg text-primary">Vikram, 31</h3>
+<p class="text-on-surface-variant font-label-lg text-label-lg mb-md">Bengaluru, India • Chartered Accountant</p>
+</div>
+<div class="grid grid-cols-2 gap-sm">
+<div class="p-sm bg-surface-container rounded-lg border border-outline-variant/20">
+<p class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-xs">Education</p>
+<p class="text-body-md font-body-md text-on-surface">CA, B.Com</p>
+</div>
+<div class="p-sm bg-surface-container rounded-lg border border-outline-variant/20">
+<p class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-xs">Star Sign</p>
+<p class="text-body-md font-body-md text-on-surface">Uthirattathi</p>
+</div>
+<div class="p-sm bg-surface-container rounded-lg border border-outline-variant/20">
+<p class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-xs">Raasi</p>
+<p class="text-body-md font-body-md text-on-surface">Meenam</p>
+</div>
+<div class="p-sm bg-surface-container rounded-lg border border-outline-variant/20">
+<p class="font-label-sm text-label-sm text-outline uppercase tracking-wider mb-xs">Income</p>
+<p class="text-body-md font-body-md text-on-surface">25L+ PA</p>
+</div>
+</div>
+<p class="text-body-md text-on-surface-variant italic">"Looking for someone who appreciates both tradition and modern aspirations. Values simplicity and intellectual connection."</p>
+<div class="pt-sm flex gap-sm">
+<button class="flex-1 py-sm bg-primary text-white rounded-xl font-label-lg text-label-lg active:scale-95 transition-transform shadow-md">Express Interest</button>
+<button class="p-sm border border-outline-variant rounded-xl hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-surface-tint">bookmark</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Profile Card 5 -->
+<div class="relative group rounded-xl overflow-hidden shadow-sm bg-white card-gold-border hover:shadow-md transition-all duration-300">
+<div class="relative aspect-[4/5] w-full overflow-hidden">
+<img alt="Deepa" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A studio portrait of a young South Asian woman with elegant hair and minimalist makeup, wearing a classic gold and cream silk salwar kameez. The background is a soft beige color with gentle spotlighting, creating a high-end, clean aesthetic. The mood is respectful and modern, capturing a balance of traditional values and professional ambition. The overall tone is light and sophisticated." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBv52LFAYn_4ZMtPlhlU5e6P6EL0OWi9p9E7vVY4GK8rPoiAh4U6M6A5r6iQHn-Q1OZixFkAPs7acNll-2jQsYswu71OMBnGnSQgCYWpsrimuOkmNbsoL88oDzCnQQSQF2lLDM73q7XVpqwEtd41XVLzJdoSr_BQZyPOrSuzlszvBJDdIjJz2OQd5yTtIky6zZa4PQbBhz1iMTPgmlRmZJrUfT_v_gyIcdW-zlS0-Rvv4t5mC_aAJoeHv5YzdF5wlj9AX_3EgAqN9K"/>
+<div class="absolute inset-0 premium-gradient-overlay"></div>
+<div class="absolute bottom-0 left-0 p-md w-full">
+<div class="flex justify-between items-end">
+<div>
+<h3 class="font-headline-md text-white">Deepa, 27</h3>
+<p class="text-white/80 font-label-sm text-label-sm">Salem, India</p>
+</div>
+<button class="bg-white/20 backdrop-blur-md p-xs rounded-full border border-white/30 text-white active:scale-90 duration-200">
+<span class="material-symbols-outlined">favorite</span>
+</button>
+</div>
+</div>
+</div>
+<div class="p-md space-y-sm">
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">school</span>
+<span class="text-body-md font-body-md text-on-surface-variant">B.Arch, Architect</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">work</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Senior Architect at UrbanDesigns</span>
+</div>
+<div class="flex items-center gap-xs">
+<span class="material-symbols-outlined text-outline text-[18px]">auto_awesome</span>
+<span class="text-body-md font-body-md text-on-surface-variant">Krittika / Rishabham Raasi</span>
+</div>
+<div class="pt-sm flex gap-sm">
+<button class="flex-1 py-xs bg-primary text-white rounded-lg font-label-lg text-label-lg active:scale-95 transition-transform">Connect Now</button>
+<button class="p-xs border border-outline-variant rounded-lg hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-surface-tint">chat</span>
+</button>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button for Quick Filter -->
+<button class="fixed bottom-24 right-container-margin z-40 bg-secondary-container text-on-secondary-container flex items-center gap-xs px-lg py-sm rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+<span class="font-label-lg text-label-lg">Quick Filter</span>
+</button>
+<!-- BottomNavBar -->
+<footer class="fixed bottom-0 w-full z-50 glass-panel border-t border-outline-variant/20 shadow-lg">
+<div class="flex justify-around items-center w-full px-xs pb-safe py-sm max-w-7xl mx-auto">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<!-- Matches (Active) -->
+<a class="flex flex-col items-center justify-center text-surface-tint relative after:content-[''] after:w-1 after:h-1 after:bg-secondary-container after:rounded-full after:mt-1 transition-all active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="favorite" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="font-label-sm text-label-sm">Matches</span>
+</a>
+<!-- Interests -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="star">star</span>
+<span class="font-label-sm text-label-sm">Interests</span>
+</a>
+<!-- Chat -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</a>
+<!-- Profile -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</a>
+</div>
+</footer>
+<script>
+        // Simple Interaction logic
+        document.querySelectorAll('button, a').forEach(el => {
+            el.addEventListener('click', (e) => {
+                // Prevent default for demo links
+                if(el.tagName === 'A' && el.getAttribute('href') === '#') e.preventDefault();
+            });
+        });
+
+        // Tab selection visual logic
+        const tabButtons = document.querySelectorAll('nav button');
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabButtons.forEach(b => {
+                    b.classList.remove('border-primary', 'text-primary');
+                    b.classList.add('border-transparent', 'text-on-surface-variant', 'opacity-70');
+                });
+                btn.classList.add('border-primary', 'text-primary');
+                btn.classList.remove('border-transparent', 'text-on-surface-variant', 'opacity-70');
+            });
+        });
+    </script>
+</body></html>

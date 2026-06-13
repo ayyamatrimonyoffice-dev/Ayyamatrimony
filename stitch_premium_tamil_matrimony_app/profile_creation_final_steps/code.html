@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Matrimony - Profile Creation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Playfair+Display:wght@100..900&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#b22b1d",
+                        "on-primary-container": "#ff8371",
+                        "tertiary-fixed": "#ffd9dd",
+                        "inverse-on-surface": "#e9f2fb",
+                        "on-surface-variant": "#5a413d",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-highest": "#dbe4ed",
+                        "primary-fixed-dim": "#ffb4a8",
+                        "on-tertiary-fixed-variant": "#70343e",
+                        "surface-bright": "#f6faff",
+                        "tertiary-fixed-dim": "#ffb2bc",
+                        "on-secondary-fixed": "#241a00",
+                        "error-container": "#ffdad6",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#fed65b",
+                        "tertiary": "#491520",
+                        "error": "#ba1a1a",
+                        "on-primary": "#ffffff",
+                        "on-tertiary-fixed": "#3a0915",
+                        "surface-container-high": "#e0e9f2",
+                        "primary": "#570000",
+                        "on-primary-fixed": "#410000",
+                        "surface-container-low": "#ecf5fe",
+                        "primary-container": "#800000",
+                        "on-surface": "#141d23",
+                        "on-secondary": "#ffffff",
+                        "on-secondary-container": "#745c00",
+                        "surface": "#f6faff",
+                        "primary-fixed": "#ffdad4",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#642a35",
+                        "inverse-primary": "#ffb4a8",
+                        "outline-variant": "#e2bfb9",
+                        "on-background": "#141d23",
+                        "on-tertiary": "#ffffff",
+                        "outline": "#8e706c",
+                        "background": "#f6faff",
+                        "surface-dim": "#d2dbe4",
+                        "on-tertiary-container": "#e1929d",
+                        "on-secondary-fixed-variant": "#574500",
+                        "secondary-fixed-dim": "#e9c349",
+                        "secondary-fixed": "#ffe088",
+                        "secondary": "#735c00",
+                        "surface-variant": "#dbe4ed",
+                        "on-primary-fixed-variant": "#8f0f07",
+                        "inverse-surface": "#293138",
+                        "surface-container": "#e6eff8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "sm": "12px",
+                        "xl": "32px",
+                        "base": "4px",
+                        "gutter": "16px",
+                        "lg": "24px",
+                        "md": "16px",
+                        "xs": "8px",
+                        "container-margin": "20px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Playfair Display"],
+                        "label-sm": ["Inter"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "display-lg": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "title-lg": ["Inter"],
+                        "headline-md": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "display-lg": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-md": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "body-lg": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                        "title-lg": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        .progress-node {
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .luxury-card {
+            box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
+        .input-focus-effect:focus-within {
+            border-color: #570000;
+            box-shadow: 0 0 0 1.5px #570000, 0 0 8px rgba(212, 175, 55, 0.3);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e2bfb9;
+            border-radius: 10px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body-lg min-h-screen pb-32">
+<!-- Top Navigation Anchor -->
+<nav class="fixed top-0 w-full z-50 backdrop-blur-md bg-surface/70 border-b border-outline-variant/20 shadow-sm h-16 flex items-center">
+<div class="flex justify-between items-center px-container-margin py-xs max-w-7xl mx-auto w-full">
+<div class="flex items-center gap-md">
+<button class="material-symbols-outlined text-surface-tint active:scale-95 duration-200">arrow_back</button>
+<span class="font-headline-md text-headline-md-mobile text-primary font-bold tracking-tight">Matrimony</span>
+</div>
+<button class="font-label-lg text-label-lg text-surface-tint active:scale-95 duration-200">தமிழ்</button>
+</div>
+</nav>
+<main class="max-w-3xl mx-auto px-container-margin pt-24 space-y-xl">
+<!-- Step Indicator & Progress Bar -->
+<header class="space-y-md">
+<div class="flex justify-between items-end">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">Final Touches</h1>
+<span class="font-label-lg text-label-lg text-outline">Step 8-9 of 9</span>
+</div>
+<!-- Stepped Onboarding Progress Bar -->
+<div class="relative h-2 w-full bg-[#f3e5ab] rounded-full overflow-hidden">
+<div class="absolute top-0 left-0 h-full bg-primary rounded-full transition-all duration-1000 ease-out" style="width: 88.88%;"></div>
+</div>
+</header>
+<!-- Section: About Me (Step 8) -->
+<section class="luxury-card bg-surface-container-lowest p-lg rounded-xl space-y-lg" id="step-8">
+<div class="space-y-base">
+<h2 class="font-title-lg text-title-lg text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-surface-tint">edit_note</span>
+                    About Me
+                </h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Describe your personality, hobbies, and what you're looking for in a life partner. Minimum 50 characters.</p>
+</div>
+<div class="relative group">
+<textarea class="w-full min-h-[160px] p-md bg-surface-container-low border-0 rounded-lg font-body-md text-on-surface focus:ring-0 input-focus-effect transition-all resize-none" placeholder="E.g. I am a software professional with a passion for Carnatic music and travel..."></textarea>
+<div class="absolute bottom-xs right-sm font-label-sm text-label-sm text-outline">0 / 2000</div>
+</div>
+</section>
+<!-- Section: Partner Preferences (Step 9) -->
+<section class="luxury-card bg-surface-container-lowest p-lg rounded-xl space-y-lg" id="step-9">
+<div class="space-y-base">
+<h2 class="font-title-lg text-title-lg text-primary flex items-center gap-xs">
+<span class="material-symbols-outlined text-surface-tint">hub</span>
+                    Partner Preferences
+                </h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Help us refine your matches based on your specific criteria.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Age Range -->
+<div class="space-y-xs">
+<label class="font-label-lg text-label-lg text-on-surface-variant px-1">Age Range</label>
+<div class="flex items-center gap-sm">
+<div class="flex-1 input-focus-effect border-b-2 border-surface-variant bg-surface-container-low rounded-t-lg transition-all">
+<select class="w-full bg-transparent border-0 py-sm px-md focus:ring-0 font-body-md">
+<option>21</option>
+<option selected="">24</option>
+<option>26</option>
+</select>
+</div>
+<span class="text-outline">to</span>
+<div class="flex-1 input-focus-effect border-b-2 border-surface-variant bg-surface-container-low rounded-t-lg transition-all">
+<select class="w-full bg-transparent border-0 py-sm px-md focus:ring-0 font-body-md">
+<option>28</option>
+<option selected="">30</option>
+<option>35</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Education -->
+<div class="space-y-xs">
+<label class="font-label-lg text-label-lg text-on-surface-variant px-1">Education Level</label>
+<div class="input-focus-effect border-b-2 border-surface-variant bg-surface-container-low rounded-t-lg transition-all">
+<select class="w-full bg-transparent border-0 py-sm px-md focus:ring-0 font-body-md">
+<option>No Preference</option>
+<option selected="">Masters / Higher Education</option>
+<option>Doctorate</option>
+<option>Bachelors</option>
+</select>
+</div>
+</div>
+<!-- Location Preference -->
+<div class="space-y-xs md:col-span-2">
+<label class="font-label-lg text-label-lg text-on-surface-variant px-1">Location / City Preference</label>
+<div class="relative input-focus-effect border-b-2 border-surface-variant bg-surface-container-low rounded-t-lg transition-all flex items-center">
+<span class="material-symbols-outlined absolute left-md text-outline">location_on</span>
+<input class="w-full bg-transparent border-0 py-sm pl-11 pr-md focus:ring-0 font-body-md" placeholder="Chennai, Coimbatore, Madurai..." type="text"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Decorative Elements for "Modern Heritage" feel -->
+<div class="flex justify-center py-sm opacity-20">
+<div class="w-16 h-px bg-surface-tint"></div>
+<span class="material-symbols-outlined text-surface-tint mx-md" style="font-variation-settings: 'FILL' 1;">universal_currency</span>
+<div class="w-16 h-px bg-surface-tint"></div>
+</div>
+<!-- Action Area -->
+<footer class="flex flex-col-reverse md:flex-row gap-md items-center py-xl">
+<button class="w-full md:w-auto px-xl py-md border border-outline-variant/30 text-surface-tint font-label-lg rounded-full active:scale-95 transition-all hover:bg-surface-container-high">
+                Back
+            </button>
+<button class="w-full flex-1 md:w-auto px-xl py-md bg-primary text-on-primary font-label-lg rounded-full shadow-lg shadow-primary/20 active:scale-95 transition-all hover:bg-primary-container">
+                Complete Profile
+            </button>
+</footer>
+</main>
+<!-- Bottom Navigation Shell (Fixed Bottom) -->
+<nav class="fixed bottom-0 w-full z-50 backdrop-blur-md bg-surface/70 border-t border-outline-variant/20 shadow-lg">
+<div class="flex justify-around items-center w-full px-xs pb-6 pt-sm max-w-7xl mx-auto">
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="favorite">favorite</span>
+<span class="font-label-sm text-label-sm">Matches</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="star">star</span>
+<span class="font-label-sm text-label-sm">Interests</span>
+</div>
+<div class="flex flex-col items-center justify-center text-on-surface-variant opacity-70 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="chat">chat</span>
+<span class="font-label-sm text-label-sm">Chat</span>
+</div>
+<div class="flex flex-col items-center justify-center text-surface-tint relative after:content-[''] after:w-1 after:h-1 after:bg-secondary-container after:rounded-full after:mt-1 active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="person" style="font-variation-settings: 'FILL' 1;">person</span>
+<span class="font-label-sm text-label-sm">Profile</span>
+</div>
+</div>
+</nav>
+<script>
+        // Simple character counter for the textarea
+        const textarea = document.querySelector('textarea');
+        const counter = textarea?.nextElementSibling;
+        
+        if (textarea && counter) {
+            textarea.addEventListener('input', (e) => {
+                const len = e.target.value.length;
+                counter.textContent = `${len} / 2000`;
+                
+                // Visual feedback if length is good
+                if (len >= 50) {
+                    counter.classList.remove('text-outline');
+                    counter.classList.add('text-secondary');
+                } else {
+                    counter.classList.add('text-outline');
+                    counter.classList.remove('text-secondary');
+                }
+            });
+        }
+    </script>
+</body></html>
