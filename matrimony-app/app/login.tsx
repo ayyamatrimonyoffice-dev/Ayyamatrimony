@@ -8,7 +8,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
 import { PrimaryButton } from '@/components/PrimaryButton';
@@ -18,6 +18,8 @@ import { images } from '@/constants/images';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { flow } = useLocalSearchParams<{ flow?: string }>();
+  const authFlow = flow === 'login' ? 'login' : 'register';
   const { translate } = useLanguage();
   const [phone, setPhone] = useState('');
 
@@ -35,7 +37,7 @@ export default function LoginScreen() {
         <View style={styles.content}>
           <View style={styles.centerBlock}>
             <View style={styles.branding}>
-              <Image source={{ uri: images.logo }} style={styles.logo} />
+              <Image source={images.logo} style={styles.logo} resizeMode="contain" />
               <Text style={styles.title}>{translate('welcomeBack')}</Text>
             </View>
 
@@ -59,7 +61,12 @@ export default function LoginScreen() {
               <PrimaryButton
                 label={translate('sendOtp')}
                 icon="arrow-forward"
-                onPress={() => router.replace('/otp')}
+                onPress={() =>
+                  router.replace({
+                    pathname: '/otp',
+                    params: { flow: authFlow },
+                  })
+                }
                 style={styles.submit}
               />
             </View>

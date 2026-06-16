@@ -18,7 +18,11 @@ export default function WelcomeScreen() {
 
   const continueToLogin = () => {
     setShowNotificationPrompt(false);
-    router.replace('/login');
+    router.replace('/login?flow=register');
+  };
+
+  const handleLogin = () => {
+    router.push('/login?flow=login');
   };
 
   const handleAllowNotifications = () => {
@@ -32,7 +36,7 @@ export default function WelcomeScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.branding}>
           <View style={styles.logoWrap}>
-            <Image source={{ uri: images.logo }} style={styles.logo} />
+            <Image source={images.logo} style={styles.logo} resizeMode="contain" />
           </View>
           <Text style={styles.title}>{translate('matrimony')}</Text>
         </View>
@@ -54,6 +58,11 @@ export default function WelcomeScreen() {
             icon="arrow-forward"
             variant="gold"
             onPress={() => setShowNotificationPrompt(true)}
+          />
+          <PrimaryButton
+            label={translate('login')}
+            variant="outlineGold"
+            onPress={handleLogin}
           />
           <View style={styles.dots}>
             <View style={[styles.dot, styles.dotActive]} />

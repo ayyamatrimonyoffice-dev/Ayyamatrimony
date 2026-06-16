@@ -17,10 +17,16 @@ type ContactFieldDefinition = {
 
 const contactDetailsFields: ContactFieldDefinition[] = [
   {
-    config: { fieldKey: CONTACT_PHONE_KEY, kind: 'text', keyboardType: 'phone-pad', maxLength: 10 },
+    config: {
+      fieldKey: CONTACT_PHONE_KEY,
+      kind: 'text',
+      optional: true,
+      keyboardType: 'phone-pad',
+      maxLength: 10,
+    },
     display: {
-      en: { label: 'Phone Number', placeholder: 'Enter 10 digit number' },
-      ta: { label: 'தொலைபேசி எண்', placeholder: '10 இலக்க எண்ணை உள்ளிடவும்' },
+      en: { label: 'Phone Number', placeholder: 'Enter mobile' },
+      ta: { label: 'தொலைபேசி எண்', placeholder: 'மொபைலை உள்ளிடவும்' },
     },
   },
   {
@@ -32,22 +38,22 @@ const contactDetailsFields: ContactFieldDefinition[] = [
       maxLength: 10,
     },
     display: {
-      en: { label: 'WhatsApp Number (Optional)', placeholder: 'Enter 10 digit number' },
-      ta: { label: 'வாட்ஸ்அப் எண் (விருப்பம்)', placeholder: '10 இலக்க எண்ணை உள்ளிடவும்' },
+      en: { label: 'WhatsApp Number', placeholder: 'Enter WhatsApp mobile' },
+      ta: { label: 'வாட்ஸ்அப் எண்', placeholder: 'வாட்ஸ்அப் மொபைலை உள்ளிடவும்' },
     },
   },
   {
     config: { fieldKey: FACEBOOK_PROFILE_KEY, kind: 'text', optional: true },
     display: {
-      en: { label: 'Facebook Profile (Optional)', placeholder: 'Profile URL or username' },
-      ta: { label: 'Facebook சுயவிவரம் (விருப்பம்)', placeholder: 'URL அல்லது பயனர்பெயர்' },
+      en: { label: 'Facebook Profile', placeholder: 'Profile URL or username' },
+      ta: { label: 'Facebook சுயவிவரம்', placeholder: 'URL அல்லது பயனர்பெயர்' },
     },
   },
   {
     config: { fieldKey: INSTAGRAM_PROFILE_KEY, kind: 'text', optional: true },
     display: {
-      en: { label: 'Instagram Profile (Optional)', placeholder: '@username or profile URL' },
-      ta: { label: 'Instagram சுயவிவரம் (விருப்பம்)', placeholder: '@username அல்லது URL' },
+      en: { label: 'Instagram Profile', placeholder: '@username or profile URL' },
+      ta: { label: 'Instagram சுயவிவரம்', placeholder: '@username அல்லது URL' },
     },
   },
 ];

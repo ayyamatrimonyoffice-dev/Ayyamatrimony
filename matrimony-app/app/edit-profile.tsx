@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 import {
   FormDateField,
@@ -7,26 +7,54 @@ import {
   FormScreen,
   FormSelectField,
 } from '@/components/FormScreen';
+import { FIXED_CASTE_VALUE } from '@/constants/formOptions';
 import { useLanguage } from '@/context/LanguageContext';
+import { useProfileForm } from '@/context/ProfileFormContext';
 
 export default function EditProfileScreen() {
   const { translate } = useLanguage();
-  const [fullName, setFullName] = useState('Ananya Krishnan');
-  const [gender, setGender] = useState('female');
-  const [dateOfBirth, setDateOfBirth] = useState('15 / 08 / 1996');
-  const [religion, setReligion] = useState('hindu');
+  const { getValue, setValue, isReady } = useProfileForm();
+  const [fullName, setFullName] = useState('');
+  const [gender, setGender] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [religion, setReligion] = useState('');
   const [subCaste, setSubCaste] = useState('');
-  const [city, setCity] = useState('Chennai');
-  const [occupation, setOccupation] = useState('software');
+  const [city, setCity] = useState('');
+  const [occupation, setOccupation] = useState('');
   const [workType, setWorkType] = useState('');
-  const [education, setEducation] = useState('masters');
+  const [education, setEducation] = useState('');
+
+  useEffect(() => {
+    if (!isReady) {
+      return;
+    }
+
+    setFullName(getValue('fullName'));
+    setGender(getValue('gender'));
+    setDateOfBirth(getValue('dateOfBirth'));
+    setReligion(getValue('religion'));
+    setSubCaste(getValue('subCaste'));
+    setCity(getValue('nativePlace'));
+    setOccupation(getValue('occupation'));
+    setWorkType(getValue('workType'));
+    setEducation(getValue('education'));
+  }, [getValue, isReady]);
+
+  const handleSave = () => {
+    setValue('fullName', fullName.trim());
+    setValue('gender', gender);
+    setValue('dateOfBirth', dateOfBirth);
+    setValue('religion', religion);
+    setValue('caste', FIXED_CASTE_VALUE);
+    setValue('subCaste', subCaste);
+    setValue('nativePlace', city.trim());
+    setValue('occupation', occupation);
+    setValue('workType', workType);
+    setValue('education', education);
+  };
 
   return (
-    <FormScreen
-      titleKey="editProfileTitle"
-      successKey="profileUpdated"
-      onSave={() => undefined}
-    >
+    <FormScreen titleKey="editProfileTitle" successKey="profileUpdated" onSave={handleSave}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 24 }}>
         <FormField label={translate('fullName')} value={fullName} onChangeText={setFullName} />
         <FormSelectField

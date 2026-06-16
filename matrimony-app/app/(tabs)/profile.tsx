@@ -5,9 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
 import { ProgressBar } from '@/components/ProgressBar';
 import { useLanguage } from '@/context/LanguageContext';
+import { useProfileForm } from '@/context/ProfileFormContext';
+import {
+  getProfileAvatarSource,
+  getProfileCompletionPercent,
+  getProfileMetaLine,
+} from '@/constants/profileDisplay';
 import { TranslationKey } from '@/constants/i18n';
 import { colors, spacing, typography } from '@/constants/theme';
-import { images } from '@/constants/images';
 
 type MenuItem = {
   labelKey: TranslationKey;
@@ -24,18 +29,32 @@ const menuItems: MenuItem[] = [
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { translate, translateFormat } = useLanguage();
+  const { language, translate, translateFormat } = useLanguage();
+  const { values, clearProfile } = useProfileForm();
+  const profileName = values.fullName?.trim() || translate('profile');
+  const profileMeta = getProfileMetaLine(values, language);
+  const profileCompletion = getProfileCompletionPercent(values);
+  const avatarSource = getProfileAvatarSource(values);
+
+  const handleLogout = () => {
+    void clearProfile().then(() => {
+      router.replace('/login');
+    });
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <AppHeader title={translate('profile')} showBack={false} />
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.hero}>
-          <Image source={{ uri: images.logo }} style={styles.avatar} />
-          <Text style={styles.name}>Ananya Krishnan</Text>
-          <Text style={styles.meta}>Chennai, Tamil Nadu • Iyer</Text>
+          <Image source={avatarSource} style={styles.avatar} resizeMode="cover" />
+          <Text style={styles.name}>{profileName}</Text>
+          {profileMeta ? <Text style={styles.meta}>{profileMeta}</Text> : null}
           <View style={styles.progressWrap}>
-            <ProgressBar progress={85} label={translateFormat('percentComplete', { percent: 85 })} />
+            <ProgressBar
+              progress={profileCompletion}
+              label={translateFormat('percentComplete', { percent: profileCompletion })}
+            />
           </View>
         </View>
 
@@ -51,6 +70,14 @@ export default function ProfileScreen() {
               <MaterialIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
             </Pressable>
           ))}
+          <Pressable
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            onPress={handleLogout}
+          >
+            <MaterialIcons name="logout" size={22} color={colors.primary} />
+            <Text style={styles.menuLabel}>{translate('logout')}</Text>
+            <MaterialIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
+          </Pressable>
         </View>
       </ScrollView>
     </SafeAreaView>

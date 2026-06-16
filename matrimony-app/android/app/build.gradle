@@ -20,7 +20,8 @@ react {
     cliFile = new File(["node", "--print", "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })"].execute(null, rootDir).text.trim())
     bundleCommand = "export:embed"
 
-    /* Folders */
+    // Bundle JS into debug APKs so they run on device without Metro.
+    debuggableVariants = []
      //   The root of your project, i.e. where "package.json" lives. Default is '../..'
     // root = file("../../")
     //   The folder where the react-native NPM package is. Default is ../../node_modules/react-native
@@ -148,10 +149,6 @@ android {
 }
 
 dependencies {
-    // Firebase BoM and Analytics
-    implementation platform('com.google.firebase:firebase-bom:34.14.1')
-    implementation 'com.google.firebase:firebase-analytics'
-
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 

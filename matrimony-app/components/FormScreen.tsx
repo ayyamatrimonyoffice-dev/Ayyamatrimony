@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
 import {
@@ -116,7 +116,19 @@ export function FormScreen({ titleKey, children, onSave, successKey }: FormScree
 
   const handleSave = () => {
     onSave();
-    Alert.alert(translate(successKey));
+
+    const message = translate(successKey);
+    const navigateBack = () => {
+      goBack();
+    };
+
+    if (Platform.OS === 'web') {
+      window.alert(message);
+      navigateBack();
+      return;
+    }
+
+    Alert.alert(message, undefined, [{ text: translate('ok'), onPress: navigateBack }]);
   };
 
   return (

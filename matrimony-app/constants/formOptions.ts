@@ -30,8 +30,10 @@ export type FormOptionsKey =
   | 'familyValues'
   | 'birthOrder'
   | 'ageRange'
+  | 'partnerAge'
   | 'preferredLocation'
   | 'indianState'
+  | 'district'
   | 'country'
   | 'siblingCount'
   | 'countryCode'
@@ -119,8 +121,10 @@ export const formOptionLists: Record<FormOptionsKey, FormOption[]> = {
     opt('teacher', 'Education / Teacher', 'கல்வி / ஆசிரியர்'),
     opt('business', 'Business / Entrepreneur', 'வணிகம் / தொழில்முனைவோர்'),
     opt('civil-services', 'Civil Services', 'குடிமைப் பணி'),
+    opt('forest-officer', 'Forest Officer', 'வன அலுவலர்'),
     opt('creative', 'Creative / Arts / Media', 'கலை / ஊடகம்'),
     opt('banking', 'Banking / Finance', 'வங்கி / நிதி'),
+    opt('farmer', 'Farmer / Agriculture', 'விவசாயி / விவசாயம்'),
     opt('homemaker', 'Homemaker', 'இல்லத்தரசி'),
     opt('other', 'Others', 'பிற'),
   ],
@@ -157,12 +161,17 @@ export const formOptionLists: Record<FormOptionsKey, FormOption[]> = {
     opt('leased', 'Leased / Rented', 'வாடகை / Lease'),
   ],
   propertyValue: [
-    opt('below-25l', 'Below ₹25,00,000', '₹25,00,000 க்கு கீழ்'),
-    opt('25l-50l', '₹25,00,000 - ₹50,00,000', '₹25,00,000 - ₹50,00,000'),
-    opt('50l-1cr', '₹50,00,000 - ₹1,00,00,000', '₹50,00,000 - ₹1,00,00,000'),
-    opt('1cr-2cr', '₹1,00,00,000 - ₹2,00,00,000', '₹1,00,00,000 - ₹2,00,00,000'),
-    opt('2cr-5cr', '₹2,00,00,000 - ₹5,00,00,000', '₹2,00,00,000 - ₹5,00,00,000'),
-    opt('above-5cr', 'Above ₹5,00,00,000', '₹5,00,00,000 க்கு மேல்'),
+    opt('below-1l', 'Below ₹1,00,000', '₹1,00,000 க்கு கீழ்'),
+    opt('1l-2l', '₹1,00,000 - ₹2,00,000', '₹1,00,000 - ₹2,00,000'),
+    opt('2l-3l', '₹2,00,000 - ₹3,00,000', '₹2,00,000 - ₹3,00,000'),
+    opt('3l-4l', '₹3,00,000 - ₹4,00,000', '₹3,00,000 - ₹4,00,000'),
+    opt('4l-5l', '₹4,00,000 - ₹5,00,000', '₹4,00,000 - ₹5,00,000'),
+    opt('5l-6l', '₹5,00,000 - ₹6,00,000', '₹5,00,000 - ₹6,00,000'),
+    opt('6l-7l', '₹6,00,000 - ₹7,00,000', '₹6,00,000 - ₹7,00,000'),
+    opt('7l-8l', '₹7,00,000 - ₹8,00,000', '₹7,00,000 - ₹8,00,000'),
+    opt('8l-9l', '₹8,00,000 - ₹9,00,000', '₹8,00,000 - ₹9,00,000'),
+    opt('9l-10l', '₹9,00,000 - ₹10,00,000', '₹9,00,000 - ₹10,00,000'),
+    opt('above-10l', 'Above ₹10,00,000', '₹10,00,000 க்கு மேல்'),
     opt('not-specified', 'Prefer not to say', 'சொல்ல விரும்பவில்லை'),
   ],
   skinColor: [
@@ -279,14 +288,18 @@ export const formOptionLists: Record<FormOptionsKey, FormOption[]> = {
     opt('30-35', '30 - 35', '30 - 35'),
     opt('35-40', '35 - 40', '35 - 40'),
   ],
+  partnerAge: Array.from({ length: 43 }, (_, index) => {
+    const age = String(18 + index);
+    return opt(age, age, age);
+  }),
   preferredLocation: [
+    opt('any', 'Any', 'எதுவும்'),
     opt('tamil-nadu', 'Tamil Nadu', 'தமிழ்நாடு'),
     opt('chennai', 'Chennai', 'சென்னை'),
     opt('coimbatore', 'Coimbatore', 'கோயம்புத்தூர்'),
     opt('madurai', 'Madurai', 'மதுரை'),
     opt('bangalore', 'Bangalore', 'பெங்களூர்'),
     opt('abroad', 'Abroad', 'வெளிநாடு'),
-    opt('any', 'Any', 'எதுவும்'),
   ],
   indianState: [
     opt('tamil-nadu', 'Tamil Nadu', 'தமிழ்நாடு'),
@@ -297,6 +310,47 @@ export const formOptionLists: Record<FormOptionsKey, FormOption[]> = {
     opt('maharashtra', 'Maharashtra', 'மகாராஷ்டிரா'),
     opt('delhi', 'Delhi', 'டெல்லி'),
     opt('puducherry', 'Puducherry', 'புதுச்சேரி'),
+    opt('other', 'Other', 'பிற'),
+  ],
+  district: [
+    opt('ariyalur', 'Ariyalur', 'அரியலூர்'),
+    opt('chengalpattu', 'Chengalpattu', 'செங்கல்பட்டு'),
+    opt('chennai', 'Chennai', 'சென்னை'),
+    opt('coimbatore', 'Coimbatore', 'கோயம்புத்தூர்'),
+    opt('cuddalore', 'Cuddalore', 'கடலூர்'),
+    opt('dharmapuri', 'Dharmapuri', 'தரமபுரி'),
+    opt('dindigul', 'Dindigul', 'திண்டுகல்'),
+    opt('erode', 'Erode', 'ஈரோடு'),
+    opt('kallakurichi', 'Kallakurichi', 'கள்ளக்குரிச்சி'),
+    opt('kanchipuram', 'Kanchipuram', 'காஞ்சிபுரம்'),
+    opt('kanyakumari', 'Kanyakumari', 'கன்னியாகுமரி'),
+    opt('karur', 'Karur', 'கருர்'),
+    opt('krishnagiri', 'Krishnagiri', 'கர்ஷ்ணகிரி'),
+    opt('madurai', 'Madurai', 'மதுரை'),
+    opt('mayiladuthurai', 'Mayiladuthurai', 'மயிலாதுதுரை'),
+    opt('nagapattinam', 'Nagapattinam', 'நாக்பட்டினம்'),
+    opt('namakkal', 'Namakkal', 'நாமக்கள்'),
+    opt('nilgiris', 'Nilgiris', 'நீலகிரி'),
+    opt('perambalur', 'Perambalur', 'பேரம்பருர்'),
+    opt('pudukkottai', 'Pudukkottai', 'புதுக்குட்டை'),
+    opt('ramanathapuram', 'Ramanathapuram', 'ராமநாதபுரம்'),
+    opt('ranipet', 'Ranipet', 'ரணிபேட்'),
+    opt('salem', 'Salem', 'சேலம்'),
+    opt('sivaganga', 'Sivaganga', 'சிவகங்க'),
+    opt('tenkasi', 'Tenkasi', 'தேன்காசி'),
+    opt('thanjavur', 'Thanjavur', 'தஞ்சாவூர்'),
+    opt('theni', 'Theni', 'தேனி'),
+    opt('thoothukudi', 'Thoothukudi', 'தூத்துக்குடி'),
+    opt('tiruchirappalli', 'Tiruchirappalli', 'திருச்சிராப்பள்ளி'),
+    opt('tirunelveli', 'Tirunelveli', 'திருநேல்வேலி'),
+    opt('tirupathur', 'Tirupathur', 'திருப்பதுர்'),
+    opt('tiruppur', 'Tiruppur', 'திருப்பூர்'),
+    opt('tiruvallur', 'Tiruvallur', 'திருவள்ளுர்'),
+    opt('tiruvannamalai', 'Tiruvannamalai', 'திருவண்ணாமலை'),
+    opt('tiruvarur', 'Tiruvarur', 'திருவருர்'),
+    opt('vellore', 'Vellore', 'வேல்லூர்'),
+    opt('viluppuram', 'Viluppuram', 'விலுப்புரம்'),
+    opt('virudhunagar', 'Virudhunagar', 'விருத்துநகர்'),
     opt('other', 'Other', 'பிற'),
   ],
   country: [
@@ -357,6 +411,7 @@ export type ProfileFieldConfig = {
   optional?: boolean;
   keyboardType?: 'default' | 'phone-pad';
   maxLength?: number;
+  rowGroup?: string;
 };
 
 type FamilyFieldDisplay = {
@@ -399,17 +454,17 @@ const familyInformationFields: FamilyFieldDefinition[] = [
     },
   },
   {
-    config: { fieldKey: 'marriedMembers', kind: 'select', optionsKey: 'siblingCount' },
+    config: { fieldKey: 'marriedMembers', kind: 'select', optionsKey: 'siblingCount', optional: true },
     display: {
-      en: { label: 'Married Members', placeholder: 'Select count' },
-      ta: { label: 'திருமணமான உறுப்பினர்கள்', placeholder: 'எண்ணிக்கையைத் தேர்ந்தெடுக்கவும்' },
+      en: { label: 'Married Members (Optional)', placeholder: 'Select count' },
+      ta: { label: 'திருமணமான உறுப்பினர்கள் (விருப்பம்)', placeholder: 'எண்ணிக்கையைத் தேர்ந்தெடுக்கவும்' },
     },
   },
   {
-    config: { fieldKey: 'unmarriedMembers', kind: 'select', optionsKey: 'siblingCount' },
+    config: { fieldKey: 'unmarriedMembers', kind: 'select', optionsKey: 'siblingCount', optional: true },
     display: {
-      en: { label: 'Unmarried Members', placeholder: 'Select count' },
-      ta: { label: 'திருமணமாகாத உறுப்பினர்கள்', placeholder: 'எண்ணிக்கையைத் தேர்ந்தெடுக்கவும்' },
+      en: { label: 'Unmarried Members (Optional)', placeholder: 'Select count' },
+      ta: { label: 'திருமணமாகாத உறுப்பினர்கள் (விருப்பம்)', placeholder: 'எண்ணிக்கையைத் தேர்ந்தெடுக்கவும்' },
     },
   },
 ];
@@ -423,10 +478,10 @@ const parentSiblingFields: FamilyFieldDefinition[] = [
     },
   },
   {
-    config: { fieldKey: 'fatherOccupation', kind: 'select', optionsKey: 'occupation' },
+    config: { fieldKey: 'fatherOccupation', kind: 'select', optionsKey: 'occupation', optional: true },
     display: {
-      en: { label: "Father's Occupation", placeholder: 'Select occupation' },
-      ta: { label: 'தந்தையின் தொழில்', placeholder: 'தொழிலைத் தேர்ந்தெடுக்கவும்' },
+      en: { label: "Father's Occupation (Optional)", placeholder: 'Select occupation' },
+      ta: { label: 'தந்தையின் தொழில் (விருப்பம்)', placeholder: 'தொழிலைத் தேர்ந்தெடுக்கவும்' },
     },
   },
   {
@@ -437,10 +492,10 @@ const parentSiblingFields: FamilyFieldDefinition[] = [
     },
   },
   {
-    config: { fieldKey: 'motherOccupation', kind: 'select', optionsKey: 'occupation' },
+    config: { fieldKey: 'motherOccupation', kind: 'select', optionsKey: 'occupation', optional: true },
     display: {
-      en: { label: "Mother's Occupation", placeholder: 'Select occupation' },
-      ta: { label: 'தாயின் தொழில்', placeholder: 'தொழிலைத் தேர்ந்தெடுக்கவும்' },
+      en: { label: "Mother's Occupation (Optional)", placeholder: 'Select occupation' },
+      ta: { label: 'தாயின் தொழில் (விருப்பம்)', placeholder: 'தொழிலைத் தேர்ந்தெடுக்கவும்' },
     },
   },
   {
@@ -512,10 +567,10 @@ const horoscopeFields: FamilyFieldDefinition[] = [
 
 const physicalDetailsFields: FamilyFieldDefinition[] = [
   {
-    config: { fieldKey: 'skinColor', kind: 'select', optionsKey: 'skinColor' },
+    config: { fieldKey: 'skinColor', kind: 'select', optionsKey: 'skinColor', optional: true },
     display: {
-      en: { label: 'Skin Color', placeholder: 'Select skin color' },
-      ta: { label: 'நிறம்', placeholder: 'நிறத்தைத் தேர்ந்தெடுக்கவும்' },
+      en: { label: 'Skin Color (Optional)', placeholder: 'Select skin color' },
+      ta: { label: 'நிறம் (விருப்பம்)', placeholder: 'நிறத்தைத் தேர்ந்தெடுக்கவும்' },
     },
   },
   {
@@ -526,10 +581,10 @@ const physicalDetailsFields: FamilyFieldDefinition[] = [
     },
   },
   {
-    config: { fieldKey: 'weight', kind: 'select', optionsKey: 'weight' },
+    config: { fieldKey: 'weight', kind: 'select', optionsKey: 'weight', optional: true },
     display: {
-      en: { label: 'Weight', placeholder: 'Select weight range' },
-      ta: { label: 'எடை', placeholder: 'எடை வரம்பைத் தேர்ந்தெடுக்கவும்' },
+      en: { label: 'Weight (Optional)', placeholder: 'Select weight range' },
+      ta: { label: 'எடை (விருப்பம்)', placeholder: 'எடை வரம்பைத் தேர்ந்தெடுக்கவும்' },
     },
   },
   {
@@ -563,7 +618,7 @@ export const profileStepFieldConfig: Record<string, ProfileFieldConfig[]> = {
       fixedValue: FIXED_CASTE_VALUE,
       optionsKey: 'community',
     },
-    { fieldKey: 'subCaste', kind: 'select', optionsKey: 'subCaste' },
+    { fieldKey: 'subCaste', kind: 'select', optionsKey: 'subCaste', optional: true },
   ],
   '3': [{ fieldKey: 'dateOfBirth', kind: 'date' }],
   '7': [{ fieldKey: 'education', kind: 'select', optionsKey: 'education' }],
@@ -576,11 +631,21 @@ export const profileStepFieldConfig: Record<string, ProfileFieldConfig[]> = {
     { fieldKey: 'annualIncome', kind: 'select', optionsKey: 'annualIncome', optional: true },
   ],
   '10': [
-    { fieldKey: 'nativeDistrict', kind: 'text' },
+    { fieldKey: 'nativePlace', kind: 'text' },
+    { fieldKey: 'nativeDistrict', kind: 'select', optionsKey: 'district' },
     { fieldKey: 'nativeState', kind: 'select', optionsKey: 'indianState' },
     { fieldKey: 'nativeCountry', kind: 'select', optionsKey: 'country' },
   ],
+  final: [
+    { fieldKey: 'partnerAgeFrom', kind: 'select', optionsKey: 'partnerAge', rowGroup: 'partnerAge' },
+    { fieldKey: 'partnerAgeTo', kind: 'select', optionsKey: 'partnerAge', rowGroup: 'partnerAge' },
+    { fieldKey: 'partnerEducation', kind: 'select', optionsKey: 'educationPreference' },
+    { fieldKey: 'partnerPreferredLocation', kind: 'select', optionsKey: 'preferredLocation' },
+  ],
 };
+
+export const PHOTOS_STEP_ID = 'photos';
+export const PARTNER_PREFERENCES_STEP_ID = 'final';
 
 export const profileOptionStepKeys: Record<string, string> = {
   '1': 'profileFor',

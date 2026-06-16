@@ -50,7 +50,10 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
   }
 
   if (defaultResolveRequest) {
-    return defaultResolveRequest(context, moduleName, platform);
+    const result = defaultResolveRequest(context, moduleName, platform);
+    if (result != null) {
+      return result;
+    }
   }
 
   return context.resolveRequest(context, moduleName, platform);

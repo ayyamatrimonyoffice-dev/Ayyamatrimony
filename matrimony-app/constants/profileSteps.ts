@@ -41,7 +41,7 @@ const stepContent: Record<Language, Record<string, StepContent>> = {
         { label: 'Gender', placeholder: 'Select gender', type: 'select' },
         { label: 'Religion', placeholder: 'Select religion', type: 'select' },
         { label: 'Caste', placeholder: 'Nadar', type: 'readonly' },
-        { label: 'Sub-Caste', placeholder: 'Select sub-caste', type: 'select' },
+        { label: 'Sub-Caste (Optional)', placeholder: 'Select sub-caste', type: 'select' },
       ],
     },
     '3': {
@@ -91,10 +91,11 @@ const stepContent: Record<Language, Record<string, StepContent>> = {
       fields: [],
     },
     '10': {
-      title: 'Native Place',
+      title: 'Location Details',
       subtitle: '',
       fields: [
-        { label: 'District', placeholder: 'e.g. Madurai' },
+        { label: 'Native Place', placeholder: 'Enter native place' },
+        { label: 'District', placeholder: 'Select district', type: 'select' },
         { label: 'State', placeholder: 'Select state', type: 'select' },
         { label: 'Country', placeholder: 'Select country', type: 'select' },
       ],
@@ -116,13 +117,23 @@ const stepContent: Record<Language, Record<string, StepContent>> = {
     },
     '19': {
       title: 'Contact Details',
+      subtitle: 'Optional. You can skip this step and continue.',
+      fields: [],
+    },
+    photos: {
+      title: 'Upload Photos',
       subtitle: '',
       fields: [],
     },
     final: {
-      title: 'Upload Photos',
+      title: 'Partner Preferences',
       subtitle: '',
-      fields: [],
+      fields: [
+        { label: 'From Age', placeholder: 'Select from age', type: 'select' },
+        { label: 'To Age', placeholder: 'Select to age', type: 'select' },
+        { label: 'Education', placeholder: 'Select education', type: 'select' },
+        { label: 'Preferred Location', placeholder: 'Select location', type: 'select' },
+      ],
     },
   },
   ta: {
@@ -147,7 +158,7 @@ const stepContent: Record<Language, Record<string, StepContent>> = {
         { label: 'பாலினம்', placeholder: 'பாலினத்தைத் தேர்ந்தெடுக்கவும்', type: 'select' },
         { label: 'மதம்', placeholder: 'மதத்தைத் தேர்ந்தெடுக்கவும்', type: 'select' },
         { label: 'சாதி', placeholder: 'நாடார்', type: 'readonly' },
-        { label: 'உட்சாதி', placeholder: 'உட்சாதியைத் தேர்ந்தெடுக்கவும்', type: 'select' },
+        { label: 'உட்சாதி (விருப்பம்)', placeholder: 'உட்சாதியைத் தேர்ந்தெடுக்கவும்', type: 'select' },
       ],
     },
     '3': {
@@ -197,10 +208,11 @@ const stepContent: Record<Language, Record<string, StepContent>> = {
       fields: [],
     },
     '10': {
-      title: 'சொந்த ஊர்',
+      title: 'இட விவரங்கள்',
       subtitle: '',
       fields: [
-        { label: 'மாவட்டம்', placeholder: 'எ.கா. மதுரை' },
+        { label: 'சொந்த ஊர்', placeholder: 'சொந்த ஊரை உள்ளிடவும்' },
+        { label: 'மாவட்டம்', placeholder: 'மாவட்டத்தைத் தேர்ந்தெடுக்கவும்', type: 'select' },
         { label: 'மாநிலம்', placeholder: 'மாநிலத்தைத் தேர்ந்தெடுக்கவும்', type: 'select' },
         { label: 'நாடு', placeholder: 'நாட்டைத் தேர்ந்தெடுக்கவும்', type: 'select' },
       ],
@@ -222,18 +234,28 @@ const stepContent: Record<Language, Record<string, StepContent>> = {
     },
     '19': {
       title: 'தொடர்பு விவரங்கள்',
-      subtitle: '',
+      subtitle: 'விருப்பம். இந்தப் படியைத் தவிர்த்து தொடரலாம்.',
       fields: [],
     },
-    final: {
+    photos: {
       title: 'புகைப்படங்களைப் பதிவேற்று',
       subtitle: '',
       fields: [],
     },
+    final: {
+      title: 'இணை விருப்பங்கள்',
+      subtitle: '',
+      fields: [
+        { label: 'தொடக்க வயது', placeholder: 'தொடக்க வயதைத் தேர்ந்தெடுக்கவும்', type: 'select' },
+        { label: 'முடிவு வயது', placeholder: 'முடிவு வயதைத் தேர்ந்தெடுக்கவும்', type: 'select' },
+        { label: 'கல்வி', placeholder: 'கல்வியைத் தேர்ந்தெடுக்கவும்', type: 'select' },
+        { label: 'விருப்பமான இடம்', placeholder: 'இடத்தைத் தேர்ந்தெடுக்கவும்', type: 'select' },
+      ],
+    },
   },
 };
 
-const stepIds = ['1', '2', '3', '4', '13', '7', '8', '9', '16', '10', '11', '12', '18', '19', 'final'];
+const stepIds = ['1', '2', '3', '4', '13', '7', '8', '9', '16', '10', '11', '12', '18', '19', 'photos', 'final'];
 
 function buildStep(id: string, language: Language, index: number, total: number): ProfileStep {
   const content = stepContent[language][id];

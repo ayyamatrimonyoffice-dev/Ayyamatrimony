@@ -12,6 +12,7 @@ import {
   PlayfairDisplay_700Bold,
 } from '@expo-google-fonts/playfair-display';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { ProfileFormProvider } from '@/context/ProfileFormContext';
 import { colors } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -37,25 +38,34 @@ export default function RootLayout() {
 
   return (
     <LanguageProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: colors.background },
-          animation: 'slide_from_right',
-        }}
-      >
-        <Stack.Screen name="index" />
-        <Stack.Screen name="welcome" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="otp" />
-        <Stack.Screen name="profile-setup" />
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="edit-profile" />
-        <Stack.Screen name="partner-preferences" />
-        <Stack.Screen name="privacy-settings" />
-        <Stack.Screen name="member" />
-        <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
-      </Stack>
+      <ProfileFormProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: colors.background },
+            animation: 'slide_from_right',
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="welcome" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="otp" />
+          <Stack.Screen name="create-profile" />
+          <Stack.Screen name="profile-setup" />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="edit-profile" />
+          <Stack.Screen name="partner-preferences" />
+          <Stack.Screen name="privacy-settings" />
+          <Stack.Screen name="edit-mobile" />
+          <Stack.Screen name="change-password" />
+          <Stack.Screen name="info" />
+          <Stack.Screen name="member/[id]" />
+          <Stack.Screen name="upgrade" />
+          <Stack.Screen name="notifications" />
+          <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
+          <Stack.Screen name="admin" options={{ headerShown: false }} />
+        </Stack>
+      </ProfileFormProvider>
     </LanguageProvider>
   );
 }

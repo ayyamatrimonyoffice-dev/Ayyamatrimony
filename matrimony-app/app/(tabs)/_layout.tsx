@@ -1,6 +1,8 @@
 import { Tabs } from 'expo-router';
+import { Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLanguage } from '@/context/LanguageContext';
+import { images } from '@/constants/images';
 import { colors, typography } from '@/constants/theme';
 
 export default function TabLayout() {
@@ -65,8 +67,17 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: translate('profile'),
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="person" size={size} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <Image
+              source={images.logo}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 12,
+                opacity: focused ? 1 : 0.65,
+              }}
+              resizeMode="cover"
+            />
           ),
         }}
       />

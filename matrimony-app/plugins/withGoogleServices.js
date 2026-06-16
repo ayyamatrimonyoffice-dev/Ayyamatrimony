@@ -79,7 +79,6 @@ function withGoogleServices(config) {
   config = withAppBuildGradle(config, (config) => {
     if (config.modResults.language === 'groovy') {
       config.modResults.contents = addAppPlugin(config.modResults.contents);
-      config.modResults.contents = addFirebaseDependencies(config.modResults.contents);
     }
     return config;
   });

@@ -6,7 +6,7 @@ type PrimaryButtonProps = {
   label: string;
   onPress: () => void;
   icon?: keyof typeof MaterialIcons.glyphMap;
-  variant?: 'primary' | 'gold' | 'outline';
+  variant?: 'primary' | 'gold' | 'outline' | 'outlineGold';
   style?: ViewStyle;
   disabled?: boolean;
 };
@@ -28,6 +28,7 @@ export function PrimaryButton({
         variant === 'primary' && styles.primary,
         variant === 'gold' && styles.gold,
         variant === 'outline' && styles.outline,
+        variant === 'outlineGold' && styles.outlineGold,
         pressed && styles.pressed,
         disabled && styles.disabled,
         style,
@@ -39,6 +40,7 @@ export function PrimaryButton({
           variant === 'primary' && styles.primaryLabel,
           variant === 'gold' && styles.goldLabel,
           variant === 'outline' && styles.outlineLabel,
+          variant === 'outlineGold' && styles.outlineGoldLabel,
         ]}
       >
         {label}
@@ -47,7 +49,13 @@ export function PrimaryButton({
         <MaterialIcons
           name={icon}
           size={20}
-          color={variant === 'outline' ? colors.primary : colors.onPrimary}
+          color={
+            variant === 'outline'
+              ? colors.primary
+              : variant === 'outlineGold'
+                ? colors.secondaryFixed
+                : colors.onPrimary
+          }
         />
       ) : null}
     </Pressable>
@@ -86,6 +94,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.outlineVariant,
   },
+  outlineGold: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 224, 136, 0.45)',
+    borderRadius: 9999,
+  },
   label: {
     ...typography.titleLg,
     fontSize: 16,
@@ -98,6 +112,9 @@ const styles = StyleSheet.create({
   },
   outlineLabel: {
     color: colors.primary,
+  },
+  outlineGoldLabel: {
+    color: colors.secondaryFixed,
   },
   pressed: {
     opacity: 0.9,

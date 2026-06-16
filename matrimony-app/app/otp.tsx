@@ -8,7 +8,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams, useRootNavigationState } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
@@ -37,6 +37,10 @@ function useOtpLayout() {
 
 export default function OtpScreen() {
   const router = useRouter();
+  const rootNavigationState = useRootNavigationState();
+  const navigationReady = Boolean(rootNavigationState?.key);
+  const { flow } = useLocalSearchParams<{ flow?: string }>();
+  const isLoginFlow = flow === 'login';
   const { translate } = useLanguage();
   const { isCompact, gap, boxWidth, boxHeight, fontSize } = useOtpLayout();
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
@@ -57,12 +61,16 @@ export default function OtpScreen() {
   }, [timeLeft]);
 
   useEffect(() => {
-    if (!otpComplete || hasNavigated.current) {
+    if (!navigationReady || !otpComplete || hasNavigated.current) {
       return;
     }
     hasNavigated.current = true;
-    router.replace('/profile-setup/1');
-  }, [otpComplete, router]);
+    if (isLoginFlow) {
+      router.replace('/(tabs)');
+      return;
+    }
+    router.replace('/create-profile');
+  }, [navigationReady, otpComplete, router, isLoginFlow]);
 
   const handleChange = (value: string, index: number) => {
     const digits = value.replace(/\D/g, '');
@@ -102,7 +110,15 @@ export default function OtpScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <AppHeader showBack onBack={() => router.replace('/login')} />
+      <AppHeader
+        showBack
+        onBack={() =>
+          router.replace({
+            pathname: '/login',
+            params: { flow: isLoginFlow ? 'login' : 'register' },
+          })
+        }
+      />
       <View style={styles.content}>
         <View style={[styles.card, isCompact && styles.cardCompact]}>
           <View style={[styles.lockBadge, isCompact && styles.lockBadgeCompact]}>

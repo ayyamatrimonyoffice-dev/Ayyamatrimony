@@ -69,6 +69,7 @@ type TextFieldProps = {
   multiline?: boolean;
   keyboardType?: 'default' | 'phone-pad';
   maxLength?: number;
+  secureTextEntry?: boolean;
 };
 
 export function TextField({
@@ -79,7 +80,45 @@ export function TextField({
   multiline,
   keyboardType = 'default',
   maxLength,
+  secureTextEntry,
 }: TextFieldProps) {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+  if (secureTextEntry) {
+    return (
+      <View style={formFieldStyles.fieldGroup}>
+        <Text style={formFieldStyles.fieldLabel}>{label}</Text>
+        <View style={styles.passwordInputRow}>
+          <TextInput
+            style={[formFieldStyles.fieldInput, styles.passwordInput]}
+            value={value}
+            onChangeText={onChangeText}
+            placeholder={placeholder}
+            placeholderTextColor="rgba(90, 65, 61, 0.4)"
+            keyboardType={keyboardType}
+            maxLength={maxLength}
+            secureTextEntry={!isPasswordVisible}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isPasswordVisible ? 'Hide password' : 'Show password'}
+            onPress={() => setIsPasswordVisible((current) => !current)}
+            style={styles.visibilityButton}
+            hitSlop={8}
+          >
+            <MaterialIcons
+              name={isPasswordVisible ? 'visibility-off' : 'visibility'}
+              size={22}
+              color={colors.onSurfaceVariant}
+            />
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={formFieldStyles.fieldGroup}>
       <Text style={formFieldStyles.fieldLabel}>{label}</Text>
@@ -459,6 +498,24 @@ export function getStoredSelectLabel(
 }
 
 const styles = StyleSheet.create({
+  passwordInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surfaceContainerLow,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 191, 185, 0.2)',
+    paddingRight: spacing.xs,
+  },
+  passwordInput: {
+    flex: 1,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
+  visibilityButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
   readOnlyInput: {
     backgroundColor: colors.surfaceContainerHigh,
     opacity: 0.92,

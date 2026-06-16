@@ -46,7 +46,7 @@ export default function LanguageScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.branding}>
           <View style={styles.logoWrap}>
-            <Image source={{ uri: images.logo }} style={styles.logo} />
+            <Image source={images.logo} style={styles.logo} resizeMode="contain" />
           </View>
           <Text style={styles.title}>{translate('matrimony')}</Text>
         </View>
