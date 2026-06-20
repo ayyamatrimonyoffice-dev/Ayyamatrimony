@@ -3,6 +3,8 @@ import { ProfileFieldConfig } from '@/constants/formOptions';
 
 export const CONTACT_STEP_ID = '19';
 
+export const PHONE_DIGIT_LENGTH = 10;
+
 export const CONTACT_PHONE_KEY = 'contactPhone';
 export const WHATSAPP_NUMBER_KEY = 'whatsappNumber';
 export const FACEBOOK_PROFILE_KEY = 'facebookProfile';
@@ -22,7 +24,7 @@ const contactDetailsFields: ContactFieldDefinition[] = [
       kind: 'text',
       optional: true,
       keyboardType: 'phone-pad',
-      maxLength: 10,
+      maxLength: PHONE_DIGIT_LENGTH,
     },
     display: {
       en: { label: 'Phone Number', placeholder: 'Enter mobile' },
@@ -35,7 +37,7 @@ const contactDetailsFields: ContactFieldDefinition[] = [
       kind: 'text',
       optional: true,
       keyboardType: 'phone-pad',
-      maxLength: 10,
+      maxLength: PHONE_DIGIT_LENGTH,
     },
     display: {
       en: { label: 'WhatsApp Number', placeholder: 'Enter WhatsApp mobile' },
@@ -66,11 +68,11 @@ export function getContactDetailsStepFields(language: Language) {
 }
 
 export function normalizePhoneDigits(value: string): string {
-  return value.replace(/\D/g, '').slice(0, 10);
+  return value.replace(/\D/g, '').slice(0, PHONE_DIGIT_LENGTH);
 }
 
 export function isValidPhoneNumber(value: string): boolean {
-  return /^\d{10}$/.test(normalizePhoneDigits(value));
+  return normalizePhoneDigits(value).length === PHONE_DIGIT_LENGTH;
 }
 
 export function maskPhoneNumber(value: string): string {

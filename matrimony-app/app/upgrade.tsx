@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { BackHandler, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Redirect } from 'expo-router';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
@@ -18,9 +19,11 @@ export default function UpgradeScreen() {
     accessPrice,
     batchSize,
     isPaidMember,
+    hasPaidProfileQuota,
     profilesViewedCount,
     profilesAllowed,
     batchesPaid,
+    isReady,
   } = useSubscription();
   const {
     paymentModalVisible,
@@ -45,6 +48,10 @@ export default function UpgradeScreen() {
       return () => subscription.remove();
     }, [handleBack]),
   );
+
+  if (isReady && hasPaidProfileQuota) {
+    return <Redirect href="/(tabs)" />;
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>

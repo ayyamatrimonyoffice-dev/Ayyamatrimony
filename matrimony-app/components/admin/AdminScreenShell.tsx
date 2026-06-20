@@ -6,9 +6,10 @@ import { adminColors } from '@/constants/admin';
 import { images } from '@/constants/images';
 
 type AdminScreenShellProps = {
-  title: string;
+  title?: string;
   subtitle?: string;
   showLogo?: boolean;
+  hideHeader?: boolean;
   onBack?: () => void;
   children: ReactNode;
   headerRight?: ReactNode;
@@ -18,33 +19,36 @@ export function AdminScreenShell({
   title,
   subtitle,
   showLogo = false,
+  hideHeader = false,
   onBack,
   children,
   headerRight,
 }: AdminScreenShellProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.header}>
-        {onBack ? (
-          <Pressable style={styles.backBtn} onPress={onBack} hitSlop={8}>
-            <MaterialIcons name="arrow-back" size={22} color={adminColors.text} />
-          </Pressable>
-        ) : null}
-        <View style={showLogo ? styles.headerBrandRow : styles.headerTextWrap}>
-          {showLogo ? (
-            <View style={styles.logoRing}>
-              <View style={styles.logoWrap}>
-                <Image source={images.logo} style={styles.logo} resizeMode="contain" />
-              </View>
-            </View>
+      {hideHeader ? null : (
+        <View style={styles.header}>
+          {onBack ? (
+            <Pressable style={styles.backBtn} onPress={onBack} hitSlop={8}>
+              <MaterialIcons name="arrow-back" size={22} color={adminColors.text} />
+            </Pressable>
           ) : null}
-          <View style={styles.headerTextWrap}>
-            <Text style={styles.title}>{title}</Text>
-            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          <View style={showLogo ? styles.headerBrandRow : styles.headerTextWrap}>
+            {showLogo ? (
+              <View style={styles.logoRing}>
+                <View style={styles.logoWrap}>
+                  <Image source={images.logo} style={styles.logo} resizeMode="contain" />
+                </View>
+              </View>
+            ) : null}
+            <View style={styles.headerTextWrap}>
+              {title ? <Text style={styles.title}>{title}</Text> : null}
+              {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+            </View>
           </View>
+          {headerRight}
         </View>
-        {headerRight}
-      </View>
+      )}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}

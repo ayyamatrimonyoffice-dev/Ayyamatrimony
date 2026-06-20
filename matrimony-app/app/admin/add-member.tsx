@@ -10,8 +10,6 @@ import { publishProfileFromValues } from '@/constants/memberDirectory';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
 
-const STEP_LABELS = ['Personal details', 'Family details', 'Review & save'];
-
 export default function AdminAddMemberScreen() {
   const router = useRouter();
   const { isReady: authReady, isAuthenticated } = useAdminAuth();
@@ -64,9 +62,6 @@ export default function AdminAddMemberScreen() {
         </Pressable>
         <View style={styles.headerText}>
           <Text style={styles.title}>Add member</Text>
-          <Text style={styles.subtitle}>
-            Step {step} of 3 · {STEP_LABELS[step - 1]}
-          </Text>
         </View>
       </View>
 
@@ -118,11 +113,6 @@ const styles = StyleSheet.create({
     color: adminColors.text,
     fontSize: 18,
     fontWeight: '700',
-  },
-  subtitle: {
-    color: adminColors.textMuted,
-    fontSize: 13,
-    marginTop: 2,
   },
   stepRow: {
     flexDirection: 'row',

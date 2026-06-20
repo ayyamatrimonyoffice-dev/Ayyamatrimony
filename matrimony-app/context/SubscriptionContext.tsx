@@ -9,6 +9,9 @@ import {
   useState,
 } from 'react';
 import {
+  getProfilesAllowed,
+  getProfilesRemaining,
+  hasActivePaidBatch,
   PROFILE_ACCESS_PRICE,
   PROFILE_BATCH_SIZE,
   SUBSCRIPTION_STORAGE_KEY,
@@ -34,6 +37,7 @@ type SubscriptionContextValue = {
   hasChosenAccessMode: boolean;
   accessMode: AccessMode;
   isPaidMember: boolean;
+  hasPaidProfileQuota: boolean;
   batchesPaid: number;
   profilesAllowed: number;
   profilesViewedCount: number;
@@ -107,7 +111,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         const profileComplete = hasCompletedProfile(profileValues);
         let nextState = parsed;
 
-        if (parsed.isLoggedIn && profileComplete && !parsed.hasChosenAccessMode) {
+        if (
+          parsed.isLoggedIn &&
+          profileComplete &&
+          !parsed.hasChosenAccessMode &&
+          !(parsed.accessMode === 'paid' && parsed.batchesPaid > 0)
+        ) {
           nextState = {
             ...parsed,
             hasChosenAccessMode: true,
@@ -138,10 +147,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     [persistState],
   );
 
-  const profilesAllowed = state.batchesPaid * PROFILE_BATCH_SIZE;
+  const profilesAllowed = getProfilesAllowed(state.batchesPaid);
   const profilesViewedCount = state.viewedProfileIds.length;
-  const profilesRemaining = Math.max(0, profilesAllowed - profilesViewedCount);
+  const profilesRemaining = getProfilesRemaining(state.batchesPaid, profilesViewedCount);
   const isPaidMember = state.accessMode === 'paid' && state.batchesPaid > 0;
+  const hasPaidProfileQuota = hasActivePaidBatch(
+    state.accessMode,
+    state.batchesPaid,
+    profilesViewedCount,
+  );
   const isPrimeViewActive = membershipViewMode === 'prime' && isPaidMember;
 
   useEffect(() => {
@@ -201,7 +215,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
           return current;
         }
 
-        const allowed = current.batchesPaid * PROFILE_BATCH_SIZE;
+        const allowed = getProfilesAllowed(current.batchesPaid);
         if (current.viewedProfileIds.length >= allowed) {
           return current;
         }
@@ -236,7 +250,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     const next: SubscriptionState = {
       ...current,
       isLoggedIn: true,
-      ...(profileComplete && !current.hasChosenAccessMode
+      ...(profileComplete &&
+      !current.hasChosenAccessMode &&
+      !(current.accessMode === 'paid' && current.batchesPaid > 0)
         ? { hasChosenAccessMode: true, accessMode: 'unpaid' as const }
         : {}),
     };
@@ -246,12 +262,22 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, [persistState]);
 
   const chooseUnpaidAccess = useCallback(async () => {
-    updateState((current) => ({
-      ...current,
-      isLoggedIn: true,
-      hasChosenAccessMode: true,
-      accessMode: 'unpaid',
-    }));
+    updateState((current) => {
+      if (current.accessMode === 'paid' && current.batchesPaid > 0) {
+        return {
+          ...current,
+          isLoggedIn: true,
+          hasChosenAccessMode: true,
+        };
+      }
+
+      return {
+        ...current,
+        isLoggedIn: true,
+        hasChosenAccessMode: true,
+        accessMode: 'unpaid',
+      };
+    });
   }, [updateState]);
 
   const processPayment = useCallback(async () => {
@@ -273,10 +299,13 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, [persistState]);
 
   const logout = useCallback(async () => {
-    setState(defaultState);
+    setState((current) => {
+      const next = { ...current, isLoggedIn: false };
+      void persistState(next);
+      return next;
+    });
     setMembershipViewMode('regular');
-    await AsyncStorage.removeItem(SUBSCRIPTION_STORAGE_KEY);
-  }, []);
+  }, [persistState]);
 
   const value = useMemo(
     () => ({
@@ -285,6 +314,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       hasChosenAccessMode: state.hasChosenAccessMode,
       accessMode: state.accessMode,
       isPaidMember,
+      hasPaidProfileQuota,
       batchesPaid: state.batchesPaid,
       profilesAllowed,
       profilesViewedCount,
@@ -307,6 +337,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       canOpenNewFullProfile,
       canViewFullProfile,
       chooseUnpaidAccess,
+      hasPaidProfileQuota,
       isPaidMember,
       isPrimeViewActive,
       isReady,

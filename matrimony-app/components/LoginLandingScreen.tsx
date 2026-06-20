@@ -23,9 +23,9 @@ import {
   isAdminPhone,
 } from '@/constants/admin';
 import {
-  CONTACT_PHONE_KEY,
   isValidPhoneNumber,
   normalizePhoneDigits,
+  PHONE_DIGIT_LENGTH,
 } from '@/constants/contactDetails';
 import { useLanguage } from '@/context/LanguageContext';
 import { useMatchActions } from '@/context/MatchActionsContext';
@@ -34,6 +34,11 @@ import { useSubscription } from '@/context/SubscriptionContext';
 import { colors, fonts, spacing, typography } from '@/constants/theme';
 import { images } from '@/constants/images';
 import { hasCompletedProfile } from '@/constants/profileCompletion';
+import {
+  mergeLoginProfile,
+  phoneOnlyProfile,
+  profilePhone,
+} from '@/constants/authFlow';
 import {
   fetchUserApprovalStatus,
   submitLoginApproval,
@@ -58,17 +63,17 @@ async function readStoredProfile(): Promise<Record<string, string>> {
   }
 }
 
-function mergeLoginProfile(
+function mergeLoginProfileWithApproval(
   localProfile: Record<string, string>,
   remoteProfile: Record<string, string> | null,
   phone: string,
+  approvalStatus: string | null,
 ): Record<string, string> {
-  return {
-    ...localProfile,
-    ...(remoteProfile ?? {}),
-    [CONTACT_PHONE_KEY]: phone,
-    whatsappNumber: remoteProfile?.whatsappNumber || localProfile.whatsappNumber || phone,
-  };
+  const merged = mergeLoginProfile(localProfile, remoteProfile, phone);
+  if (approvalStatus) {
+    merged.approvalStatus = approvalStatus;
+  }
+  return merged;
 }
 
 export function LoginLandingScreen() {
@@ -76,16 +81,17 @@ export function LoginLandingScreen() {
   const { translate } = useLanguage();
   const { login } = useSubscription();
   const { clearActions } = useMatchActions();
-  const { values, setValue, clearProfile, replaceValues } = useProfileForm();
-  const [phone, setPhone] = useState(() => normalizePhoneDigits(values[CONTACT_PHONE_KEY] ?? ''));
+  const { clearProfile, replaceValues } = useProfileForm();
+  const [phone, setPhone] = useState('');
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     void import('@/lib/firebase').then(({ initFirebaseAnalytics }) => initFirebaseAnalytics());
   }, []);
 
-  const savePhone = (digits: string) => {
-    setValue(CONTACT_PHONE_KEY, digits);
-    setValue('whatsappNumber', digits);
+  const enterAdmin = async (path: Href) => {
+    await grantAdminSession();
+    router.replace(path);
   };
 
   const requireValidPhone = () => {
@@ -94,13 +100,30 @@ export function LoginLandingScreen() {
       Alert.alert(translate('phoneNumber'), translate('invalidPhone'));
       return null;
     }
-    savePhone(digits);
     return digits;
   };
 
-  const enterAdmin = async (path: Href) => {
-    await grantAdminSession();
-    router.replace(path);
+  const finishAuth = async (
+    digits: string,
+    mergedProfile: Record<string, string>,
+    source: 'login' | 'register',
+  ) => {
+    await replaceValues(mergedProfile);
+    await login();
+
+    await submitLoginApproval(digits, {
+      name: mergedProfile.fullName ?? '',
+      profileId: mergedProfile.memberListingId,
+      registrationCommunity: mergedProfile.registrationCommunity,
+      source: source === 'register' ? 'profile' : 'login',
+    }).catch(() => undefined);
+
+    if (hasCompletedProfile(mergedProfile) && source === 'login') {
+      router.replace('/(tabs)');
+      return;
+    }
+
+    router.replace('/select-community');
   };
 
   const handleLogin = () => {
@@ -110,51 +133,32 @@ export function LoginLandingScreen() {
       return;
     }
     if (!requireValidPhone()) return;
+    if (busy) return;
 
     void (async () => {
-      const localProfile = await readStoredProfile();
-      const remoteProfile = await hydrateLocalProfileFromFirestore(digits).catch(() => null);
-      const approvalStatus = await fetchUserApprovalStatus(digits).catch(() => null);
-      const mergedProfile = mergeLoginProfile(localProfile, remoteProfile, digits);
-      if (approvalStatus) {
-        mergedProfile.approvalStatus = approvalStatus;
+      setBusy(true);
+      try {
+        const localProfile = await readStoredProfile();
+        const remoteProfile = await hydrateLocalProfileFromFirestore(digits).catch(() => null);
+        const approvalStatus = await fetchUserApprovalStatus(digits).catch(() => null);
+        const storedPhone = profilePhone(localProfile);
+
+        if (storedPhone && storedPhone !== digits) {
+          await clearProfile();
+          await clearActions();
+        }
+
+        const mergedProfile = mergeLoginProfileWithApproval(
+          storedPhone === digits ? localProfile : {},
+          remoteProfile,
+          digits,
+          approvalStatus,
+        );
+
+        await finishAuth(digits, mergedProfile, 'login');
+      } finally {
+        setBusy(false);
       }
-      const previousPhone = normalizePhoneDigits(
-        localProfile[CONTACT_PHONE_KEY] ?? localProfile.phoneNumber ?? '',
-      );
-      const phoneChanged = Boolean(previousPhone) && previousPhone !== digits;
-
-      if (phoneChanged) {
-        await clearProfile();
-        await clearActions();
-        savePhone(digits);
-        router.replace('/select-community');
-        return;
-      }
-
-      if (Object.keys(mergedProfile).length > 0) {
-        await replaceValues(mergedProfile);
-      } else {
-        savePhone(digits);
-      }
-
-      await login();
-
-      await submitLoginApproval(digits, {
-        name: mergedProfile.fullName ?? '',
-        profileId: mergedProfile.memberListingId,
-        registrationCommunity: mergedProfile.registrationCommunity,
-        source: 'login',
-      }).catch(() => undefined);
-
-      if (!hasCompletedProfile(mergedProfile)) {
-        savePhone(digits);
-        router.replace('/select-community');
-        return;
-      }
-
-      savePhone(digits);
-      router.replace('/(tabs)');
     })();
   };
 
@@ -164,18 +168,26 @@ export function LoginLandingScreen() {
       Alert.alert('Admin', `Use Login with ${ADMIN_PHONE} to open the admin panel.`);
       return;
     }
-    if (!isValidPhoneNumber(digits)) {
-      Alert.alert(translate('phoneNumber'), translate('invalidPhone'));
-      return;
-    }
+    if (!requireValidPhone()) return;
+    if (busy) return;
 
     void (async () => {
-      await clearProfile();
-      await clearActions();
-      savePhone(digits);
-      await login();
-      await submitLoginApproval(digits, { source: 'login' }).catch(() => undefined);
-      router.replace('/select-community');
+      setBusy(true);
+      try {
+        const remoteProfile = await hydrateLocalProfileFromFirestore(digits).catch(() => null);
+        const remoteOnly = mergeLoginProfile({}, remoteProfile, digits);
+
+        if (hasCompletedProfile(remoteOnly)) {
+          Alert.alert(translate('phoneNumber'), translate('accountAlreadyRegistered'));
+          return;
+        }
+
+        await clearProfile();
+        await clearActions();
+        await finishAuth(digits, phoneOnlyProfile(digits), 'register');
+      } finally {
+        setBusy(false);
+      }
     })();
   };
 
@@ -268,7 +280,7 @@ export function LoginLandingScreen() {
                     placeholder={translate('enterPhone')}
                     placeholderTextColor="rgba(90, 65, 61, 0.42)"
                     keyboardType="phone-pad"
-                    maxLength={11}
+                    maxLength={PHONE_DIGIT_LENGTH}
                     value={phone}
                     onChangeText={(text) => setPhone(normalizePhoneDigits(text))}
                   />
@@ -281,12 +293,14 @@ export function LoginLandingScreen() {
                   icon="arrow-forward"
                   variant="gold"
                   onPress={handleLogin}
+                  disabled={busy}
                   style={styles.loginButton}
                 />
                 <PrimaryButton
                   label={translate('registerFree')}
                   variant="outline"
                   onPress={handleRegister}
+                  disabled={busy}
                   style={styles.registerButton}
                   labelStyle={styles.registerLabel}
                 />

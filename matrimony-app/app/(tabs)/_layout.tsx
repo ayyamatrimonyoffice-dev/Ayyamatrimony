@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { ActivityIndicator, View } from 'react-native';
-import { Redirect, Tabs, useFocusEffect } from 'expo-router';
+import { Redirect, Tabs, useFocusEffect, useRouter, type Href } from 'expo-router';
 import { Image } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LoginLandingScreen } from '@/components/LoginLandingScreen';
@@ -13,11 +13,14 @@ import { images } from '@/constants/images';
 import { colors, typography } from '@/constants/theme';
 
 export default function TabLayout() {
+  const router = useRouter();
   const { translate } = useLanguage();
-  const { isReady, isLoggedIn, hasChosenAccessMode, chooseUnpaidAccess } = useSubscription();
+  const { isReady, isLoggedIn, hasChosenAccessMode, chooseUnpaidAccess, accessMode, batchesPaid } =
+    useSubscription();
   const { values, isReady: profileReady } = useProfileForm();
   const { refresh: refreshApproval } = useUserApproval();
   const unpaidBootstrapped = useRef(false);
+  const sentToRegistration = useRef(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -32,8 +35,20 @@ export default function TabLayout() {
   useEffect(() => {
     if (!isLoggedIn) {
       unpaidBootstrapped.current = false;
+      sentToRegistration.current = false;
     }
   }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isReady || !profileReady || !isLoggedIn || profileComplete) {
+      return;
+    }
+    if (sentToRegistration.current) {
+      return;
+    }
+    sentToRegistration.current = true;
+    router.replace('/select-community' as Href);
+  }, [isLoggedIn, isReady, profileComplete, profileReady, router]);
 
   useEffect(() => {
     if (
@@ -42,7 +57,8 @@ export default function TabLayout() {
       !isLoggedIn ||
       !profileComplete ||
       hasChosenAccessMode ||
-      unpaidBootstrapped.current
+      unpaidBootstrapped.current ||
+      (accessMode === 'paid' && batchesPaid > 0)
     ) {
       return;
     }
@@ -50,6 +66,8 @@ export default function TabLayout() {
     unpaidBootstrapped.current = true;
     void chooseUnpaidAccess();
   }, [
+    accessMode,
+    batchesPaid,
     chooseUnpaidAccess,
     hasChosenAccessMode,
     isLoggedIn,
@@ -67,11 +85,16 @@ export default function TabLayout() {
   }
 
   if (!isLoggedIn) {
+    // Redirect inside nested tabs shows a blank screen on web; render login directly.
     return <LoginLandingScreen />;
   }
 
   if (!profileComplete) {
-    return <Redirect href="/select-community" />;
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   return (

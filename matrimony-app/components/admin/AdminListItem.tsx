@@ -4,7 +4,7 @@ import { adminColors } from '@/constants/admin';
 
 type AdminListItemProps = {
   title: string;
-  subtitle: string;
+  subtitle?: string;
   meta?: string;
   badge?: string;
   badgeColor?: string;
@@ -27,7 +27,7 @@ export function AdminListItem({
     >
       <View style={styles.content}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
         {meta ? <Text style={styles.meta}>{meta}</Text> : null}
       </View>
       {badge ? (

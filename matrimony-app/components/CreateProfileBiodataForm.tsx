@@ -2406,7 +2406,9 @@ function reviewDisplayValue(value: string): string {
 
 const REVIEW_LABEL_WIDTH = 108;
 const REVIEW_LABEL_WIDTH_EXPANDED = 132;
-const REVIEW_INLINE_LABEL_WIDTH = 46;
+const REVIEW_COLON_WIDTH = 12;
+const REVIEW_INLINE_LABEL_WIDTH = 50;
+const REVIEW_SIBLING_LABEL_WIDTH = 96;
 
 function reviewUniqueJoin(parts: string[], separator = ' — '): string {
   const seen = new Set<string>();
@@ -2435,6 +2437,18 @@ function buildReviewOccupationLine(
   return reviewUniqueJoin([occupationTypeLabel, occupationRoleLabel, occupationDesignation]);
 }
 
+function reviewOccupationDisplay(
+  occupationTypeLabel: string,
+  occupationRoleLabel: string,
+  occupationDesignation: string,
+): string {
+  return (
+    occupationRoleLabel.trim() ||
+    occupationDesignation.trim() ||
+    occupationTypeLabel.trim()
+  );
+}
+
 function reviewDisplayOption(
   optionsKey: FormOptionsKey,
   value: string,
@@ -2460,14 +2474,22 @@ function ReviewDataRow({
 
   return (
     <View style={[reviewStyles.dataRow, expanded && reviewStyles.dataRowExpanded]}>
-      <Text
-        style={[reviewStyles.dataLabel, { width: labelWidth }]}
-        numberOfLines={expanded ? 2 : 2}
+      <View
+        style={[
+          reviewStyles.dataLabelColumn,
+          { width: labelWidth, minWidth: labelWidth, maxWidth: labelWidth },
+        ]}
       >
-        {label}
-      </Text>
-      <Text style={reviewStyles.dataColon}>:</Text>
-      <Text style={reviewStyles.dataValue}>{reviewDisplayValue(value)}</Text>
+        <Text style={reviewStyles.dataLabel} numberOfLines={2}>
+          {label}
+        </Text>
+      </View>
+      <View style={reviewStyles.dataColonColumn}>
+        <Text style={reviewStyles.dataColon}>:</Text>
+      </View>
+      <View style={reviewStyles.dataValueColumn}>
+        <Text style={reviewStyles.dataValue}>{reviewDisplayValue(value)}</Text>
+      </View>
     </View>
   );
 }
@@ -2483,11 +2505,13 @@ function ReviewInlinePair({
   rightLabel: string;
   rightValue: string;
 }) {
-  const renderHalf = (label: string, value: string, labelWidth: number) => (
+  const renderHalf = (label: string, value: string) => (
     <View style={reviewStyles.inlineHalf}>
-      <Text style={[reviewStyles.inlineHalfLabel, { width: labelWidth }]} numberOfLines={1}>
-        {label}
-      </Text>
+      <View style={[reviewStyles.dataLabelColumn, { width: REVIEW_INLINE_LABEL_WIDTH }]}>
+        <Text style={reviewStyles.inlineHalfLabel} numberOfLines={2}>
+          {label}
+        </Text>
+      </View>
       <Text style={reviewStyles.dataColon}>:</Text>
       <Text style={reviewStyles.inlineHalfValue} numberOfLines={2}>
         {reviewDisplayValue(value)}
@@ -2497,9 +2521,9 @@ function ReviewInlinePair({
 
   return (
     <View style={reviewStyles.dataRow}>
-      {renderHalf(leftLabel, leftValue, REVIEW_INLINE_LABEL_WIDTH)}
+      {renderHalf(leftLabel, leftValue)}
       <View style={reviewStyles.inlineHalfDivider} />
-      {renderHalf(rightLabel, rightValue, REVIEW_INLINE_LABEL_WIDTH + 8)}
+      {renderHalf(rightLabel, rightValue)}
     </View>
   );
 }
@@ -2531,19 +2555,31 @@ function ReviewSiblingBox({
       <Text style={[reviewStyles.siblingBoxTitle, wide && reviewStyles.siblingBoxTitleWide]}>{title}</Text>
       {rows.map((row) => (
         <View key={row.label} style={[reviewStyles.siblingRow, wide && reviewStyles.siblingRowWide]}>
-          <Text
-            style={[reviewStyles.siblingLabel, wide && reviewStyles.siblingLabelWide]}
-            numberOfLines={2}
+          <View
+            style={[
+              reviewStyles.dataLabelColumn,
+              {
+                width: wide ? REVIEW_SIBLING_LABEL_WIDTH + 4 : REVIEW_SIBLING_LABEL_WIDTH,
+                minWidth: wide ? REVIEW_SIBLING_LABEL_WIDTH + 4 : REVIEW_SIBLING_LABEL_WIDTH,
+                maxWidth: wide ? REVIEW_SIBLING_LABEL_WIDTH + 4 : REVIEW_SIBLING_LABEL_WIDTH,
+              },
+            ]}
           >
-            {row.label}
-          </Text>
-          <Text style={reviewStyles.siblingColon}>:</Text>
-          <Text
-            style={[reviewStyles.siblingValue, wide && reviewStyles.siblingValueWide]}
-            numberOfLines={1}
-          >
-            {reviewDisplayValue(row.value)}
-          </Text>
+            <Text style={[reviewStyles.siblingLabel, wide && reviewStyles.siblingLabelWide]} numberOfLines={2}>
+              {row.label}
+            </Text>
+          </View>
+          <View style={reviewStyles.dataColonColumn}>
+            <Text style={reviewStyles.siblingColon}>:</Text>
+          </View>
+          <View style={reviewStyles.siblingValueColumn}>
+            <Text
+              style={[reviewStyles.siblingValue, wide && reviewStyles.siblingValueWide]}
+              numberOfLines={1}
+            >
+              {reviewDisplayValue(row.value)}
+            </Text>
+          </View>
         </View>
       ))}
     </View>
@@ -2659,7 +2695,7 @@ function ChristianBiodataReviewSheet({
   const degreeLabel = reviewDisplayOption('degreeDetail', form.education, language);
   const occupationTypeLabel = reviewDisplayOption('occupationType', form.occupationType, language);
   const occupationRoleLabel = reviewDisplayOption('occupation', form.occupation, language);
-  const occupationLine = buildReviewOccupationLine(
+  const occupationDisplay = reviewOccupationDisplay(
     occupationTypeLabel,
     occupationRoleLabel,
     form.occupationDesignation,
@@ -2715,7 +2751,7 @@ function ChristianBiodataReviewSheet({
           />
           <ReviewDataRow expanded label={translate('biodataReviewDob')} value={form.dateOfBirth} />
           <ReviewDataRow expanded label={translate('biodataReviewEducation')} value={degreeLabel} />
-          <ReviewDataRow expanded label={translate('biodataReviewOccupation')} value={occupationLine} />
+          <ReviewDataRow expanded label={translate('biodataReviewOccupation')} value={occupationDisplay} />
           <ReviewDataRow
             expanded
             label={translate('biodataReviewIncome')}
@@ -2820,10 +2856,10 @@ function BiodataReviewSheet({
   }
 
   const degreeLabel = reviewDisplayOption('degreeDetail', form.education, language);
-  const nameLine = [form.fullName.trim(), degreeLabel.trim()].filter(Boolean).join(' ');
+  const nameDisplay = form.fullName.trim();
   const occupationTypeLabel = reviewDisplayOption('occupationType', form.occupationType, language);
   const occupationRoleLabel = reviewDisplayOption('occupation', form.occupation, language);
-  const occupationLine = buildReviewOccupationLine(
+  const occupationDisplay = reviewOccupationDisplay(
     occupationTypeLabel,
     occupationRoleLabel,
     form.occupationDesignation,
@@ -2855,7 +2891,10 @@ function BiodataReviewSheet({
       <BiodataLetterheadHeader registrationNumber={form.registrationNumber} translate={translate} />
       <View style={reviewStyles.bodyRow}>
         <View style={reviewStyles.leftPane}>
-          <ReviewDataRow label={translate('biodataReviewName')} value={nameLine} />
+          <ReviewDataRow label={translate('biodataReviewName')} value={nameDisplay} />
+          {degreeLabel ? (
+            <ReviewDataRow label={translate('biodataReviewEducation')} value={degreeLabel} />
+          ) : null}
           <ReviewDataRow
             label={translate('gender')}
             value={reviewDisplayOption('gender', form.gender, language)}
@@ -2866,13 +2905,15 @@ function BiodataReviewSheet({
             label={translate('biodataReviewStar')}
             value={reviewDisplayOption('nakshatra', form.natchathiram, language)}
           />
-          <ReviewInlinePair
-            leftLabel={translate('biodataReviewRasi')}
-            leftValue={reviewDisplayOption('rasi', form.rasi, language)}
-            rightLabel={translate('biodataReviewLagnam')}
-            rightValue={reviewDisplayOption('rasi', form.lagnam, language)}
+          <ReviewDataRow
+            label={translate('biodataReviewRasi')}
+            value={reviewDisplayOption('rasi', form.rasi, language)}
           />
-          <ReviewDataRow label={translate('biodataReviewOccupation')} value={occupationLine} />
+          <ReviewDataRow
+            label={translate('biodataReviewLagnam')}
+            value={reviewDisplayOption('rasi', form.lagnam, language)}
+          />
+          <ReviewDataRow label={translate('biodataReviewOccupation')} value={occupationDisplay} />
           <ReviewDataRow
             label={translate('biodataReviewIncome')}
             value={reviewDisplayOption('monthlyIncome', form.monthlyIncome, language)}
@@ -3102,7 +3143,7 @@ const reviewStyles = StyleSheet.create({
   },
   leftPane: {
     flex: 1.55,
-    minWidth: 0,
+    minWidth: 200,
   },
   rightPane: {
     flex: 1,
@@ -3114,7 +3155,7 @@ const reviewStyles = StyleSheet.create({
   },
   dataRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(87, 0, 0, 0.12)',
     minHeight: 30,
@@ -3124,32 +3165,51 @@ const reviewStyles = StyleSheet.create({
   dataRowExpanded: {
     flex: 1,
     minHeight: 0,
-    alignItems: 'center',
+    alignItems: 'flex-start',
+  },
+  dataLabelColumn: {
+    flexGrow: 0,
+    flexShrink: 0,
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
+    paddingTop: 1,
   },
   dataLabel: {
     color: colors.primary,
     fontFamily: fonts.interSemi,
     fontSize: 12,
     lineHeight: 16,
-    flexShrink: 0,
     textAlign: 'right',
-    paddingRight: 2,
+    width: '100%',
   },
   dataLabelExpanded: {
     flexShrink: 0,
+  },
+  dataColonColumn: {
+    width: REVIEW_COLON_WIDTH,
+    minWidth: REVIEW_COLON_WIDTH,
+    maxWidth: REVIEW_COLON_WIDTH,
+    flexGrow: 0,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 1,
   },
   dataColon: {
     color: colors.primary,
     fontFamily: fonts.interSemi,
     fontSize: 12,
     lineHeight: 16,
-    width: 10,
-    flexShrink: 0,
     textAlign: 'center',
   },
-  dataValue: {
+  dataValueColumn: {
     flex: 1,
+    flexShrink: 1,
     minWidth: 0,
+    paddingLeft: 6,
+    paddingTop: 1,
+  },
+  dataValue: {
     color: colors.onSurface,
     fontFamily: fonts.interMedium,
     fontSize: 12,
@@ -3158,7 +3218,7 @@ const reviewStyles = StyleSheet.create({
   inlineHalf: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     minWidth: 0,
     paddingHorizontal: 2,
   },
@@ -3174,9 +3234,7 @@ const reviewStyles = StyleSheet.create({
     fontFamily: fonts.interSemi,
     fontSize: 12,
     lineHeight: 16,
-    flexShrink: 0,
     textAlign: 'right',
-    paddingRight: 2,
   },
   inlineHalfValue: {
     flex: 1,
@@ -3185,6 +3243,7 @@ const reviewStyles = StyleSheet.create({
     fontFamily: fonts.interMedium,
     fontSize: 12,
     lineHeight: 16,
+    marginTop: 1,
   },
   sidebarBox: {
     borderWidth: 1,
@@ -3249,26 +3308,23 @@ const reviewStyles = StyleSheet.create({
   },
   siblingRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     minHeight: 18,
-    gap: 2,
+    gap: 0,
   },
   siblingRowWide: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     minHeight: 22,
-    gap: 2,
+    gap: 0,
   },
   siblingLabel: {
     color: colors.primary,
     fontFamily: fonts.inter,
     fontSize: 9,
     lineHeight: 12,
-    width: 78,
-    flexShrink: 0,
+    textAlign: 'right',
   },
   siblingLabelWide: {
-    width: 88,
-    flexShrink: 0,
     fontSize: 10,
     lineHeight: 14,
     fontFamily: fonts.interMedium,
@@ -3277,25 +3333,26 @@ const reviewStyles = StyleSheet.create({
     color: colors.primary,
     fontSize: 9,
     lineHeight: 12,
-    width: 8,
-    flexShrink: 0,
     textAlign: 'center',
   },
-  siblingValue: {
+  siblingValueColumn: {
     flex: 1,
+    flexShrink: 1,
     minWidth: 0,
+    paddingLeft: 4,
+    paddingTop: 1,
+  },
+  siblingValue: {
     color: colors.onSurface,
     fontFamily: fonts.interMedium,
     fontSize: 10,
     lineHeight: 13,
-    textAlign: 'right',
+    textAlign: 'left',
   },
   siblingValueWide: {
-    flex: 1,
-    minWidth: 20,
     fontSize: 11,
     lineHeight: 15,
-    textAlign: 'right',
+    textAlign: 'left',
   },
   horoscopeSection: {
     paddingHorizontal: 8,

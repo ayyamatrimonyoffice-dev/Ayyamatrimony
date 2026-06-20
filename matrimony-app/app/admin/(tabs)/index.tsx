@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -6,27 +6,36 @@ import { AdminListItem } from '@/components/admin/AdminListItem';
 import { AdminScreenShell } from '@/components/admin/AdminScreenShell';
 import { AdminStatCard } from '@/components/admin/AdminStatCard';
 import { computeAdminDashboardStats } from '@/constants/adminStats';
+import type { AdminUserRecord } from '@/constants/adminMockData';
 import { adminColors } from '@/constants/admin';
 import { useAdminApprovals } from '@/context/AdminApprovalsContext';
 import { useAdminNotifications } from '@/context/AdminNotificationsContext';
 import { useMemberDirectory } from '@/hooks/useMemberDirectory';
+import { listAdminUsers } from '@/lib/firestore/adminUserService';
 
 export default function AdminDashboardScreen() {
   const router = useRouter();
   const { published, refresh } = useMemberDirectory();
   const { items: approvals, refresh: refreshApprovals } = useAdminApprovals();
   const { unreadCount } = useAdminNotifications();
+  const [users, setUsers] = useState<AdminUserRecord[]>([]);
+
+  const refreshUsers = useCallback(async () => {
+    const entries = await listAdminUsers();
+    setUsers(entries);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       void refresh();
       void refreshApprovals();
-    }, [refresh, refreshApprovals]),
+      void refreshUsers();
+    }, [refresh, refreshApprovals, refreshUsers]),
   );
 
   const stats = useMemo(
-    () => computeAdminDashboardStats(published, approvals, unreadCount),
-    [approvals, published, unreadCount],
+    () => computeAdminDashboardStats(users, published, approvals, unreadCount),
+    [approvals, published, unreadCount, users],
   );
 
   return (
@@ -67,7 +76,7 @@ export default function AdminDashboardScreen() {
             tone="warning"
           />
           <AdminStatCard
-            label="Active today"
+            label="Active users"
             value={stats.activeToday}
             icon="bolt"
             tone="success"
@@ -86,7 +95,6 @@ export default function AdminDashboardScreen() {
             <AdminListItem
               key={item.id}
               title={item.name}
-              subtitle={item.phone}
               meta={`Submitted ${item.submittedAt}`}
               badge={item.status}
               badgeColor={

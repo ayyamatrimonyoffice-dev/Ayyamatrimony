@@ -15,6 +15,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '@/context/LanguageContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
+import { useSubscription } from '@/context/SubscriptionContext';
 import {
   getProfileAvatarSource,
   getProfileFirstName,
@@ -90,6 +91,7 @@ export function SideMenuDrawer({ visible, onClose }: SideMenuDrawerProps) {
   const { width } = useWindowDimensions();
   const { translate, translateFormat } = useLanguage();
   const { values } = useProfileForm();
+  const { isPaidMember, hasPaidProfileQuota } = useSubscription();
 
   const drawerWidth = Math.min(width * 0.88, 360);
   const profileName =
@@ -143,10 +145,13 @@ export function SideMenuDrawer({ visible, onClose }: SideMenuDrawerProps) {
               <View style={styles.profileMeta}>
                 <Text style={styles.profileName}>{profileName}</Text>
                 <Text style={styles.memberId}>{memberId}</Text>
-                <Text style={styles.memberType}>{translate('freeMember')}</Text>
+                <Text style={styles.memberType}>
+                  {isPaidMember ? translate('membershipPaid') : translate('freeMember')}
+                </Text>
               </View>
             </View>
 
+            {!hasPaidProfileQuota ? (
             <View style={styles.upgradeBanner}>
               <Text style={styles.upgradeCopy}>{translate('upgradeMembershipBanner')}</Text>
               <Pressable
@@ -156,6 +161,7 @@ export function SideMenuDrawer({ visible, onClose }: SideMenuDrawerProps) {
                 <Text style={styles.upgradeButtonText}>{translate('upgradeNow')}</Text>
               </Pressable>
             </View>
+            ) : null}
 
             <Pressable style={styles.switchAccountCard}>
               <Text style={styles.switchAccountText}>{translate('switchAccount')}</Text>

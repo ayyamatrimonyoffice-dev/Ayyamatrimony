@@ -29,14 +29,6 @@ export const adminDashboardStats = {
   newRegistrations: 18,
 };
 
-export const adminUsers: AdminUserRecord[] = [
-  { id: 'U-1001', name: 'Arun Kumar', phone: '9876543210', status: 'active', registeredAt: '12 Mar 2026' },
-  { id: 'U-1002', name: 'Priya Devi', phone: '9123456780', status: 'pending', registeredAt: '11 Mar 2026' },
-  { id: 'U-1003', name: 'Murugan S', phone: '9988776655', status: 'active', registeredAt: '10 Mar 2026' },
-  { id: 'U-1004', name: 'Lakshmi R', phone: '9001122334', status: 'blocked', registeredAt: '08 Mar 2026' },
-  { id: 'U-1005', name: 'Senthil V', phone: '9445566778', status: 'active', registeredAt: '07 Mar 2026' },
-];
-
 export const adminApprovals: AdminApprovalRecord[] = [
   { id: 'P-501', name: 'Kavitha M', phone: '9876001234', submittedAt: '13 Mar 2026', status: 'pending' },
   { id: 'P-502', name: 'Ramesh P', phone: '8765432109', submittedAt: '13 Mar 2026', status: 'pending' },

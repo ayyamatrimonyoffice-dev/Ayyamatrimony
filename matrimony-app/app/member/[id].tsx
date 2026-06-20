@@ -23,6 +23,7 @@ export default function MemberProfileScreen() {
   const {
     isReady,
     isPaidMember,
+    profilesRemaining,
     canViewFullProfile,
     recordProfileView,
   } = useSubscription();
@@ -101,7 +102,7 @@ export default function MemberProfileScreen() {
             <MaterialIcons name="lock" size={28} color={colors.primary} />
             <Text style={styles.lockedTitle}>{translate('detailsLocked')}</Text>
             <Text style={styles.lockedBody}>
-              {isPaidMember
+              {isPaidMember && profilesRemaining <= 0
                 ? translate('profileLimitReached')
                 : translate('unpaidAccessNote')}
             </Text>
@@ -110,7 +111,7 @@ export default function MemberProfileScreen() {
               onPress={() =>
                 router.push({
                   pathname: '/payment-access',
-                  params: { reason: isPaidMember ? 'batch' : 'initial' },
+                  params: { reason: isPaidMember && profilesRemaining <= 0 ? 'batch' : 'initial' },
                 })
               }
             />

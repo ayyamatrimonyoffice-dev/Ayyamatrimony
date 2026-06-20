@@ -1,9 +1,12 @@
-import { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { AdminEmptyState } from '@/components/admin/AdminEmptyState';
 import { AdminListItem } from '@/components/admin/AdminListItem';
 import { AdminScreenShell } from '@/components/admin/AdminScreenShell';
-import { adminUsers, type AdminUserRecord } from '@/constants/adminMockData';
+import type { AdminUserRecord } from '@/constants/adminMockData';
 import { adminColors } from '@/constants/admin';
+import { listAdminUsers } from '@/lib/firestore/adminUserService';
 
 type Filter = 'all' | AdminUserRecord['status'];
 
@@ -22,16 +25,34 @@ const statusColor: Record<AdminUserRecord['status'], string> = {
 
 export default function AdminUsersScreen() {
   const [filter, setFilter] = useState<Filter>('all');
+  const [users, setUsers] = useState<AdminUserRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const entries = await listAdminUsers();
+      setUsers(entries);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
   const filteredUsers = useMemo(() => {
     if (filter === 'all') {
-      return adminUsers;
+      return users;
     }
-    return adminUsers.filter((user) => user.status === filter);
-  }, [filter]);
+    return users.filter((user) => user.status === filter);
+  }, [filter, users]);
 
   return (
-    <AdminScreenShell title="User Management" subtitle={`${adminUsers.length} registered users`}>
+    <AdminScreenShell title="User Management">
       <View style={styles.filters}>
         {filters.map((item) => {
           const active = filter === item.key;
@@ -47,18 +68,34 @@ export default function AdminUsersScreen() {
         })}
       </View>
 
-      <View style={styles.list}>
-        {filteredUsers.map((user) => (
-          <AdminListItem
-            key={user.id}
-            title={user.name}
-            subtitle={`${user.phone} · ${user.id}`}
-            meta={`Registered ${user.registeredAt}`}
-            badge={user.status}
-            badgeColor={statusColor[user.status]}
-          />
-        ))}
-      </View>
+      {isLoading ? (
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color={adminColors.primary} />
+        </View>
+      ) : filteredUsers.length === 0 ? (
+        <AdminEmptyState
+          icon="groups"
+          title="No users yet"
+          message={
+            filter === 'all'
+              ? 'Registered members will appear here after they sign up.'
+              : `No ${filter} users right now.`
+          }
+        />
+      ) : (
+        <View style={styles.list}>
+          {filteredUsers.map((user) => (
+            <AdminListItem
+              key={user.phone}
+              title={user.name}
+              subtitle={user.phone}
+              meta={`Registered ${user.registeredAt}`}
+              badge={user.status}
+              badgeColor={statusColor[user.status]}
+            />
+          ))}
+        </View>
+      )}
     </AdminScreenShell>
   );
 }
@@ -88,6 +125,10 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: '#fff',
+  },
+  loading: {
+    paddingVertical: 48,
+    alignItems: 'center',
   },
   list: {
     gap: 10,

@@ -12,6 +12,7 @@ import { AppHeader } from '@/components/AppHeader';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGoBack } from '@/hooks/useGoBack';
+import { isValidPhoneNumber, normalizePhoneDigits, PHONE_DIGIT_LENGTH } from '@/constants/contactDetails';
 import { colors, spacing, typography } from '@/constants/theme';
 
 export default function EditMobileScreen() {
@@ -20,7 +21,7 @@ export default function EditMobileScreen() {
   const [phone, setPhone] = useState('');
 
   const handleContinue = () => {
-    if (!/^\d{10}$/.test(phone)) {
+    if (!isValidPhoneNumber(phone)) {
       const message = translate('invalidPhone');
       if (Platform.OS === 'web') {
         window.alert(message);
@@ -49,9 +50,9 @@ export default function EditMobileScreen() {
               placeholder={translate('enterPhone')}
               placeholderTextColor="rgba(90, 65, 61, 0.4)"
               keyboardType="phone-pad"
-              maxLength={10}
+              maxLength={PHONE_DIGIT_LENGTH}
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(text) => setPhone(normalizePhoneDigits(text))}
             />
           </View>
 

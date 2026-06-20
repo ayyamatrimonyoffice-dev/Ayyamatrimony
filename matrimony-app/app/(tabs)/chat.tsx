@@ -8,7 +8,7 @@ import { useLanguage } from '@/context/LanguageContext';
 import { colors, fonts, spacing, typography } from '@/constants/theme';
 import { useBrowsableMembers } from '@/hooks/useBrowsableMembers';
 
-type MessageTab = 'received' | 'awaiting' | 'calls';
+type MessageTab = 'received' | 'awaiting';
 
 type MessageItem = {
   id: string;
@@ -24,8 +24,6 @@ type MessageItem = {
 };
 
 function MessageRow({ item, onPress }: { item: MessageItem; onPress: () => void }) {
-  const { translate } = useLanguage();
-
   return (
     <Pressable style={styles.messageRow} onPress={onPress}>
       <View style={styles.avatarWrap}>
@@ -56,13 +54,6 @@ function MessageRow({ item, onPress }: { item: MessageItem; onPress: () => void 
             </View>
           ) : null}
         </View>
-
-        {item.waitingForResponse ? (
-          <View style={styles.waitingRow}>
-            <MaterialIcons name="reply" size={14} color={colorsLocal.waitingText} />
-            <Text style={styles.waitingText}>{translate('waitingForYourResponse')}</Text>
-          </View>
-        ) : null}
       </View>
     </Pressable>
   );
@@ -117,16 +108,12 @@ export default function ChatScreen() {
     if (activeTab === 'awaiting') {
       return allMessages.filter((item) => item.waitingForResponse);
     }
-    if (activeTab === 'calls') {
-      return [];
-    }
     return allMessages;
   }, [activeTab, allMessages]);
 
-  const tabs: { key: MessageTab; label: string; dot?: boolean }[] = [
+  const tabs: { key: MessageTab; label: string }[] = [
     { key: 'received', label: translate('received') },
     { key: 'awaiting', label: translate('awaitingResponse') },
-    { key: 'calls', label: translate('calls'), dot: true },
   ];
 
   return (
@@ -143,10 +130,7 @@ export default function ChatScreen() {
                 style={styles.tabItem}
                 onPress={() => setActiveTab(tab.key)}
               >
-                <View style={styles.tabLabelRow}>
-                  <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.label}</Text>
-                  {tab.dot ? <View style={styles.tabDot} /> : null}
-                </View>
+                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{tab.label}</Text>
                 {isActive ? <View style={styles.tabIndicator} /> : null}
               </Pressable>
             );
@@ -155,16 +139,9 @@ export default function ChatScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        {activeTab === 'calls' ? (
-          <View style={styles.emptyState}>
-            <MaterialIcons name="call" size={40} color={colors.onSurfaceVariant} />
-            <Text style={styles.emptyText}>{translate('noCallsYet')}</Text>
-          </View>
-        ) : (
-          visibleMessages.map((item) => (
-            <MessageRow key={item.id} item={item} onPress={() => openChat(item)} />
-          ))
-        )}
+        {visibleMessages.map((item) => (
+          <MessageRow key={item.id} item={item} onPress={() => openChat(item)} />
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
@@ -174,9 +151,7 @@ const colorsLocal = {
   tabActive: '#00897B',
   chipBorder: '#D9D9D9',
   rowTint: '#EEF2FA',
-  waitingText: '#E65100',
   unreadOrange: '#FF9800',
-  tabDot: '#FF9800',
 };
 
 const styles = StyleSheet.create({
@@ -206,13 +181,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     position: 'relative',
   },
-  tabLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 4,
-  },
   tabText: {
     ...typography.labelLg,
     color: colors.onSurfaceVariant,
@@ -222,12 +190,6 @@ const styles = StyleSheet.create({
   tabTextActive: {
     color: colorsLocal.tabActive,
     fontFamily: fonts.interSemi,
-  },
-  tabDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colorsLocal.tabDot,
   },
   tabIndicator: {
     position: 'absolute',
@@ -322,26 +284,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 11,
     fontFamily: fonts.interSemi,
-  },
-  waitingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 2,
-  },
-  waitingText: {
-    ...typography.labelSm,
-    color: colorsLocal.waitingText,
-    fontFamily: typography.labelLg.fontFamily,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl * 2,
-    gap: spacing.sm,
-  },
-  emptyText: {
-    ...typography.bodyMd,
-    color: colors.onSurfaceVariant,
   },
 });

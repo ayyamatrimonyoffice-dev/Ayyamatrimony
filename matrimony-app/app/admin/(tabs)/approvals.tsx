@@ -16,8 +16,6 @@ export default function AdminApprovalsScreen() {
     }, [refresh]),
   );
 
-  const pendingItems = items.filter((item) => item.status === 'pending');
-
   const updateItemStatus = (id: string, status: AdminApprovalRecord['status']) => {
     void updateStatus(id, status).then(() => {
       Alert.alert('Profile updated', `Profile marked as ${status}.`);
@@ -25,10 +23,7 @@ export default function AdminApprovalsScreen() {
   };
 
   return (
-    <AdminScreenShell
-      title="Profile Approval"
-      subtitle={`${pendingItems.length} profiles pending review`}
-    >
+    <AdminScreenShell hideHeader>
       {items.map((item) => (
         <View key={item.id} style={styles.card}>
           <AdminListItem

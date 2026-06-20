@@ -25,8 +25,11 @@ export default function Index() {
     );
   }
 
-  if (isLoggedIn && hasCompletedProfile(values)) {
-    return <Redirect href="/(tabs)" />;
+  if (isLoggedIn) {
+    if (hasCompletedProfile(values)) {
+      return <Redirect href="/(tabs)" />;
+    }
+    return <Redirect href="/select-community" />;
   }
 
   return <LoginLandingScreen />;

@@ -2,7 +2,7 @@ import { useMemo, useCallback } from 'react';
 import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
 import { PaymentMethodModal } from '@/components/PaymentMethodModal';
@@ -24,8 +24,10 @@ export default function PaymentAccessScreen() {
     profilesViewedCount,
     profilesAllowed,
     isPaidMember,
+    hasPaidProfileQuota,
     batchesPaid,
     hasChosenAccessMode,
+    isReady,
   } = useSubscription();
   const {
     paymentModalVisible,
@@ -38,6 +40,7 @@ export default function PaymentAccessScreen() {
   });
 
   const isBatchRenewal = reason === 'batch' || (isPaidMember && profilesRemaining <= 0);
+  const shouldRedirectPaidUser = isReady && hasPaidProfileQuota && reason !== 'batch';
 
   const headline = useMemo(() => {
     if (isBatchRenewal) {
@@ -79,6 +82,10 @@ export default function PaymentAccessScreen() {
       router.replace('/(tabs)');
     });
   };
+
+  if (shouldRedirectPaidUser) {
+    return <Redirect href="/(tabs)" />;
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>

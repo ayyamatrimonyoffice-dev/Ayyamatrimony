@@ -235,7 +235,7 @@ export const translations = {
     chatMessage1: 'Would love to connect with your family.',
     chatMessage2: 'Thank you for your interest!',
     messagesTitle: 'Messages',
-    awaitingResponse: 'Awaiting Response',
+    awaitingResponse: 'Awaiting',
     calls: 'Calls',
     incomingPaidMessages: 'Incoming messages from paid members ({count})',
     waitingForYourResponse: 'Waiting for your response',
@@ -342,6 +342,7 @@ export const translations = {
     passwordChanged: 'Password updated successfully',
     passwordsDoNotMatch: 'New password and confirmation do not match',
     invalidPhone: 'Please enter a valid 10-digit mobile number',
+    accountAlreadyRegistered: 'This number is already registered. Please tap Login.',
     helpCenterBody:
       'Need help with your profile, matches, or account? Contact Ayya Matrimony support at support@ayyamatrimony.com or call +91 98765 43210. Our team is available Monday to Saturday, 9 AM to 6 PM.',
     termsBody:
@@ -753,7 +754,7 @@ export const translations = {
     chatMessage1: 'உங்கள் குடும்பத்துடன் இணைவதில் மகிழ்ச்சி.',
     chatMessage2: 'உங்கள் விருப்பத்திற்கு நன்றி!',
     messagesTitle: 'Messages',
-    awaitingResponse: 'Awaiting Response',
+    awaitingResponse: 'காத்திருப்பு',
     calls: 'Calls',
     incomingPaidMessages: 'Paid உறுப்பினர்களிடமிருந்து வந்த செய்திகள் ({count})',
     waitingForYourResponse: 'உங்கள் பதிலுக்காக காத்திருக்கிறது',
@@ -860,6 +861,7 @@ export const translations = {
     passwordChanged: 'கடவுச்சொல் வெற்றிகரமாக புதுப்பிக்கப்பட்டது',
     passwordsDoNotMatch: 'புதிய கடவுச்சொலும் உறுதிப்படுத்தலும் பொருந்தவில்லை',
     invalidPhone: 'சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்',
+    accountAlreadyRegistered: 'இந்த எண் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது. Login ஐ அழுத்தவும்.',
     helpCenterBody:
       'சுயவிவரம், பொருத்தங்கள் அல்லது கணக்கு தொடர்பான உதவி தேவையா? support@ayyamatrimony.com முகவரிக்கு மின்னஞ்சல் அனுப்பவும் அல்லது +91 98765 43210 எண்ணில் தொடர்பு கொள்ளவும். திங்கள் முதல் சனி வரை காலை 9 மணி முதல் மாலை 6 மணி வரை.',
     termsBody:

@@ -1,21 +1,16 @@
-import type { AdminApprovalRecord } from '@/constants/adminMockData';
-import { images } from '@/constants/images';
+import type { AdminApprovalRecord, AdminUserRecord } from '@/constants/adminMockData';
 import type { PublishedMember } from '@/constants/memberDirectory';
 
 export function computeAdminDashboardStats(
+  users: AdminUserRecord[],
   published: PublishedMember[],
   approvals: AdminApprovalRecord[],
   unreadCount = 0,
 ) {
-  const publishedIds = new Set(published.map((member) => member.id));
-  const staticMembers = images.matches.filter((member) => !publishedIds.has(member.id));
-  const totalUsers = staticMembers.length + published.length;
-
+  const totalUsers = users.length;
+  const activeToday = users.filter((user) => user.status === 'active').length;
   const adminAdded = published.filter((entry) => entry.ownerKey.startsWith('admin-')).length;
   const pendingCount = approvals.filter((item) => item.status === 'pending').length;
-
-  const verifiedStaticCount = staticMembers.filter((member) => member.verified).length;
-  const activeToday = Math.min(totalUsers, verifiedStaticCount + published.length);
 
   return {
     totalUsers,
