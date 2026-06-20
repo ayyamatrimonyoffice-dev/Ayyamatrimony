@@ -1,5 +1,5 @@
 import { Redirect } from 'expo-router';
 
 export default function OtpScreen() {
-  return <Redirect href="/welcome" />;
+  return <Redirect href="/" />;
 }

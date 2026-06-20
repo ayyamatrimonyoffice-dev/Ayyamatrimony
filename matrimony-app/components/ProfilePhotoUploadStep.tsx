@@ -32,6 +32,9 @@ type ProfilePhotoUploadStepProps = {
   labels: ProfilePhotoUploadStepLabels;
   onChange: (photos: string[]) => void;
   onSkip: () => void;
+  openLibraryOnMount?: boolean;
+  libraryOnly?: boolean;
+  showSkip?: boolean;
 };
 
 async function ensurePermission(source: 'camera' | 'library'): Promise<boolean> {
@@ -229,9 +232,13 @@ export function ProfilePhotoUploadStep({
   labels,
   onChange,
   onSkip,
+  openLibraryOnMount = false,
+  libraryOnly = false,
+  showSkip = true,
 }: ProfilePhotoUploadStepProps) {
   const [sourcePickerSlot, setSourcePickerSlot] = useState<number | null>(null);
   const [webCameraSlot, setWebCameraSlot] = useState<number | null>(null);
+  const openedLibraryOnMountRef = useRef(false);
 
   const applyPhotoToSlot = useCallback(
     (slotIndex: number, uri: string) => {
@@ -285,13 +292,31 @@ export function ProfilePhotoUploadStep({
     [applyPhotoToSlot, labels],
   );
 
-  const openPicker = useCallback((slotIndex: number) => {
-    setSourcePickerSlot(slotIndex);
-  }, []);
+  const openPicker = useCallback(
+    (slotIndex: number) => {
+      if (libraryOnly) {
+        void pickPhoto(slotIndex, 'library');
+        return;
+      }
+      setSourcePickerSlot(slotIndex);
+    },
+    [libraryOnly, pickPhoto],
+  );
 
   const closePicker = useCallback(() => {
     setSourcePickerSlot(null);
   }, []);
+
+  useEffect(() => {
+    if (!openLibraryOnMount || openedLibraryOnMountRef.current) {
+      return;
+    }
+
+    openedLibraryOnMountRef.current = true;
+    const firstEmptySlot = photos.findIndex((photo) => photo.length === 0);
+    const slotIndex = firstEmptySlot >= 0 ? firstEmptySlot : 0;
+    void pickPhoto(slotIndex, 'library');
+  }, [openLibraryOnMount, photos, pickPhoto]);
 
   const handleSourceSelect = useCallback(
     (source: 'camera' | 'library') => {
@@ -365,11 +390,11 @@ export function ProfilePhotoUploadStep({
         ))}
       </View>
 
-      {!skipped && !photos.some((photo) => photo.length > 0) ? (
+      {!showSkip || skipped || photos.some((photo) => photo.length > 0) ? null : (
         <Pressable onPress={onSkip} style={styles.skipButton}>
           <Text style={styles.skipText}>{labels.skipForNow}</Text>
         </Pressable>
-      ) : null}
+      )}
 
       <Modal
         visible={sourcePickerSlot !== null}

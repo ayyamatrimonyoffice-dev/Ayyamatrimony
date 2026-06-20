@@ -2,17 +2,16 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useRouter, type Href } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AppHeader } from '@/components/AppHeader';
-import { ProgressBar } from '@/components/ProgressBar';
 import { useLanguage } from '@/context/LanguageContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
+import { useLogout } from '@/hooks/useLogout';
+import { useSubscription } from '@/context/SubscriptionContext';
 import {
   getProfileAvatarSource,
-  getProfileCompletionPercent,
   getProfileMetaLine,
 } from '@/constants/profileDisplay';
 import { TranslationKey } from '@/constants/i18n';
-import { colors, spacing, typography } from '@/constants/theme';
+import { borderRadius, colors, fonts, spacing, typography } from '@/constants/theme';
 
 type MenuItem = {
   labelKey: TranslationKey;
@@ -21,6 +20,7 @@ type MenuItem = {
 };
 
 const menuItems: MenuItem[] = [
+  { labelKey: 'viewProfile', icon: 'visibility', route: '/view-profile' },
   { labelKey: 'editProfile', icon: 'edit', route: '/edit-profile' },
   { labelKey: 'partnerPreferences', icon: 'favorite-border', route: '/partner-preferences' },
   { labelKey: 'privacySettings', icon: 'lock-outline', route: '/privacy-settings' },
@@ -30,32 +30,46 @@ const menuItems: MenuItem[] = [
 export default function ProfileScreen() {
   const router = useRouter();
   const { language, translate, translateFormat } = useLanguage();
-  const { values, clearProfile } = useProfileForm();
+  const { values } = useProfileForm();
+  const logout = useLogout();
+  const { isPaidMember, profilesAllowed, profilesRemaining } = useSubscription();
   const profileName = values.fullName?.trim() || translate('profile');
   const profileMeta = getProfileMetaLine(values, language);
-  const profileCompletion = getProfileCompletionPercent(values);
   const avatarSource = getProfileAvatarSource(values);
 
   const handleLogout = () => {
-    void clearProfile().then(() => {
-      router.replace('/welcome');
-    });
+    void logout();
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <AppHeader title={translate('profile')} showBack={false} />
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+      >
         <View style={styles.hero}>
           <Image source={avatarSource} style={styles.avatar} resizeMode="cover" />
           <Text style={styles.name}>{profileName}</Text>
           {profileMeta ? <Text style={styles.meta}>{profileMeta}</Text> : null}
-          <View style={styles.progressWrap}>
-            <ProgressBar
-              progress={profileCompletion}
-              label={translateFormat('percentComplete', { percent: profileCompletion })}
-            />
+
+          <View style={styles.membershipRow}>
+            <Text style={styles.membershipType}>
+              {isPaidMember ? translate('membershipPaid') : translate('freeMember')}
+            </Text>
+            {!isPaidMember ? (
+              <Pressable style={styles.upgradePill} onPress={() => router.push('/upgrade')}>
+                <Text style={styles.upgradeText}>{translate('upgrade')}</Text>
+              </Pressable>
+            ) : null}
           </View>
+
+          {isPaidMember ? (
+            <Text style={styles.paidProfilesMeta}>
+              {translateFormat('paidProfilesAvailable', { count: profilesAllowed })}
+              {' · '}
+              {translateFormat('profilesRemainingFormat', { count: profilesRemaining })}
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.menu}>
@@ -90,21 +104,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scroll: {
-    paddingTop: 72,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xl,
   },
   hero: {
     alignItems: 'center',
     paddingHorizontal: spacing.containerMargin,
-    paddingVertical: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     borderWidth: 2,
     borderColor: 'rgba(212, 175, 55, 0.3)',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   name: {
     ...typography.headlineLg,
@@ -114,14 +128,41 @@ const styles = StyleSheet.create({
     ...typography.bodyMd,
     color: colors.onSurfaceVariant,
     marginTop: 4,
-    marginBottom: spacing.lg,
   },
-  progressWrap: {
-    width: '100%',
-    maxWidth: 320,
+  membershipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+  },
+  membershipType: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+  },
+  paidProfilesMeta: {
+    ...typography.labelSm,
+    color: colors.primary,
+    fontFamily: fonts.interSemi,
+    marginTop: spacing.xs,
+    textAlign: 'center',
+  },
+  upgradePill: {
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: borderRadius.full,
+    paddingHorizontal: 10,
+    paddingVertical: 2,
+    backgroundColor: colors.surface,
+  },
+  upgradeText: {
+    ...typography.labelSm,
+    color: colors.secondary,
+    fontSize: 11,
   },
   menu: {
     paddingHorizontal: spacing.containerMargin,
+    paddingTop: spacing.xs,
     gap: spacing.sm,
   },
   menuItem: {

@@ -1,7 +1,14 @@
 export type MatchGender = 'male' | 'female';
 
-export function getRecommendedGender(userGender: string): MatchGender | null {
-  if (userGender === 'male') {
+export function resolveUserGender(values: Record<string, string>): MatchGender | '' {
+  const gender = values.gender?.trim();
+  if (gender === 'male' || gender === 'female') {
+    return gender;
+  }
+  return '';
+}
+
+export function getRecommendedGender(userGender: string): MatchGender | null {  if (userGender === 'male') {
     return 'female';
   }
   if (userGender === 'female') {
@@ -16,7 +23,7 @@ export function filterByRecommendedGender<T extends { gender: MatchGender }>(
 ): T[] {
   const recommendedGender = getRecommendedGender(userGender);
   if (!recommendedGender) {
-    return [...profiles];
+    return [];
   }
   return profiles.filter((profile) => profile.gender === recommendedGender);
 }

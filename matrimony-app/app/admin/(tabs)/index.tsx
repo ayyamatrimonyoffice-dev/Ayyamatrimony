@@ -1,78 +1,105 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { MaterialIcons } from '@expo/vector-icons';
 import { AdminListItem } from '@/components/admin/AdminListItem';
 import { AdminScreenShell } from '@/components/admin/AdminScreenShell';
 import { AdminStatCard } from '@/components/admin/AdminStatCard';
-import {
-  adminApprovals,
-  adminDashboardStats,
-  adminNotifications,
-} from '@/constants/adminMockData';
+import { computeAdminDashboardStats } from '@/constants/adminStats';
 import { adminColors } from '@/constants/admin';
+import { useAdminApprovals } from '@/context/AdminApprovalsContext';
+import { useAdminNotifications } from '@/context/AdminNotificationsContext';
+import { useMemberDirectory } from '@/hooks/useMemberDirectory';
 
 export default function AdminDashboardScreen() {
-  const pendingCount = adminApprovals.filter((item) => item.status === 'pending').length;
-  const unreadCount = adminNotifications.filter((item) => !item.read).length;
+  const router = useRouter();
+  const { published, refresh } = useMemberDirectory();
+  const { items: approvals, refresh: refreshApprovals } = useAdminApprovals();
+  const { unreadCount } = useAdminNotifications();
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+      void refreshApprovals();
+    }, [refresh, refreshApprovals]),
+  );
+
+  const stats = useMemo(
+    () => computeAdminDashboardStats(published, approvals, unreadCount),
+    [approvals, published, unreadCount],
+  );
 
   return (
     <AdminScreenShell
       title="Dashboard"
-      subtitle="Overview of matrimony activity"
-    >
-      <View style={styles.statsGrid}>
-        <AdminStatCard
-          label="Total users"
-          value={adminDashboardStats.totalUsers}
-          icon="groups"
-        />
-        <AdminStatCard
-          label="Pending approvals"
-          value={pendingCount}
-          icon="pending-actions"
-          tone="warning"
-        />
-        <AdminStatCard
-          label="Active today"
-          value={adminDashboardStats.activeToday}
-          icon="bolt"
-          tone="success"
-        />
-        <AdminStatCard
-          label="New registrations"
-          value={adminDashboardStats.newRegistrations}
-          icon="person-add"
-          tone="default"
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick summary</Text>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryText}>
-            {pendingCount} profiles waiting for approval and {unreadCount} unread admin alerts.
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Recent approvals</Text>
-        {adminApprovals.slice(0, 3).map((item) => (
-          <AdminListItem
-            key={item.id}
-            title={item.name}
-            subtitle={item.phone}
-            meta={`Submitted ${item.submittedAt}`}
-            badge={item.status}
-            badgeColor={
-              item.status === 'pending'
-                ? adminColors.warning
-                : item.status === 'approved'
-                  ? adminColors.success
-                  : adminColors.danger
-            }
+      showLogo
+      headerRight={
+          <Pressable
+            style={styles.notificationBtn}
+            onPress={() => router.push('/admin/notifications')}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+          >
+            <View style={styles.notificationIconWrap}>
+              <MaterialIcons name="notifications-none" size={24} color={adminColors.text} />
+              {stats.unreadCount > 0 ? (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>
+                    {stats.unreadCount > 9 ? '9+' : stats.unreadCount}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          </Pressable>
+        }
+      >
+        <View style={styles.statsGrid}>
+          <AdminStatCard
+            label="Total users"
+            value={stats.totalUsers}
+            icon="groups"
           />
-        ))}
-      </View>
-    </AdminScreenShell>
+          <AdminStatCard
+            label="Pending approvals"
+            value={stats.pendingCount}
+            icon="pending-actions"
+            tone="warning"
+          />
+          <AdminStatCard
+            label="Active today"
+            value={stats.activeToday}
+            icon="bolt"
+            tone="success"
+          />
+          <AdminStatCard
+            label="Admin added"
+            value={stats.adminAdded}
+            icon="person-add"
+            tone="default"
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent approvals</Text>
+          {approvals.slice(0, 3).map((item) => (
+            <AdminListItem
+              key={item.id}
+              title={item.name}
+              subtitle={item.phone}
+              meta={`Submitted ${item.submittedAt}`}
+              badge={item.status}
+              badgeColor={
+                item.status === 'pending'
+                  ? adminColors.warning
+                  : item.status === 'approved'
+                    ? adminColors.success
+                    : adminColors.danger
+              }
+            />
+          ))}
+        </View>
+      </AdminScreenShell>
   );
 }
 
@@ -80,7 +107,7 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   section: {
     gap: 10,
@@ -91,16 +118,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  summaryCard: {
-    backgroundColor: adminColors.primaryLight,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: `${adminColors.primary}22`,
+  notificationBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  summaryText: {
-    color: adminColors.primaryDark,
-    fontSize: 14,
-    lineHeight: 20,
+  notificationIconWrap: {
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: adminColors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    lineHeight: 12,
+    fontWeight: '700',
   },
 });

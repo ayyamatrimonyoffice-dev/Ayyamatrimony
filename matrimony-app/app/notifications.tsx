@@ -13,7 +13,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
 import { useLanguage } from '@/context/LanguageContext';
-import { images } from '@/constants/images';
+import { useOpenMemberProfile } from '@/hooks/useOpenMemberProfile';
 import { borderRadius, colors, fonts, spacing, typography } from '@/constants/theme';
 
 type NotificationTab = 'all' | 'interactions' | 'urgent';
@@ -62,6 +62,7 @@ function NotificationBody({ item }: { item: NotificationItem }) {
 function NotificationRow({ item }: { item: NotificationItem }) {
   const { translate, translateFormat } = useLanguage();
   const router = useRouter();
+  const openProfile = useOpenMemberProfile();
 
   const actionLabel =
     item.kind === 'interest'
@@ -72,7 +73,7 @@ function NotificationRow({ item }: { item: NotificationItem }) {
 
   const handleAction = () => {
     if (item.memberId) {
-      router.push(`/member/${item.memberId}`);
+      openProfile(item.memberId);
       return;
     }
     router.push('/(tabs)/matches');
@@ -125,48 +126,7 @@ export default function NotificationsScreen() {
   const { translate } = useLanguage();
   const [activeTab, setActiveTab] = useState<NotificationTab>('all');
 
-  const allNotifications: NotificationItem[] = useMemo(() => {
-    const [first, second, third] = images.matches;
-
-    return [
-      {
-        id: 'n1',
-        kind: 'interest',
-        section: 'today',
-        name: 'S Shrinivas',
-        image: first?.image,
-        hours: 9,
-        memberId: first?.id,
-        urgent: true,
-      },
-      {
-        id: 'n2',
-        kind: 'view',
-        section: 'today',
-        name: 'Thangaraj G',
-        hours: 15,
-        memberId: second?.id,
-      },
-      {
-        id: 'n3',
-        kind: 'grouped_view',
-        section: 'yesterday',
-        name: 'Srinivasan',
-        groupedImages: [second?.image, third?.image].filter(Boolean) as string[],
-        otherCount: 29,
-        hours: 24,
-      },
-      {
-        id: 'n4',
-        kind: 'view',
-        section: 'yesterday',
-        name: third?.name ?? 'Vignesh Mani',
-        image: third?.image,
-        hours: 28,
-        memberId: third?.id,
-      },
-    ];
-  }, []);
+  const allNotifications: NotificationItem[] = useMemo(() => [], []);
 
   const visibleNotifications = useMemo(() => {
     if (activeTab === 'urgent') {
@@ -228,24 +188,32 @@ export default function NotificationsScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       >
-        {sections.map((section) => {
-          const sectionItems = visibleNotifications.filter((item) => item.section === section.key);
-          if (sectionItems.length === 0) {
-            return null;
-          }
+        {visibleNotifications.length === 0 ? (
+          <View style={styles.emptyState}>
+            <MaterialIcons name="notifications-none" size={44} color={colors.onSurfaceVariant} />
+            <Text style={styles.emptyTitle}>{translate('noNotificationsYet')}</Text>
+            <Text style={styles.emptyHint}>{translate('noNotificationsHint')}</Text>
+          </View>
+        ) : (
+          sections.map((section) => {
+            const sectionItems = visibleNotifications.filter((item) => item.section === section.key);
+            if (sectionItems.length === 0) {
+              return null;
+            }
 
-          return (
-            <View key={section.key} style={styles.sectionBlock}>
-              <Text style={styles.sectionTitle}>{section.label}</Text>
-              {sectionItems.map((item, index) => (
-                <View key={item.id}>
-                  <NotificationRow item={item} />
-                  {index < sectionItems.length - 1 ? <View style={styles.divider} /> : null}
-                </View>
-              ))}
-            </View>
-          );
-        })}
+            return (
+              <View key={section.key} style={styles.sectionBlock}>
+                <Text style={styles.sectionTitle}>{section.label}</Text>
+                {sectionItems.map((item, index) => (
+                  <View key={item.id}>
+                    <NotificationRow item={item} />
+                    {index < sectionItems.length - 1 ? <View style={styles.divider} /> : null}
+                  </View>
+                ))}
+              </View>
+            );
+          })
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -304,7 +272,30 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    flexGrow: 1,
     paddingBottom: spacing.xl,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.containerMargin,
+    paddingVertical: spacing.xl,
+    gap: spacing.sm,
+    minHeight: 280,
+  },
+  emptyTitle: {
+    ...typography.titleMd,
+    color: colors.onSurface,
+    textAlign: 'center',
+    fontFamily: fonts.interSemi,
+  },
+  emptyHint: {
+    ...typography.bodyMd,
+    color: colors.onSurfaceVariant,
+    textAlign: 'center',
+    lineHeight: 20,
+    maxWidth: 320,
   },
   sectionBlock: {
     backgroundColor: colors.surfaceContainerLowest,

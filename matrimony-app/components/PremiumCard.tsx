@@ -1,5 +1,6 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ProtectedProfileImage } from '@/components/ProtectedProfileImage';
 import { useLanguage } from '@/context/LanguageContext';
 import { colors, spacing, typography } from '@/constants/theme';
 
@@ -8,14 +9,15 @@ type PremiumCardProps = {
   role: string;
   image: string;
   premium?: boolean;
+  locked?: boolean;
 };
 
-export function PremiumCard({ name, role, image, premium }: PremiumCardProps) {
+export function PremiumCard({ name, role, image, premium, locked = false }: PremiumCardProps) {
   const { translate } = useLanguage();
 
   return (
     <View style={styles.card}>
-      <Image source={{ uri: image }} style={styles.image} />
+      <ProtectedProfileImage imageUri={image} locked={locked} style={styles.imageWrap} imageStyle={styles.image} />
       <LinearGradient colors={['transparent', 'rgba(0,0,0,0.8)']} style={styles.gradient} />
       {premium ? (
         <View style={styles.premiumBadge}>
@@ -26,7 +28,7 @@ export function PremiumCard({ name, role, image, premium }: PremiumCardProps) {
         <Text style={styles.name} numberOfLines={1}>
           {name}
         </Text>
-        <Text style={styles.role}>{role}</Text>
+        <Text style={styles.role}>{locked ? translate('detailsLocked') : role}</Text>
       </View>
     </View>
   );
@@ -41,6 +43,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(212, 175, 55, 0.2)',
     marginRight: spacing.md,
+  },
+  imageWrap: {
+    width: '100%',
+    height: '100%',
   },
   image: {
     width: '100%',

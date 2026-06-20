@@ -1,26 +1,22 @@
-import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { AdminEmptyState } from '@/components/admin/AdminEmptyState';
 import { AdminScreenShell } from '@/components/admin/AdminScreenShell';
-import { adminNotifications, type AdminNotificationRecord } from '@/constants/adminMockData';
 import { adminColors } from '@/constants/admin';
+import { useAdminNotifications } from '@/context/AdminNotificationsContext';
 
 export default function AdminNotificationsScreen() {
-  const [items, setItems] = useState<AdminNotificationRecord[]>(adminNotifications);
-
-  const unreadCount = items.filter((item) => !item.read).length;
-
-  const markAllRead = () => {
-    setItems((current) => current.map((item) => ({ ...item, read: true })));
-  };
+  const router = useRouter();
+  const { items, unreadCount, markRead, markAllRead } = useAdminNotifications();
 
   return (
     <AdminScreenShell
       title="Notifications"
       subtitle={`${unreadCount} unread alerts`}
+      onBack={() => router.back()}
       headerRight={
         unreadCount > 0 ? (
-          <Pressable onPress={markAllRead}>
+          <Pressable onPress={() => void markAllRead()}>
             <Text style={styles.markAll}>Mark all read</Text>
           </Pressable>
         ) : null
@@ -34,8 +30,13 @@ export default function AdminNotificationsScreen() {
         />
       ) : (
         items.map((item) => (
-          <View
+          <Pressable
             key={item.id}
+            onPress={() => {
+              if (!item.read) {
+                void markRead(item.id);
+              }
+            }}
             style={[styles.card, !item.read && styles.cardUnread]}
           >
             <View style={styles.cardHeader}>
@@ -44,7 +45,7 @@ export default function AdminNotificationsScreen() {
             </View>
             <Text style={styles.cardBody}>{item.body}</Text>
             <Text style={styles.cardTime}>{item.time}</Text>
-          </View>
+          </Pressable>
         ))
       )}
     </AdminScreenShell>

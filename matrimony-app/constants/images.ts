@@ -170,8 +170,42 @@ export const images = {
       instagramProfile: '@anitha.raj',
       interestStatus: 'mutual',
     },
+    {
+      id: '7',
+      name: 'Grace Thomas',
+      gender: 'female',
+      age: '26 Years, 5\'4"',
+      community: 'CSI, Nadar Christian',
+      location: 'Tirunelveli, Tamil Nadu',
+      verified: true,
+      image:
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80',
+      phoneNumber: '9000011122',
+      whatsappNumber: '9000011122',
+      interestStatus: 'none',
+    },
   ] satisfies MemberProfile[],
 };
+
+function readUriFromAsset(asset: unknown): string | undefined {
+  if (typeof asset === 'string' && asset.length > 0) {
+    return asset;
+  }
+  if (!asset || typeof asset !== 'object') {
+    return undefined;
+  }
+  if ('uri' in asset && typeof (asset as { uri: unknown }).uri === 'string') {
+    return (asset as { uri: string }).uri;
+  }
+  if ('default' in asset) {
+    return readUriFromAsset((asset as { default: unknown }).default);
+  }
+  return undefined;
+}
+
+export function getLogoUri(): string | undefined {
+  return readUriFromAsset(images.logo);
+}
 
 export function getMemberProfileById(id: string): MemberProfile | undefined {
   return images.matches.find((match) => match.id === id);

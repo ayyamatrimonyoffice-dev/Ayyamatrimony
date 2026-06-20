@@ -1,21 +1,93 @@
-import { useCallback } from 'react';
-import { Image, Platform, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import { ActivityIndicator, Image, Platform, StyleSheet, Text, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useRouter, Redirect, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CreateProfileBiodataForm, RegistrationNumberBar } from '@/components/CreateProfileBiodataForm';
 import { LanguageLogoToggle } from '@/components/LanguageLogoToggle';
+import { publishProfileFromValues } from '@/constants/memberDirectory';
+import { submitLoginApproval } from '@/lib/firestore/approvalService';
+import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import { images } from '@/constants/images';
 import { colors, fonts, spacing } from '@/constants/theme';
+import { hasCompletedProfile } from '@/constants/profileCompletion';
 import { useLanguage } from '@/context/LanguageContext';
+import { useProfileForm } from '@/context/ProfileFormContext';
+import { useSubscription } from '@/context/SubscriptionContext';
 
 export default function CreateProfileScreen() {
   const router = useRouter();
+  const { community, religion } = useLocalSearchParams<{
+    community?: string;
+    religion?: string;
+  }>();
   const { translate } = useLanguage();
+  const { values, isReady: profileReady, setValue } = useProfileForm();
+  const { isReady: subscriptionReady, isLoggedIn, chooseUnpaidAccess } = useSubscription();
+  const communityApplied = useRef(false);
+  const isSaving = useRef(false);
+
+  useEffect(() => {
+    if (communityApplied.current) return;
+    if (typeof community !== 'string' || !community.trim()) return;
+
+    communityApplied.current = true;
+    setValue('registrationCommunity', community);
+    if (typeof religion === 'string' && religion.trim()) {
+      setValue('religion', religion);
+    }
+  }, [community, religion, setValue]);
 
   const handleSave = useCallback(() => {
-    router.replace('/(tabs)');
-  }, [router]);
+    if (isSaving.current) return;
+    isSaving.current = true;
+
+    void (async () => {
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        const raw = await AsyncStorage.getItem('user_profile');
+        let profileValues = values;
+        if (raw) {
+          try {
+            profileValues = JSON.parse(raw) as Record<string, string>;
+          } catch {
+            profileValues = values;
+          }
+        }
+        await publishProfileFromValues(profileValues, 'current-user');
+        const phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+        if (phone) {
+          await submitLoginApproval(phone, {
+            name: profileValues.fullName,
+            profileId: profileValues.memberListingId,
+            registrationCommunity: profileValues.registrationCommunity,
+            source: 'profile',
+          }).catch(() => undefined);
+        }
+        await chooseUnpaidAccess();
+        router.replace('/(tabs)');
+      } finally {
+        isSaving.current = false;
+      }
+    })();
+  }, [chooseUnpaidAccess, router, values]);
+
+  if (!profileReady || !subscriptionReady) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return <Redirect href="/" />;
+  }
+
+  if (hasCompletedProfile(values)) {
+    return <Redirect href="/(tabs)" />;
+  }
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -52,6 +124,12 @@ export default function CreateProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3F7FC',
+  },
   safeArea: {
     flex: 1,
     backgroundColor: '#F3F7FC',

@@ -21,11 +21,16 @@ export function AdminStatCard({ label, value, icon, tone = 'default' }: AdminSta
 
   return (
     <View style={styles.card}>
-      <View style={[styles.iconWrap, { backgroundColor: `${accent}18` }]}>
-        <MaterialIcons name={icon} size={22} color={accent} />
+      <Text style={styles.label} numberOfLines={2}>
+        {label}
+      </Text>
+      <View style={styles.body}>
+        <View style={[styles.iconWrap, { backgroundColor: `${accent}18` }]}>
+          <MaterialIcons name={icon} size={18} color={accent} />
+        </View>
+        <Text style={styles.value}>{value}</Text>
+        <View style={styles.iconSpacer} />
       </View>
-      <Text style={styles.value}>{value}</Text>
-      <Text style={styles.label}>{label}</Text>
     </View>
   );
 }
@@ -35,27 +40,44 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: '46%',
     backgroundColor: adminColors.surface,
-    borderRadius: 14,
-    padding: 14,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     borderWidth: 1,
     borderColor: adminColors.border,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 10,
-  },
-  value: {
-    color: adminColors.text,
-    fontSize: 22,
-    fontWeight: '700',
+    gap: 8,
   },
   label: {
     color: adminColors.textMuted,
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: 11,
+    fontWeight: '600',
+    lineHeight: 14,
+  },
+  body: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 32,
+  },
+  iconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  iconSpacer: {
+    width: 30,
+    height: 30,
+    flexShrink: 0,
+  },
+  value: {
+    flex: 1,
+    color: adminColors.text,
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 24,
   },
 });

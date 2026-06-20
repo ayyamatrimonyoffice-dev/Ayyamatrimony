@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useChat } from '@/context/ChatContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { useProfileForm } from '@/context/ProfileFormContext';
-import { borderRadius, colors, fonts, spacing, typography } from '@/constants/theme';
-import { images } from '@/constants/images';
-import { filterByRecommendedGender } from '@/constants/matchFilters';
+import { colors, fonts, spacing, typography } from '@/constants/theme';
+import { useBrowsableMembers } from '@/hooks/useBrowsableMembers';
 
 type MessageTab = 'received' | 'awaiting' | 'calls';
 
@@ -20,13 +20,14 @@ type MessageItem = {
   unreadCount: number;
   waitingForResponse: boolean;
   isPaidMember: boolean;
+  seedMessage: string;
 };
 
-function MessageRow({ item }: { item: MessageItem }) {
+function MessageRow({ item, onPress }: { item: MessageItem; onPress: () => void }) {
   const { translate } = useLanguage();
 
   return (
-    <Pressable style={styles.messageRow}>
+    <Pressable style={styles.messageRow} onPress={onPress}>
       <View style={styles.avatarWrap}>
         <Image source={{ uri: item.image }} style={styles.avatar} />
         {item.isPaidMember ? (
@@ -68,32 +69,49 @@ function MessageRow({ item }: { item: MessageItem }) {
 }
 
 export default function ChatScreen() {
-  const { translate, translateFormat } = useLanguage();
-  const { getValue } = useProfileForm();
+  const router = useRouter();
+  const { translate } = useLanguage();
+  const { threads } = useChat();
   const [activeTab, setActiveTab] = useState<MessageTab>('received');
-  const userGender = getValue('gender');
-
-  const recommendedMatches = useMemo(
-    () => filterByRecommendedGender(images.matches, userGender),
-    [userGender],
-  );
+  const recommendedMatches = useBrowsableMembers();
 
   const allMessages: MessageItem[] = useMemo(
     () =>
-      recommendedMatches.map((match, index) => ({
-        id: match.id,
-        name: match.name,
-        image: match.image,
-        verified: match.verified,
-        message:
-          index === 0 ? translate('chatMessagePreview1') : translate('chatMessagePreview2'),
-        time: index === 0 ? translate('yesterday') : '12 Jun 2026',
-        unreadCount: index === 0 ? 1 : index === 1 ? 2 : 0,
-        waitingForResponse: index < 2,
-        isPaidMember: Boolean(match.verified) || index < 2,
-      })),
-    [recommendedMatches, translate],
+      recommendedMatches.map((match, index) => {
+        const storedThread = threads.find((thread) => thread.memberId === match.id);
+        const fallbackPreview =
+          index === 0 ? translate('chatMessagePreview1') : translate('chatMessagePreview2');
+        const lastMessage = storedThread?.messages[storedThread.messages.length - 1];
+        const preview = lastMessage?.text ?? fallbackPreview;
+
+        return {
+          id: match.id,
+          name: match.name,
+          image: match.image,
+          verified: match.verified,
+          message: preview,
+          time: index === 0 ? translate('yesterday') : '12 Jun 2026',
+          unreadCount: storedThread?.unreadCount ?? (index === 0 ? 1 : index === 1 ? 2 : 0),
+          waitingForResponse: storedThread
+            ? lastMessage?.sender === 'them'
+            : index < 2,
+          isPaidMember: Boolean(match.verified) || index < 2,
+          seedMessage: fallbackPreview,
+        };
+      }),
+    [recommendedMatches, threads, translate],
   );
+
+  const openChat = (item: MessageItem) => {
+    router.push({
+      pathname: '/conversation/[id]',
+      params: {
+        id: item.id,
+        name: item.name,
+        image: item.image,
+      },
+    });
+  };
 
   const visibleMessages = useMemo(() => {
     if (activeTab === 'awaiting') {
@@ -104,8 +122,6 @@ export default function ChatScreen() {
     }
     return allMessages;
   }, [activeTab, allMessages]);
-
-  const paidMemberCount = allMessages.filter((item) => item.isPaidMember).length;
 
   const tabs: { key: MessageTab; label: string; dot?: boolean }[] = [
     { key: 'received', label: translate('received') },
@@ -136,23 +152,6 @@ export default function ChatScreen() {
             );
           })}
         </View>
-
-        <View style={styles.sectionDivider} />
-
-        <View style={styles.sectionToolsRow}>
-          <Text style={styles.sectionSubtitle}>
-            {translateFormat('incomingPaidMessages', { count: paidMemberCount })}
-          </Text>
-          <View style={styles.sectionActions}>
-            <Pressable style={styles.filterActionBtn}>
-              <MaterialIcons name="tune" size={16} color={colors.onSurface} />
-              <Text style={styles.filterActionText}>{translate('filter')}</Text>
-            </Pressable>
-            <Pressable style={styles.searchBtn} hitSlop={8}>
-              <MaterialIcons name="search" size={22} color={colors.onSurface} />
-            </Pressable>
-          </View>
-        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
@@ -162,24 +161,10 @@ export default function ChatScreen() {
             <Text style={styles.emptyText}>{translate('noCallsYet')}</Text>
           </View>
         ) : (
-          visibleMessages.map((item) => <MessageRow key={item.id} item={item} />)
+          visibleMessages.map((item) => (
+            <MessageRow key={item.id} item={item} onPress={() => openChat(item)} />
+          ))
         )}
-
-        {activeTab !== 'calls' ? (
-          <Pressable style={styles.serviceRow}>
-            <View style={styles.serviceIconWrap}>
-              <View style={styles.serviceIconInner}>
-                <MaterialIcons name="support-agent" size={24} color={colorsLocal.serviceGreen} />
-              </View>
-              <View style={styles.serviceOnlineDot} />
-            </View>
-            <View style={styles.serviceContent}>
-              <Text style={styles.serviceTitle}>{translate('assistedService')}</Text>
-              <Text style={styles.serviceDesc}>{translate('assistedServiceDesc')}</Text>
-            </View>
-            <MaterialIcons name="chevron-right" size={24} color={colors.onSurfaceVariant} />
-          </Pressable>
-        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -192,7 +177,6 @@ const colorsLocal = {
   waitingText: '#E65100',
   unreadOrange: '#FF9800',
   tabDot: '#FF9800',
-  serviceGreen: '#43A047',
 };
 
 const styles = StyleSheet.create({
@@ -253,50 +237,6 @@ const styles = StyleSheet.create({
     height: 3,
     borderRadius: 2,
     backgroundColor: colorsLocal.tabActive,
-  },
-  sectionDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colorsLocal.chipBorder,
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  sectionToolsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  sectionSubtitle: {
-    ...typography.bodyMd,
-    color: colors.onSurface,
-    flex: 1,
-  },
-  sectionActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  filterActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
-    borderColor: colorsLocal.chipBorder,
-    backgroundColor: colors.surfaceContainerLowest,
-  },
-  filterActionText: {
-    ...typography.labelLg,
-    color: colors.onSurface,
-    fontSize: 13,
-  },
-  searchBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scroll: {
     paddingBottom: spacing.xl,
@@ -393,54 +333,6 @@ const styles = StyleSheet.create({
     ...typography.labelSm,
     color: colorsLocal.waitingText,
     fontFamily: typography.labelLg.fontFamily,
-  },
-  serviceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.containerMargin,
-    paddingVertical: spacing.lg,
-    backgroundColor: colors.surfaceContainerLowest,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colorsLocal.chipBorder,
-    marginTop: spacing.sm,
-  },
-  serviceIconWrap: {
-    position: 'relative',
-  },
-  serviceIconInner: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#E8F5E9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  serviceOnlineDot: {
-    position: 'absolute',
-    right: 0,
-    bottom: 0,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colorsLocal.serviceGreen,
-    borderWidth: 2,
-    borderColor: colors.surfaceContainerLowest,
-  },
-  serviceContent: {
-    flex: 1,
-    gap: 2,
-  },
-  serviceTitle: {
-    ...typography.titleLg,
-    fontSize: 16,
-    color: colors.onSurface,
-    fontFamily: fonts.interSemi,
-  },
-  serviceDesc: {
-    ...typography.bodyMd,
-    color: colors.onSurfaceVariant,
-    lineHeight: 18,
   },
   emptyState: {
     alignItems: 'center',

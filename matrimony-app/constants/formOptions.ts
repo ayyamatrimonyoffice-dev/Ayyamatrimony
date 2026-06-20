@@ -8,12 +8,18 @@ export type FormOption = {
 export type FormOptionsKey =
   | 'gender'
   | 'education'
+  | 'degreeDetail'
   | 'religion'
   | 'community'
   | 'subCaste'
   | 'subCastePreference'
   | 'workType'
   | 'occupation'
+  | 'occupationType'
+  | 'propertyHouseType'
+  | 'propertyHouseCount'
+  | 'propertyOwnHouseCount'
+  | 'propertyLandUnit'
   | 'monthlyIncome'
   | 'annualIncome'
   | 'propertyType'
@@ -36,6 +42,16 @@ export type FormOptionsKey =
   | 'district'
   | 'country'
   | 'siblingCount'
+  | 'birthOrderRelation'
+  | 'maritalStatusBiodata'
+  | 'livingStatus'
+  | 'eatingHabit'
+  | 'complexionBiodata'
+  | 'seervarisai'
+  | 'dasaPlanet'
+  | 'dasaYear'
+  | 'dasaMonth'
+  | 'dasaDay'
   | 'countryCode'
   | 'educationPreference'
   | 'anyOption';
@@ -57,6 +73,45 @@ export const formOptionLists: Record<FormOptionsKey, FormOption[]> = {
     opt('bachelors', "Bachelor's Degree", 'இளங்கலை பட்டம்'),
     opt('masters', "Master's Degree", 'முதுகலை பட்டம்'),
     opt('doctorate', 'Doctorate / PhD', 'முனைவர் பட்டம்'),
+    opt('other', 'Other Professional Qualification', 'பிற தொழில்முறை தகுதி'),
+  ],
+  degreeDetail: [
+    opt('high-school', 'Secondary School Leaving Certificate', 'இடைநிலைப் பள்ளி சான்றிதழ்'),
+    opt('hsc', 'Higher Secondary Certificate', 'உயர்நிலைச் சான்றிதழ்'),
+    opt('iti', 'Industrial Training Institute', 'தொழில்பயிற்சி நிறுவனம்'),
+    opt('diploma', 'Diploma', 'டிப்ளோமா'),
+    opt('be', 'Bachelor of Engineering', 'பொறியியல் இளங்கலை'),
+    opt('btech', 'Bachelor of Technology', 'தொழில்நுட்ப இளங்கலை'),
+    opt('barch', 'Bachelor of Architecture', 'கட்டிடக்கலை இளங்கலை'),
+    opt('bsc', 'Bachelor of Science', 'அறிவியல் இளங்கலை'),
+    opt('bcom', 'Bachelor of Commerce', 'வணிக இளங்கலை'),
+    opt('ba', 'Bachelor of Arts', 'கலை இளங்கலை'),
+    opt('bba', 'Bachelor of Business Administration', 'வணிக நிர்வாக இளங்கலை'),
+    opt('bca', 'Bachelor of Computer Applications', 'கணினி பயன்பாடுகள் இளங்கலை'),
+    opt('bpharm', 'Bachelor of Pharmacy', 'மருந்தியல் இளங்கலை'),
+    opt('bed', 'Bachelor of Education', 'கல்வி இளங்கலை'),
+    opt('llb', 'Bachelor of Laws', 'சட்ட இளங்கலை'),
+    opt('mbbs', 'Bachelor of Medicine and Bachelor of Surgery', 'மருத்துவ இளங்கலை'),
+    opt('bds', 'Bachelor of Dental Surgery', 'பல் மருத்துவ இளங்கலை'),
+    opt('bams', 'Bachelor of Ayurvedic Medicine and Surgery', 'ஆயுர்வேத மருத்துவ இளங்கலை'),
+    opt('bhms', 'Bachelor of Homeopathic Medicine and Surgery', 'ஹோமியோபதி மருத்துவ இளங்கலை'),
+    opt('bachelors', "Bachelor's Degree (Other)", 'இளங்கலை பட்டம் (பிற)'),
+    opt('me', 'Master of Engineering', 'பொறியியல் முதுகலை'),
+    opt('mtech', 'Master of Technology', 'தொழில்நுட்ப முதுகலை'),
+    opt('msc', 'Master of Science', 'அறிவியல் முதுகலை'),
+    opt('mcom', 'Master of Commerce', 'வணிக முதுகலை'),
+    opt('ma', 'Master of Arts', 'கலை முதுகலை'),
+    opt('mba', 'Master of Business Administration', 'வணிக நிர்வாக முதுகலை'),
+    opt('mca', 'Master of Computer Applications', 'கணினி பயன்பாடுகள் முதுகலை'),
+    opt('md', 'Doctor of Medicine', 'மருத்துவ முனைவர் பட்டம்'),
+    opt('ms', 'Master of Surgery', 'அறுவை சிகிச்சை முதுகலை'),
+    opt('masters', "Master's Degree (Other)", 'முதுகலை பட்டம் (பிற)'),
+    opt('mphil', 'Master of Philosophy', 'தத்துவ முதுகலை'),
+    opt('phd', 'Doctor of Philosophy', 'முனைவர் பட்டம்'),
+    opt('doctorate', 'Doctorate / PhD', 'முனைவர் பட்டம் / PhD'),
+    opt('ca', 'Chartered Accountant', 'சார்ட்டர் கணக்காளர்'),
+    opt('cma', 'Cost and Management Accountant', 'செலவு மற்றும் நிர்வாக கணக்காளர்'),
+    opt('cs', 'Company Secretary', 'நிறுவன செயலாளர்'),
     opt('other', 'Other Professional Qualification', 'பிற தொழில்முறை தகுதி'),
   ],
   religion: [
@@ -127,6 +182,34 @@ export const formOptionLists: Record<FormOptionsKey, FormOption[]> = {
     opt('farmer', 'Farmer / Agriculture', 'விவசாயி / விவசாயம்'),
     opt('homemaker', 'Homemaker', 'இல்லத்தரசி'),
     opt('other', 'Others', 'பிற'),
+  ],
+  occupationType: [
+    opt('government-job', 'Government Job', 'அரசு வேலை'),
+    opt('private-job', 'Private Job', 'தனியார் வேலை'),
+    opt('business', 'Business', 'வணிகம்'),
+    opt('self-employed', 'Self Employed', 'சுயதொழில்'),
+    opt('agriculture', 'Agriculture', 'விவசாயம்'),
+    opt('abroad-job', 'Abroad Job', 'வெளிநாட்டு வேலை'),
+  ],
+  propertyHouseType: [
+    opt('own', 'Own House', 'சொந்த வீடு'),
+    opt('rental', 'Rental House', 'வாடகை வீடு'),
+  ],
+  propertyHouseCount: [
+    opt('1', '1', '1'),
+    opt('2', '2', '2'),
+    opt('3', '3', '3'),
+    opt('4-plus', '4+', '4+'),
+    opt('5-plus', '5+', '5+'),
+  ],
+  propertyOwnHouseCount: [
+    opt('1', '1', '1'),
+    opt('2', '2', '2'),
+    opt('3-plus', '3+', '3+'),
+  ],
+  propertyLandUnit: [
+    opt('cent', 'Cent', 'செண்ட்'),
+    opt('acre', 'Acre', 'ஏக்கர்'),
   ],
   monthlyIncome: [
     opt('below-25k', 'Below ₹25,000', '₹25,000 க்கு கீழ்'),
@@ -277,8 +360,8 @@ export const formOptionLists: Record<FormOptionsKey, FormOption[]> = {
   ],
   birthOrder: [
     opt('eldest', 'Eldest', 'மூத்தவர்'),
-    opt('middle', 'Middle', 'நடுவில்'),
     opt('youngest', 'Youngest', 'இளையவர்'),
+    opt('middle', 'Middle', 'நடுவில்'),
     opt('only-child', 'Only Child', 'ஒரே பிள்ளை'),
   ],
   ageRange: [
@@ -371,6 +454,58 @@ export const formOptionLists: Record<FormOptionsKey, FormOption[]> = {
     opt('4', '4', '4'),
     opt('5+', '5 or more', '5 அல்லது அதற்கு மேல்'),
   ],
+  birthOrderRelation: [
+    opt('elder-brother', 'Elder Brother', 'அண்ணன்'),
+    opt('younger-brother', 'Younger Brother', 'தம்பி'),
+    opt('elder-sister', 'Elder Sister', 'அக்கா'),
+    opt('younger-sister', 'Younger Sister', 'தங்கை'),
+  ],
+  maritalStatusBiodata: [
+    opt('unmarried', 'Unmarried', 'திருமணமாகாதவர்'),
+    opt('married', 'Married', 'திருமணமானவர்'),
+  ],
+  livingStatus: [
+    opt('with-family', 'With Family', 'குடும்பத்துடன்'),
+    opt('separate', 'Separate', 'தனியாக'),
+  ],
+  eatingHabit: [
+    opt('veg', 'Veg', 'சைவம்'),
+    opt('non-veg', 'Non-Veg', 'அசைவம்'),
+    opt('eggetarian', 'Eggetarian', 'முட்டை சைவம்'),
+  ],
+  complexionBiodata: [
+    opt('fair', 'Fair', 'வெள்ளை'),
+    opt('wheatish', 'Wheatish', 'வெண்மை'),
+    opt('dark', 'Dark', 'கருமை'),
+  ],
+  seervarisai: [
+    opt('no', 'No', 'இல்லை'),
+    opt('as-agreed', 'As agreed', 'பேச்சுவார்த்தையில்'),
+    opt('as-per-custom', 'As per custom', 'வழக்கப்படி'),
+  ],
+  dasaPlanet: [
+    opt('kethu', 'Kethu', 'கேது'),
+    opt('sukran', 'Sukran', 'சுக்ரன்'),
+    opt('suriyan', 'Suriyan', 'சூரியன்'),
+    opt('chandran', 'Chandran', 'சந்திரன்'),
+    opt('sevvai', 'Sevvai', 'செவ்வாய்'),
+    opt('rahu', 'Rahu', 'ராகு'),
+    opt('guru', 'Guru', 'குரு'),
+    opt('sani', 'Sani', 'சனி'),
+    opt('budhan', 'Budhan', 'புதன்'),
+  ],
+  dasaYear: Array.from({ length: 2008 - 1950 + 1 }, (_, index) => {
+    const year = String(1950 + index);
+    return opt(year, year, year);
+  }),
+  dasaMonth: Array.from({ length: 12 }, (_, index) => {
+    const month = String(index + 1).padStart(2, '0');
+    return opt(month, month, month);
+  }),
+  dasaDay: Array.from({ length: 31 }, (_, index) => {
+    const day = String(index + 1).padStart(2, '0');
+    return opt(day, day, day);
+  }),
   countryCode: [
     opt('+91', 'India (+91)', 'இந்தியா (+91)'),
     opt('+1', 'USA (+1)', 'அமெரிக்கா (+1)'),

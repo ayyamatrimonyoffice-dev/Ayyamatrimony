@@ -1,29 +1,24 @@
-import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { Href, useRouter } from 'expo-router';
+import { Redirect } from 'expo-router';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { adminColors } from '@/constants/admin';
 
 export default function AdminIndexScreen() {
-  const router = useRouter();
   const { isReady, isAuthenticated } = useAdminAuth();
 
-  useEffect(() => {
-    if (!isReady) {
-      return;
-    }
-    if (isAuthenticated) {
-      router.replace('/admin/(tabs)/' as Href);
-      return;
-    }
-    router.replace('/admin/login');
-  }, [isAuthenticated, isReady, router]);
+  if (!isReady) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator size="large" color={adminColors.primary} />
+      </View>
+    );
+  }
 
-  return (
-    <View style={styles.loader}>
-      <ActivityIndicator size="large" color={adminColors.primary} />
-    </View>
-  );
+  if (isAuthenticated) {
+    return <Redirect href="/admin/(tabs)/" />;
+  }
+
+  return <Redirect href="/" />;
 }
 
 const styles = StyleSheet.create({

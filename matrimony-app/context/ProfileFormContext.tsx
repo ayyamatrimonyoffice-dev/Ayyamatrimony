@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
+import { hydrateLocalProfileFromFirestore, upsertProfileFromValues } from '@/lib/firestore/profileService';
 
 const PROFILE_STORAGE_KEY = 'user_profile';
 
@@ -8,6 +10,8 @@ type ProfileFormContextValue = {
   isReady: boolean;
   setValue: (key: string, value: string) => void;
   getValue: (key: string) => string;
+  replaceValues: (nextValues: Record<string, string>) => Promise<void>;
+  syncProfileToFirestore: (ownerKey?: string, published?: boolean) => Promise<void>;
   clearProfile: () => Promise<void>;
 };
 
@@ -37,13 +41,27 @@ export function ProfileFormProvider({ children }: { children: ReactNode }) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(PROFILE_STORAGE_KEY)
-      .then((stored) => {
-        setValues(parseStoredProfile(stored));
-      })
-      .finally(() => {
-        setIsReady(true);
-      });
+    void (async () => {
+      const stored = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+      let nextValues = parseStoredProfile(stored);
+      const phone = nextValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+
+      if (phone) {
+        const remoteProfile = await hydrateLocalProfileFromFirestore(phone).catch(() => null);
+        if (remoteProfile) {
+          nextValues = {
+            ...nextValues,
+            ...remoteProfile,
+            [CONTACT_PHONE_KEY]: phone,
+            whatsappNumber: remoteProfile.whatsappNumber || nextValues.whatsappNumber || phone,
+          };
+          await AsyncStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(nextValues));
+        }
+      }
+
+      setValues(nextValues);
+      setIsReady(true);
+    })();
   }, []);
 
   const persistValues = useCallback(async (nextValues: Record<string, string>) => {
@@ -61,6 +79,18 @@ export function ProfileFormProvider({ children }: { children: ReactNode }) {
     [persistValues],
   );
 
+  const replaceValues = useCallback(async (nextValues: Record<string, string>) => {
+    setValues(nextValues);
+    await persistValues(nextValues);
+  }, [persistValues]);
+
+  const syncProfileToFirestore = useCallback(
+    async (ownerKey = 'current-user', published = true) => {
+      await upsertProfileFromValues(values, ownerKey, { published, uploadPhotos: true });
+    },
+    [values],
+  );
+
   const clearProfile = useCallback(async () => {
     setValues({});
     await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
@@ -72,9 +102,11 @@ export function ProfileFormProvider({ children }: { children: ReactNode }) {
       isReady,
       setValue,
       getValue: (key: string) => values[key] ?? '',
+      replaceValues,
+      syncProfileToFirestore,
       clearProfile,
     }),
-    [clearProfile, isReady, setValue, values],
+    [clearProfile, isReady, replaceValues, setValue, syncProfileToFirestore, values],
   );
 
   return <ProfileFormContext.Provider value={value}>{children}</ProfileFormContext.Provider>;

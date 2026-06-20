@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
 import {
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,14 +8,15 @@ import {
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MembershipToggle } from '@/components/MembershipToggle';
+import { ProtectedProfileImage } from '@/components/ProtectedProfileImage';
 import { useLanguage } from '@/context/LanguageContext';
-import { useProfileForm } from '@/context/ProfileFormContext';
+import { useSubscription } from '@/context/SubscriptionContext';
+import { useMatchActions } from '@/context/MatchActionsContext';
+import { useOpenMemberProfile } from '@/hooks/useOpenMemberProfile';
 import { borderRadius, colors, fonts, spacing, typography } from '@/constants/theme';
-import { images } from '@/constants/images';
-import { filterByRecommendedGender } from '@/constants/matchFilters';
 
 type DirectionTab = 'received' | 'sent';
 type StatusFilter = 'all' | 'pending' | 'accepted' | 'declined';
@@ -44,34 +45,25 @@ function formatProfileSummary(age: string, community: string) {
     : `${agePart} · ${communityShort}`;
 }
 
-function InterestCard({ item }: { item: InterestItem }) {
-  const router = useRouter();
-  const { translate, translateFormat } = useLanguage();
-
-  const openProfile = () => {
-    router.push({ pathname: '/member/[id]', params: { id: item.id } });
-  };
-
-  const sentMessage =
-    item.pronoun === 'she'
-      ? translateFormat('sheSentYouInterest', { date: item.interestDate })
-      : translateFormat('heSentYouInterest', { date: item.interestDate });
-
-  const hintMessage =
-    item.pronoun === 'she'
-      ? translate('acceptInterestHintHer')
-      : translate('acceptInterestHintHis');
+function InterestCard({ item, locked }: { item: InterestItem; locked: boolean }) {
+  const openProfile = useOpenMemberProfile();
+  const { translate } = useLanguage();
 
   return (
     <View style={styles.interestCard}>
       <View style={styles.cardTopRow}>
-        <Pressable onPress={openProfile}>
-          <Image source={{ uri: item.image }} style={styles.cardAvatar} />
+        <Pressable onPress={() => openProfile(item.id)}>
+          <ProtectedProfileImage
+            imageUri={item.image}
+            locked={locked}
+            style={styles.cardAvatar}
+            imageStyle={styles.cardAvatar}
+          />
         </Pressable>
 
         <View style={styles.cardInfo}>
           <View style={styles.cardNameRow}>
-            <Pressable onPress={openProfile} style={styles.namePressable}>
+            <Pressable onPress={() => openProfile(item.id)} style={styles.namePressable}>
               <Text style={styles.cardName}>{item.name}</Text>
             </Pressable>
             <Pressable hitSlop={8} style={styles.cardMenuBtn}>
@@ -79,19 +71,18 @@ function InterestCard({ item }: { item: InterestItem }) {
             </Pressable>
           </View>
 
-          <Text style={styles.summaryLine}>{item.summaryLine}</Text>
-          <Text style={styles.detailLine}>{item.profession}</Text>
-          <Text style={styles.detailLine}>{item.salary}</Text>
+          <Text style={styles.summaryLine}>
+            {locked ? translate('detailsLocked') : item.summaryLine}
+          </Text>
+          {locked ? null : (
+            <>
+              <Text style={styles.detailLine}>{item.profession}</Text>
+              <Text style={styles.detailLine}>{item.salary}</Text>
+            </>
+          )}
           <Text style={styles.detailLine}>{item.location}</Text>
         </View>
       </View>
-
-      {item.direction === 'received' && item.filterStatus === 'pending' ? (
-        <View style={styles.statusBlock}>
-          <Text style={styles.statusTitle}>{sentMessage}</Text>
-          <Text style={styles.statusHint}>{hintMessage}</Text>
-        </View>
-      ) : null}
 
       {item.direction === 'received' && item.filterStatus === 'pending' ? (
         <View style={styles.cardActions}>
@@ -110,76 +101,38 @@ function InterestCard({ item }: { item: InterestItem }) {
 }
 
 export default function InterestsScreen() {
-  const { translate, translateFormat } = useLanguage();
-  const { getValue } = useProfileForm();
-  const [membershipMode, setMembershipMode] = useState<'regular' | 'prime'>('regular');
+  const { direction } = useLocalSearchParams<{ direction?: string | string[] }>();
+  const { translate } = useLanguage();
+  const { isPrimeViewActive } = useSubscription();
+  const { sentInterests } = useMatchActions();
   const [directionTab, setDirectionTab] = useState<DirectionTab>('received');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');
-  const userGender = getValue('gender');
 
-  const allInterests: InterestItem[] = useMemo(() => {
-    const filteredMatches = filterByRecommendedGender(images.matches, userGender);
-    const [first, second, third] = filteredMatches;
-    const professions = ['Banking Professional', 'Medical Specialist', 'Software Professional'];
-    const salaries = [
-      '₹ 12 - 14 lakhs per annum',
-      '₹ 18 - 20 lakhs per annum',
-      '₹ 15 - 18 lakhs per annum',
-    ];
-    const dates = ['14 Jun 26', '10 Jun 26', '08 Jun 26'];
-    const configs: Array<{
-      match: (typeof filteredMatches)[number] | undefined;
-      direction: DirectionTab;
-      filterStatus: StatusFilter;
-      profession: string;
-      salary: string;
-      interestDate: string;
-    }> = [
-      {
-        match: third,
-        direction: 'received',
-        filterStatus: 'pending',
-        profession: professions[0],
-        salary: salaries[0],
-        interestDate: dates[0],
-      },
-      {
-        match: second,
-        direction: 'received',
-        filterStatus: 'accepted',
-        profession: professions[1],
-        salary: salaries[1],
-        interestDate: dates[1],
-      },
-      {
-        match: first,
-        direction: 'sent',
-        filterStatus: 'pending',
-        profession: professions[2],
-        salary: salaries[2],
-        interestDate: dates[2],
-      },
-    ];
+  useEffect(() => {
+    const requestedDirection = Array.isArray(direction) ? direction[0] : direction;
+    if (requestedDirection === 'sent') {
+      setDirectionTab('sent');
+      setStatusFilter('all');
+    }
+  }, [direction]);
 
-    return configs
-      .filter((config) => config.match)
-      .map((config) => {
-        const match = config.match!;
-        return {
-          id: match.id,
-          name: match.name,
-          image: match.image,
-          summaryLine: formatProfileSummary(match.age, match.community),
-          profession: config.profession,
-          salary: config.salary,
-          location: match.location,
-          interestDate: config.interestDate,
-          direction: config.direction,
-          filterStatus: config.filterStatus,
-          pronoun: match.gender === 'female' ? ('she' as const) : ('he' as const),
-        };
-      });
-  }, [userGender]);
+  const allInterests: InterestItem[] = useMemo(
+    () =>
+      sentInterests.map((entry) => ({
+        id: entry.memberId,
+        name: entry.memberName,
+        image: entry.memberImage,
+        summaryLine: formatProfileSummary(entry.age, entry.community),
+        profession: '—',
+        salary: '—',
+        location: entry.location,
+        interestDate: entry.sentAt,
+        direction: 'sent' as const,
+        filterStatus: entry.status,
+        pronoun: 'he' as const,
+      })),
+    [sentInterests],
+  );
 
   const directionInterests = useMemo(
     () => allInterests.filter((item) => item.direction === directionTab),
@@ -203,26 +156,6 @@ export default function InterestsScreen() {
     return directionInterests.filter((item) => item.filterStatus === statusFilter);
   }, [directionInterests, statusFilter]);
 
-  const sectionTitle = useMemo(() => {
-    if (statusFilter === 'pending') {
-      return translateFormat('pendingInterestsTitle', { count: filterCounts.pending });
-    }
-    if (statusFilter === 'accepted') {
-      return translateFormat('acceptedInterestsTitle', { count: filterCounts.accepted });
-    }
-    if (statusFilter === 'declined') {
-      return translateFormat('declinedInterestsTitle', { count: filterCounts.declined });
-    }
-    return translateFormat('allInterestsTitle', { count: filterCounts.all });
-  }, [filterCounts, statusFilter, translateFormat]);
-
-  const sectionSubtitle =
-    directionTab === 'received' && statusFilter === 'pending'
-      ? translate('pendingInterestsSubtitle')
-      : directionTab === 'sent'
-        ? translate('sentInterestsSubtitle')
-        : translate('receivedInterestsSubtitle');
-
   const statusFilters: { key: StatusFilter; label: string; count: number }[] = [
     { key: 'all', label: translate('allTab'), count: filterCounts.all },
     { key: 'pending', label: translate('pending'), count: filterCounts.pending },
@@ -239,27 +172,7 @@ export default function InterestsScreen() {
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
         <View style={styles.topUtilityRow}>
-          <View style={styles.membershipToggle}>
-            <Pressable
-              style={[styles.togglePill, membershipMode === 'regular' && styles.togglePillActive]}
-              onPress={() => setMembershipMode('regular')}
-            >
-              <Text
-                style={[styles.toggleText, membershipMode === 'regular' && styles.toggleTextActive]}
-              >
-                {translate('regular')}
-              </Text>
-            </Pressable>
-            <Pressable
-              style={[styles.togglePill, membershipMode === 'prime' && styles.togglePillActive]}
-              onPress={() => setMembershipMode('prime')}
-            >
-              <Text style={[styles.toggleText, membershipMode === 'prime' && styles.toggleTextActive]}>
-                {translate('prime')}
-              </Text>
-              <View style={styles.primeDot} />
-            </Pressable>
-          </View>
+          <MembershipToggle variant="outlined" />
         </View>
 
         <View style={styles.tabsRow}>
@@ -317,22 +230,6 @@ export default function InterestsScreen() {
             );
           })}
         </ScrollView>
-
-        <View style={styles.sectionToolsRow}>
-          <View style={styles.sectionCopy}>
-            <Text style={styles.sectionTitle}>{sectionTitle}</Text>
-            <Text style={styles.sectionSubtitle}>{sectionSubtitle}</Text>
-          </View>
-          <View style={styles.toolsRow}>
-            <Pressable style={styles.filterActionBtn}>
-              <MaterialIcons name="tune" size={16} color={colors.onSurface} />
-              <Text style={styles.filterActionText}>{translate('filter')}</Text>
-            </Pressable>
-            <Pressable style={styles.searchBtn} hitSlop={8}>
-              <MaterialIcons name="search" size={22} color={colors.onSurface} />
-            </Pressable>
-          </View>
-        </View>
       </View>
 
       <ScrollView
@@ -346,7 +243,9 @@ export default function InterestsScreen() {
             <Text style={styles.emptyText}>{translate('noInterestsInFilter')}</Text>
           </View>
         ) : (
-          visibleInterests.map((item) => <InterestCard key={item.id} item={item} />)
+          visibleInterests.map((item) => (
+            <InterestCard key={item.id} item={item} locked={!isPrimeViewActive} />
+          ))
         )}
       </ScrollView>
     </SafeAreaView>
@@ -490,56 +389,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: fonts.interSemi,
   },
-  sectionToolsRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  sectionCopy: {
-    flex: 1,
-  },
-  sectionTitle: {
-    ...typography.titleLg,
-    fontSize: 16,
-    color: colors.onSurface,
-    fontFamily: fonts.interSemi,
-  },
-  sectionSubtitle: {
-    ...typography.bodyMd,
-    color: colors.onSurfaceVariant,
-    marginTop: 4,
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  toolsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  filterActionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
-    borderColor: colorsLocal.chipBorder,
-    backgroundColor: colors.surfaceContainerLowest,
-  },
-  filterActionText: {
-    ...typography.labelLg,
-    color: colors.onSurface,
-    fontSize: 13,
-  },
-  searchBtn: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   listScroll: {
     flex: 1,
     backgroundColor: colors.surfaceContainerLow,
@@ -599,28 +448,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 13,
   },
-  statusBlock: {
-    marginTop: spacing.md,
-    paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colorsLocal.chipBorder,
-  },
-  statusTitle: {
-    ...typography.bodyMd,
-    color: colors.onSurface,
-    fontFamily: fonts.interSemi,
-    fontSize: 14,
-  },
-  statusHint: {
-    ...typography.labelLg,
-    color: colors.onSurfaceVariant,
-    marginTop: 4,
-    fontSize: 13,
-  },
   cardActions: {
     flexDirection: 'row',
     gap: spacing.sm,
     marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colorsLocal.chipBorder,
   },
   declineBtn: {
     flex: 1,

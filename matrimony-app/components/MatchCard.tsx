@@ -1,8 +1,10 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLanguage } from '@/context/LanguageContext';
-import { colors, spacing, typography } from '@/constants/theme';
+import { useMatchActions } from '@/context/MatchActionsContext';
+import { useOpenMemberProfile } from '@/hooks/useOpenMemberProfile';
+import { borderRadius, colors, fonts, spacing, typography } from '@/constants/theme';
 
 type MatchCardProps = {
   id: string;
@@ -11,8 +13,9 @@ type MatchCardProps = {
   community: string;
   location: string;
   image: string;
-  badge?: string;
+  occupation?: string;
   verified?: boolean;
+  online?: boolean;
 };
 
 export function MatchCard({
@@ -22,41 +25,97 @@ export function MatchCard({
   community,
   location,
   image,
-  badge,
-  verified,
+  occupation = '—',
+  verified = false,
+  online = true,
 }: MatchCardProps) {
   const router = useRouter();
-  const { translate } = useLanguage();
+  const openProfile = useOpenMemberProfile();
+  const { translate, translateFormat } = useLanguage();
+  const { hasSentInterest, sendInterest } = useMatchActions();
 
-  const openProfile = () => {
-    router.push({ pathname: '/member/[id]', params: { id } });
+  const interestSent = hasSentInterest(id);
+
+  const handleViewProfile = () => {
+    openProfile(id);
+  };
+
+  const handleInterest = () => {
+    if (interestSent) {
+      Alert.alert(translate('interest'), translateFormat('interestAlreadySentFormat', { name }));
+      router.push({ pathname: '/(tabs)/interests', params: { direction: 'sent' } });
+      return;
+    }
+
+    void sendInterest({
+      memberId: id,
+      memberName: name,
+      memberImage: image,
+      age,
+      community,
+      location,
+    }).then((result) => {
+      Alert.alert(
+        translate('interest'),
+        result === 'sent'
+          ? translateFormat('interestSentFormat', { name })
+          : translateFormat('interestAlreadySentFormat', { name }),
+      );
+      router.push({ pathname: '/(tabs)/interests', params: { direction: 'sent' } });
+    });
   };
 
   return (
     <View style={styles.card}>
       <View style={styles.row}>
-        <Pressable onPress={openProfile}>
-          <Image source={{ uri: image }} style={styles.image} />
-        </Pressable>
-        <View style={styles.content}>
-          <Pressable onPress={openProfile}>
-            <View style={styles.header}>
-              <Text style={styles.name}>{name}</Text>
-              {badge ? <Text style={styles.badge}>{badge}</Text> : null}
-              {verified ? <MaterialIcons name="verified" size={18} color={colors.secondary} /> : null}
+        <Pressable style={styles.photoWrap} onPress={handleViewProfile}>
+          <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
+          {online ? (
+            <View style={styles.onlineBadge}>
+              <View style={styles.onlineDot} />
+              <Text style={styles.onlineText}>{translate('online')}</Text>
             </View>
-            <InfoRow icon="calendar-today" text={age} />
-            <InfoRow icon="groups" text={community} />
-            <InfoRow icon="location-on" text={location} />
-          </Pressable>
+          ) : null}
+        </Pressable>
+
+        <View style={styles.content}>
+          <View style={styles.titleRow}>
+            <View style={styles.nameRow}>
+              <Text style={styles.name} numberOfLines={1}>
+                {name}
+              </Text>
+              {verified ? (
+                <View style={styles.verifiedIconWrap}>
+                  <MaterialIcons name="verified" size={14} color={colors.gold} />
+                </View>
+              ) : null}
+            </View>
+            {verified ? (
+              <View style={styles.verifiedPill}>
+                <MaterialIcons name="verified-user" size={12} color={colors.primary} />
+                <Text style={styles.verifiedPillText}>{translate('verified')}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <InfoRow icon="person-outline" text={age} />
+          <InfoRow icon="work-outline" text={occupation} />
+          <InfoRow icon="location-on" text={location} />
+          <InfoRow icon="groups" text={community} />
+
           <View style={styles.actions}>
-            <Pressable style={styles.outlineBtn}>
-              <MaterialIcons name="star-outline" size={18} color={colors.primary} />
-              <Text style={styles.outlineText}>{translate('shortlist')}</Text>
+            <Pressable style={styles.outlineBtn} onPress={handleViewProfile}>
+              <MaterialIcons name="visibility" size={16} color={colors.primary} />
+              <Text style={styles.outlineText}>{translate('viewProfile')}</Text>
             </Pressable>
-            <Pressable style={styles.primaryBtn}>
-              <MaterialIcons name="favorite" size={18} color={colors.onPrimary} />
-              <Text style={styles.primaryText}>{translate('interest')}</Text>
+            <Pressable
+              style={[styles.primaryBtn, interestSent && styles.primaryBtnSent]}
+              onPress={handleInterest}
+            >
+              <MaterialIcons name="favorite" size={16} color={colors.onPrimary} />
+              <Text style={styles.primaryText}>
+                {interestSent ? translate('interestSent') : translate('interest')}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -68,8 +127,10 @@ export function MatchCard({
 function InfoRow({ icon, text }: { icon: keyof typeof MaterialIcons.glyphMap; text: string }) {
   return (
     <View style={styles.infoRow}>
-      <MaterialIcons name={icon} size={16} color={colors.onSurfaceVariant} />
-      <Text style={styles.infoText}>{text}</Text>
+      <MaterialIcons name={icon} size={14} color={colors.onSurfaceVariant} />
+      <Text style={styles.infoText} numberOfLines={1}>
+        {text}
+      </Text>
     </View>
   );
 }
@@ -77,62 +138,124 @@ function InfoRow({ icon, text }: { icon: keyof typeof MaterialIcons.glyphMap; te
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surfaceContainerLowest,
-    borderRadius: 12,
-    overflow: 'hidden',
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: 'rgba(212, 175, 55, 0.2)',
-    marginBottom: spacing.lg,
+    borderColor: 'rgba(226, 191, 185, 0.35)',
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
-    minHeight: 176,
+    minHeight: 188,
+  },
+  photoWrap: {
+    width: 118,
+    backgroundColor: colors.surfaceContainerHigh,
   },
   image: {
-    width: '33%',
+    width: '100%',
     height: '100%',
-    minHeight: 176,
+    minHeight: 188,
+  },
+  onlineBadge: {
+    position: 'absolute',
+    left: 8,
+    bottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(20, 29, 35, 0.82)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: borderRadius.full,
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4CAF50',
+  },
+  onlineText: {
+    color: colors.onPrimary,
+    fontSize: 10,
+    lineHeight: 12,
+    fontFamily: fonts.interMedium,
   },
   content: {
     flex: 1,
-    padding: spacing.md,
+    minWidth: 0,
+    padding: spacing.sm,
     justifyContent: 'space-between',
+    gap: 2,
   },
-  header: {
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+    marginBottom: 2,
+  },
+  nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 4,
+    flex: 1,
+    minWidth: 0,
   },
   name: {
-    ...typography.headlineMd,
-    fontSize: 18,
+    ...typography.titleLg,
+    fontSize: 16,
+    lineHeight: 22,
     color: colors.primary,
-    flex: 1,
+    flexShrink: 1,
   },
-  badge: {
-    ...typography.labelSm,
-    color: colors.onSurfaceVariant,
-    backgroundColor: colors.surfaceContainerHigh,
+  verifiedIconWrap: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#FFF8E7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifiedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#ffffff',
     paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingVertical: 3,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 191, 185, 0.45)',
+    flexShrink: 0,
+  },
+  verifiedPillText: {
+    ...typography.labelSm,
+    color: colors.primary,
+    fontSize: 10,
+    letterSpacing: 0,
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 4,
+    marginTop: 2,
   },
   infoText: {
-    ...typography.labelLg,
+    ...typography.bodyMd,
     color: colors.onSurfaceVariant,
+    fontSize: 12,
+    lineHeight: 16,
     flex: 1,
   },
   actions: {
     flexDirection: 'row',
-    gap: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(226, 191, 185, 0.2)',
-    paddingTop: spacing.sm,
+    gap: spacing.xs,
     marginTop: spacing.sm,
   },
   outlineBtn: {
@@ -140,28 +263,36 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: spacing.sm,
+    gap: 4,
+    paddingVertical: 8,
     borderWidth: 1,
-    borderColor: 'rgba(226, 191, 185, 0.3)',
-    borderRadius: 8,
+    borderColor: colors.primary,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surfaceContainerLowest,
   },
   outlineText: {
-    ...typography.labelLg,
+    ...typography.labelSm,
     color: colors.primary,
+    fontSize: 11,
+    letterSpacing: 0,
   },
   primaryBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: spacing.sm,
+    gap: 4,
+    paddingVertical: 8,
     backgroundColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
+  },
+  primaryBtnSent: {
+    opacity: 0.85,
   },
   primaryText: {
-    ...typography.labelLg,
+    ...typography.labelSm,
     color: colors.onPrimary,
+    fontSize: 11,
+    letterSpacing: 0,
   },
 });

@@ -13,7 +13,11 @@ import {
   PlayfairDisplay_700Bold,
 } from '@expo-google-fonts/playfair-display';
 import { LanguageProvider } from '@/context/LanguageContext';
+import { ChatProvider } from '@/context/ChatContext';
+import { MatchActionsProvider } from '@/context/MatchActionsContext';
 import { ProfileFormProvider } from '@/context/ProfileFormContext';
+import { SubscriptionProvider } from '@/context/SubscriptionContext';
+import { UserApprovalProvider } from '@/context/UserApprovalContext';
 import { colors } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -51,6 +55,10 @@ export default function RootLayout() {
   return (
     <LanguageProvider>
       <ProfileFormProvider>
+        <SubscriptionProvider>
+        <UserApprovalProvider>
+        <ChatProvider>
+        <MatchActionsProvider>
         <Stack
           screenOptions={{
             headerShown: false,
@@ -62,21 +70,31 @@ export default function RootLayout() {
           <Stack.Screen name="welcome" />
           <Stack.Screen name="login" />
           <Stack.Screen name="otp" />
+          <Stack.Screen name="select-community" />
           <Stack.Screen name="create-profile" />
           <Stack.Screen name="profile-setup" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="edit-profile" />
+          <Stack.Screen name="add-photos" />
+          <Stack.Screen name="add-profile" />
+          <Stack.Screen name="view-profile" />
           <Stack.Screen name="partner-preferences" />
           <Stack.Screen name="privacy-settings" />
           <Stack.Screen name="edit-mobile" />
           <Stack.Screen name="change-password" />
           <Stack.Screen name="info" />
           <Stack.Screen name="member/[id]" />
+          <Stack.Screen name="conversation/[id]" />
+          <Stack.Screen name="payment-access" />
           <Stack.Screen name="upgrade" />
           <Stack.Screen name="notifications" />
           <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
           <Stack.Screen name="admin" options={{ headerShown: false }} />
         </Stack>
+        </MatchActionsProvider>
+        </ChatProvider>
+        </UserApprovalProvider>
+        </SubscriptionProvider>
       </ProfileFormProvider>
     </LanguageProvider>
   );

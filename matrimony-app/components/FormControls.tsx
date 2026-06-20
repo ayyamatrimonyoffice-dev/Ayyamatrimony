@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -161,6 +162,8 @@ type SelectFieldProps = {
   showLabel?: boolean;
   compact?: boolean;
   variant?: 'default' | 'premium';
+  embedded?: boolean;
+  tight?: boolean;
 };
 
 export function SelectField({
@@ -172,9 +175,16 @@ export function SelectField({
   showLabel = true,
   compact = false,
   variant = 'default',
+  embedded = false,
+  tight = false,
 }: SelectFieldProps) {
   const isPremium = variant === 'premium';
+  const isEmbeddedCompact = embedded && compact;
+  const isTightEmbedded = isEmbeddedCompact && tight;
+  const useModalDropdown = embedded;
+  const triggerRef = useRef<View>(null);
   const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState<{ top: number; left: number; width: number } | null>(null);
   const selectedLabel = options.find((option) => option.value === value)?.label;
   const compactRowHeight = 20;
   const compactListMaxHeight = Math.min(
@@ -182,44 +192,135 @@ export function SelectField({
     compact ? 110 : 220,
   );
 
-  const handleSelect = (nextValue: string) => {
-    onValueChange(nextValue);
+  const closeDropdown = useCallback(() => {
     setOpen(false);
-  };
+    setAnchor(null);
+  }, []);
+
+  const handleSelect = useCallback(
+    (nextValue: string) => {
+      onValueChange(nextValue);
+      closeDropdown();
+    },
+    [closeDropdown, onValueChange],
+  );
+
+  const handleToggle = useCallback(() => {
+    if (open) {
+      closeDropdown();
+      return;
+    }
+
+    if (!useModalDropdown) {
+      setOpen(true);
+      return;
+    }
+
+    triggerRef.current?.measureInWindow((x, y, width, height) => {
+      setAnchor({
+        top: y + height + 2,
+        left: x,
+        width: Math.max(width, 120),
+      });
+      setOpen(true);
+    });
+  }, [closeDropdown, open, useModalDropdown]);
+
+  const dropdownPanelStyle = useMemo(
+    () => [
+      styles.inlineDropdown,
+      styles.inlineDropdownModalPanel,
+      isPremium && styles.inlineDropdownPremium,
+      compact && styles.inlineDropdownCompact,
+      compact && styles.inlineDropdownModalPanelCompact,
+    ],
+    [compact, isPremium],
+  );
+
+  const optionsList = (
+    <ScrollView
+      style={[
+        styles.inlineOptionsList,
+        compact && styles.inlineOptionsListCompact,
+        compact && { maxHeight: compactListMaxHeight },
+      ]}
+      nestedScrollEnabled
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={compact && options.length * compactRowHeight > 110}
+    >
+      {options.map((option) => {
+        const isSelected = option.value === value;
+        return (
+          <Pressable
+            key={option.value}
+            style={[
+              styles.optionRow,
+              compact && styles.optionRowCompact,
+              isSelected && styles.optionRowSelected,
+            ]}
+            onPress={() => handleSelect(option.value)}
+          >
+            <Text
+              style={[
+                styles.optionText,
+                compact && styles.optionTextCompact,
+                isSelected && styles.optionTextSelected,
+              ]}
+              numberOfLines={1}
+            >
+              {option.label}
+            </Text>
+            {isSelected ? (
+              <MaterialIcons name="check" size={compact ? 14 : 20} color={colors.primary} />
+            ) : null}
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
 
   return (
     <View style={[formFieldStyles.fieldGroup, open && styles.fieldGroupOpen]}>
       {showLabel && label ? <Text style={formFieldStyles.fieldLabel}>{label}</Text> : null}
-      <View style={styles.selectWrapper}>
+      <View ref={triggerRef} collapsable={false} style={styles.selectWrapper}>
         <Pressable
           style={[
             formFieldStyles.selectTrigger,
             isPremium && styles.selectTriggerPremium,
             compact && styles.selectTriggerCompact,
             compact && isPremium && styles.selectTriggerPremiumCompact,
-            open && styles.selectTriggerOpen,
-            open && isPremium && styles.selectTriggerPremiumOpen,
+            embedded && styles.selectTriggerEmbedded,
+            isEmbeddedCompact && styles.selectTriggerEmbeddedCompact,
+            isTightEmbedded && styles.selectTriggerTight,
+            open && !useModalDropdown && styles.selectTriggerOpen,
+            open && isPremium && !useModalDropdown && styles.selectTriggerPremiumOpen,
+            open && useModalDropdown && isPremium && styles.selectTriggerPremiumOverlayOpen,
           ]}
-          onPress={() => setOpen((current) => !current)}
+          onPress={handleToggle}
         >
           <Text
             style={[
               selectedLabel ? formFieldStyles.selectValue : formFieldStyles.selectPlaceholder,
               compact && styles.selectValueCompact,
               isPremium && styles.selectValuePremium,
+              isEmbeddedCompact && styles.selectValueEmbeddedCompact,
+              isTightEmbedded && styles.selectValueTight,
+              !selectedLabel && isTightEmbedded && styles.selectPlaceholderTight,
             ]}
             numberOfLines={1}
+            adjustsFontSizeToFit={isEmbeddedCompact}
+            minimumFontScale={isTightEmbedded ? 0.85 : 0.75}
           >
             {selectedLabel ?? placeholder}
           </Text>
           <MaterialIcons
             name={open ? 'expand-less' : 'expand-more'}
-            size={compact ? 16 : 22}
+            size={isTightEmbedded ? 12 : isEmbeddedCompact ? 14 : compact ? 16 : 22}
             color={isPremium ? colors.primary : colors.onSurfaceVariant}
           />
         </Pressable>
 
-        {open ? (
+        {open && !useModalDropdown ? (
           <View
             style={[
               styles.inlineDropdown,
@@ -227,48 +328,36 @@ export function SelectField({
               compact && styles.inlineDropdownCompact,
             ]}
           >
-            <ScrollView
-              style={[
-                styles.inlineOptionsList,
-                compact && styles.inlineOptionsListCompact,
-                compact && { maxHeight: compactListMaxHeight },
-              ]}
-              nestedScrollEnabled
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={compact && options.length * compactRowHeight > 110}
-            >
-              {options.map((option) => {
-                const isSelected = option.value === value;
-                return (
-                  <Pressable
-                    key={option.value}
-                    style={[
-                      styles.optionRow,
-                      compact && styles.optionRowCompact,
-                      isSelected && styles.optionRowSelected,
-                    ]}
-                    onPress={() => handleSelect(option.value)}
-                  >
-                    <Text
-                      style={[
-                        styles.optionText,
-                        compact && styles.optionTextCompact,
-                        isSelected && styles.optionTextSelected,
-                      ]}
-                      numberOfLines={1}
-                    >
-                      {option.label}
-                    </Text>
-                    {isSelected ? (
-                      <MaterialIcons name="check" size={compact ? 14 : 20} color={colors.primary} />
-                    ) : null}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+            {optionsList}
           </View>
         ) : null}
       </View>
+
+      {useModalDropdown && open && anchor ? (
+        <Modal
+          visible
+          transparent
+          animationType="fade"
+          onRequestClose={closeDropdown}
+        >
+          <View style={styles.dropdownModalRoot}>
+            <Pressable style={styles.dropdownModalBackdrop} onPress={closeDropdown} />
+            <View
+              pointerEvents="box-none"
+              style={[
+                styles.dropdownModalPanel,
+                {
+                  top: anchor.top,
+                  left: anchor.left,
+                  width: anchor.width,
+                },
+              ]}
+            >
+              <View style={dropdownPanelStyle}>{optionsList}</View>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </View>
   );
 }
@@ -429,6 +518,7 @@ type DatePickerFieldProps = {
   showPartLabels?: boolean;
   compact?: boolean;
   variant?: 'default' | 'premium';
+  embedded?: boolean;
 };
 
 export function DatePickerField({
@@ -440,8 +530,13 @@ export function DatePickerField({
   showPartLabels = true,
   compact = false,
   variant = 'default',
+  embedded = false,
 }: DatePickerFieldProps) {
   const labels = DATE_PICKER_LABELS[language];
+  const useCompactPlaceholders = compact && embedded;
+  const dayPlaceholder = useCompactPlaceholders ? labels.day : labels.dayPlaceholder;
+  const monthPlaceholder = useCompactPlaceholders ? labels.month : labels.monthPlaceholder;
+  const yearPlaceholder = useCompactPlaceholders ? labels.year : labels.yearPlaceholder;
   const parsed = parseDate(value);
 
   const [day, setDay] = useState(parsed ? String(parsed.day) : '');
@@ -516,10 +611,11 @@ export function DatePickerField({
             value={day}
             onValueChange={handleDayChange}
             options={dayOptions}
-            placeholder={labels.dayPlaceholder}
+            placeholder={dayPlaceholder}
             showLabel={showPartLabels}
             compact={compact}
             variant={variant}
+            embedded={embedded}
           />
         </View>
         <View style={styles.dobColumn}>
@@ -528,10 +624,11 @@ export function DatePickerField({
             value={month}
             onValueChange={handleMonthChange}
             options={monthOptions}
-            placeholder={labels.monthPlaceholder}
+            placeholder={monthPlaceholder}
             showLabel={showPartLabels}
             compact={compact}
             variant={variant}
+            embedded={embedded}
           />
         </View>
         <View style={styles.dobColumn}>
@@ -540,10 +637,11 @@ export function DatePickerField({
             value={year}
             onValueChange={handleYearChange}
             options={yearOptions}
-            placeholder={labels.yearPlaceholder}
+            placeholder={yearPlaceholder}
             showLabel={showPartLabels}
             compact={compact}
             variant={variant}
+            embedded={embedded}
           />
         </View>
       </View>
@@ -600,12 +698,39 @@ const styles = StyleSheet.create({
     }),
   },
   selectTriggerPremiumCompact: {
-    minHeight: 28,
+    minHeight: 38,
     borderRadius: 10,
-    paddingVertical: 3,
-    paddingHorizontal: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  selectTriggerEmbedded: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    ...Platform.select({
+      web: { boxShadow: 'none' },
+      default: {
+        shadowOpacity: 0,
+        elevation: 0,
+      },
+    }),
+  },
+  selectTriggerEmbeddedCompact: {
+    minHeight: 40,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: 0,
+  },
+  selectTriggerTight: {
+    minHeight: 38,
+    paddingVertical: 7,
+    paddingHorizontal: 4,
+    gap: 0,
   },
   selectTriggerPremiumOpen: {
+    borderColor: 'rgba(87, 0, 0, 0.22)',
+    backgroundColor: colors.surfaceContainerLowest,
+  },
+  selectTriggerPremiumOverlayOpen: {
     borderColor: 'rgba(87, 0, 0, 0.22)',
     backgroundColor: colors.surfaceContainerLowest,
   },
@@ -614,7 +739,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   selectValueCompact: {
+    fontSize: 12,
+    lineHeight: 16,
+    flex: 1,
+    minWidth: 0,
+  },
+  selectValueEmbeddedCompact: {
+    fontSize: 12,
+    lineHeight: 16,
+    flex: 1,
+    minWidth: 0,
+  },
+  selectValueTight: {
     fontSize: 11,
+    lineHeight: 13,
+    textAlign: 'center',
+  },
+  selectPlaceholderTight: {
+    color: colors.onSurfaceVariant,
+    fontSize: 11,
+    textAlign: 'center',
   },
   readOnlyInput: {
     backgroundColor: colors.surfaceContainerHigh,
@@ -631,6 +775,21 @@ const styles = StyleSheet.create({
   selectWrapper: {
     position: 'relative',
     width: '100%',
+  },
+  dropdownModalRoot: {
+    flex: 1,
+  },
+  dropdownModalBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'transparent',
+  },
+  dropdownModalPanel: {
+    position: 'absolute',
+    zIndex: 20,
+    ...Platform.select({
+      android: { elevation: 24 },
+      default: {},
+    }),
   },
   selectTriggerOpen: {
     borderBottomLeftRadius: 0,
@@ -658,6 +817,25 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
     }),
+  },
+  inlineDropdownModalPanel: {
+    borderTopWidth: 1,
+    borderRadius: 10,
+    ...Platform.select({
+      web: {
+        boxShadow: '0 10px 24px rgba(20, 29, 35, 0.16)',
+      },
+      default: {
+        elevation: 16,
+        shadowColor: '#141d23',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.16,
+        shadowRadius: 10,
+      },
+    }),
+  },
+  inlineDropdownModalPanelCompact: {
+    borderRadius: 10,
   },
   inlineDropdownPremium: {
     borderColor: 'rgba(87, 0, 0, 0.18)',
@@ -695,7 +873,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   dobRowCompact: {
-    gap: 3,
+    gap: 4,
+    alignItems: 'stretch',
   },
   dobColumn: {
     flex: 1,

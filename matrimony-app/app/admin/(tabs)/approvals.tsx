@@ -1,20 +1,27 @@
-import { useState } from 'react';
+import { useCallback } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { AdminListItem } from '@/components/admin/AdminListItem';
 import { AdminScreenShell } from '@/components/admin/AdminScreenShell';
-import { adminApprovals, type AdminApprovalRecord } from '@/constants/adminMockData';
+import type { AdminApprovalRecord } from '@/constants/adminMockData';
 import { adminColors } from '@/constants/admin';
+import { useAdminApprovals } from '@/context/AdminApprovalsContext';
 
 export default function AdminApprovalsScreen() {
-  const [items, setItems] = useState<AdminApprovalRecord[]>(adminApprovals);
+  const { items, updateStatus, refresh } = useAdminApprovals();
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
   const pendingItems = items.filter((item) => item.status === 'pending');
 
-  const updateStatus = (id: string, status: AdminApprovalRecord['status']) => {
-    setItems((current) =>
-      current.map((item) => (item.id === id ? { ...item, status } : item)),
-    );
-    Alert.alert('Profile updated', `Profile marked as ${status}.`);
+  const updateItemStatus = (id: string, status: AdminApprovalRecord['status']) => {
+    void updateStatus(id, status).then(() => {
+      Alert.alert('Profile updated', `Profile marked as ${status}.`);
+    });
   };
 
   return (
@@ -41,13 +48,13 @@ export default function AdminApprovalsScreen() {
             <View style={styles.actions}>
               <Pressable
                 style={[styles.actionButton, styles.approveButton]}
-                onPress={() => updateStatus(item.id, 'approved')}
+                onPress={() => updateItemStatus(item.id, 'approved')}
               >
                 <Text style={styles.approveText}>Approve</Text>
               </Pressable>
               <Pressable
                 style={[styles.actionButton, styles.rejectButton]}
-                onPress={() => updateStatus(item.id, 'rejected')}
+                onPress={() => updateItemStatus(item.id, 'rejected')}
               >
                 <Text style={styles.rejectText}>Reject</Text>
               </Pressable>

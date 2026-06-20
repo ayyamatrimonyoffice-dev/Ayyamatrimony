@@ -2,6 +2,8 @@ import { Platform } from 'react-native';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Analytics } from 'firebase/analytics';
+import type { Firestore } from 'firebase/firestore';
+import type { FirebaseStorage } from 'firebase/storage';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyBLZ_BdZ1kJXqy6Qyj7HZYZ6ZzhV-q5z04',
@@ -19,6 +21,8 @@ function canUseFirebase(): boolean {
 
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
+let firestore: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
 let analyticsInstance: Analytics | null = null;
 let initPromise: Promise<void> | null = null;
 
@@ -35,9 +39,13 @@ async function ensureFirebase(): Promise<void> {
     initPromise = (async () => {
       const { initializeApp, getApps, getApp } = await import('firebase/app');
       const { getAuth } = await import('firebase/auth');
+      const { getFirestore } = await import('firebase/firestore');
+      const { getStorage } = await import('firebase/storage');
 
       app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
       auth = getAuth(app);
+      firestore = getFirestore(app);
+      storage = getStorage(app);
     })();
   }
 
@@ -52,6 +60,16 @@ export async function getFirebaseApp(): Promise<FirebaseApp | null> {
 export async function getFirebaseAuth(): Promise<Auth | null> {
   await ensureFirebase();
   return auth;
+}
+
+export async function getFirebaseFirestore(): Promise<Firestore | null> {
+  await ensureFirebase();
+  return firestore;
+}
+
+export async function getFirebaseStorage(): Promise<FirebaseStorage | null> {
+  await ensureFirebase();
+  return storage;
 }
 
 export async function initFirebaseAnalytics(): Promise<Analytics | null> {
