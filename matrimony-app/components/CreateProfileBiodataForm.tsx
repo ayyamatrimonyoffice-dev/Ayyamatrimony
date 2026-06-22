@@ -963,6 +963,14 @@ const actionBarShadow = Platform.select({
   },
 });
 
+function normalizeRegistrationReligion(stored: string): string {
+  const trimmed = stored.trim();
+  if (trimmed === 'hindu' || trimmed === 'rc-christian' || trimmed === 'csi-christian') {
+    return trimmed;
+  }
+  return '';
+}
+
 function resolveStoredOptionValue(
   optionsKey: FormOptionsKey,
   stored: string,
@@ -2859,11 +2867,11 @@ function ReviewSiblingBox({
       <Text style={[reviewStyles.siblingBoxTitle, wide && reviewStyles.siblingBoxTitleWide]}>{title}</Text>
       {rows.map((row) => (
         <View key={row.label} style={[reviewStyles.siblingRow, wide && reviewStyles.siblingRowWide]}>
-          <View style={reviewStyles.dataLabelColonGroup}>
+          <View style={[reviewStyles.dataLabelColonGroup, reviewStyles.siblingLabelColonGroup]}>
             <Text style={[reviewStyles.siblingLabel, wide && reviewStyles.siblingLabelWide]} numberOfLines={2}>
               {row.label}
             </Text>
-            <Text style={reviewStyles.siblingColon}>:</Text>
+            <Text style={[reviewStyles.siblingColon, wide && reviewStyles.siblingColonWide]}>:</Text>
           </View>
           <View style={reviewStyles.siblingValueColumn}>
             <Text
@@ -3432,7 +3440,6 @@ function BiodataReviewSheet({
   dense,
   registrationCommunity,
   religion,
-  isInitiallyChristian,
   primaryPhotoUri = '',
 }: {
   form: BiodataState;
@@ -3447,22 +3454,13 @@ function BiodataReviewSheet({
   dense?: boolean;
   registrationCommunity?: string;
   religion?: string;
-  isInitiallyChristian?: boolean;
   primaryPhotoUri?: string;
 }) {
   const { translate, language } = useLanguage();
-
-  if (isChristianRegistration(registrationCommunity, religion)) {
-    return (
-      <ChristianBiodataReviewSheet
-        form={form}
-        language={language}
-        translate={translate}
-        registrationCommunity={registrationCommunity as RegistrationCommunityId}
-        primaryPhotoUri={primaryPhotoUri}
-      />
-    );
-  }
+  const reviewReligion = normalizeRegistrationReligion(religion ?? form.religion);
+  const showHoroscopeFields =
+    Boolean(reviewReligion) &&
+    !isChristianRegistration(registrationCommunity ?? '', reviewReligion);
 
   const degreeLabel = reviewDisplayOption('degreeDetail', form.education, language);
   const nameDisplay = form.fullName.trim();
@@ -3520,16 +3518,20 @@ function BiodataReviewSheet({
               label={translate('religion')}
               value={reviewDisplayOption('religion', form.religion, language)}
             />
-            <ReviewDataRow
-              label={translate('biodataReviewStar')}
-              value={reviewDisplayOption('nakshatra', form.natchathiram, language)}
-            />
-            <ReviewInlinePair
-              leftLabel={translate('biodataReviewRasi')}
-              leftValue={reviewDisplayOption('rasi', form.rasi, language)}
-              rightLabel={translate('biodataReviewLagnam')}
-              rightValue={reviewDisplayOption('rasi', form.lagnam, language)}
-            />
+            {showHoroscopeFields ? (
+              <ReviewDataRow
+                label={translate('biodataReviewStar')}
+                value={reviewDisplayOption('nakshatra', form.natchathiram, language)}
+              />
+            ) : null}
+            {showHoroscopeFields ? (
+              <ReviewInlinePair
+                leftLabel={translate('biodataReviewRasi')}
+                leftValue={reviewDisplayOption('rasi', form.rasi, language)}
+                rightLabel={translate('biodataReviewLagnam')}
+                rightValue={reviewDisplayOption('rasi', form.lagnam, language)}
+              />
+            ) : null}
             <ReviewDataRow label={translate('biodataReviewOccupation')} value={occupationDisplay} />
             <ReviewDataRow
               label={translate('biodataReviewIncome')}
@@ -3578,26 +3580,28 @@ function BiodataReviewSheet({
           </View>
         </View>
 
-      <View
-        nativeID="biodata-print-horoscope-section"
-        style={[styles.horoscopeSection, dense && styles.horoscopeSectionDense, reviewStyles.horoscopeSection]}
-      >
-        <HoroscopeSection
-          form={form}
-          rasiChart={rasiChart}
-          amsamChart={amsamChart}
-          detailGrid={detailGrid}
-          onFieldChange={onFieldChange}
-          onRasiChartChange={onRasiChartChange}
-          onAmsamChartChange={onAmsamChartChange}
-          onDetailGridChange={onDetailGridChange}
-          editable={false}
-          dense={dense}
-          translate={translate}
-          language={language}
-          hideBasicInputs={true}
-        />
-      </View>
+      {showHoroscopeFields ? (
+        <View
+          nativeID="biodata-print-horoscope-section"
+          style={[styles.horoscopeSection, dense && styles.horoscopeSectionDense, reviewStyles.horoscopeSection]}
+        >
+          <HoroscopeSection
+            form={form}
+            rasiChart={rasiChart}
+            amsamChart={amsamChart}
+            detailGrid={detailGrid}
+            onFieldChange={onFieldChange}
+            onRasiChartChange={onRasiChartChange}
+            onAmsamChartChange={onAmsamChartChange}
+            onDetailGridChange={onDetailGridChange}
+            editable={false}
+            dense={dense}
+            translate={translate}
+            language={language}
+            hideBasicInputs={true}
+          />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -3903,25 +3907,24 @@ const reviewStyles = StyleSheet.create({
     borderWidth: 0,
   },
   siblingBoxWide: {
-    paddingVertical: 4,
-    paddingHorizontal: 2,
-    gap: 2,
-    flex: 1,
-    minHeight: 50,
-    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    gap: 4,
+    flexShrink: 0,
+    justifyContent: 'flex-start',
   },
   siblingBoxTitle: {
     color: colors.primary,
     fontFamily: fonts.interSemi,
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: 10,
+    lineHeight: 14,
     textAlign: 'center',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   siblingBoxTitleWide: {
-    fontSize: 8,
-    lineHeight: 11,
-    marginBottom: 2,
+    fontSize: 11,
+    lineHeight: 15,
+    marginBottom: 6,
   },
   siblingRow: {
     flexDirection: 'row',
@@ -3931,15 +3934,21 @@ const reviewStyles = StyleSheet.create({
   },
   siblingRowWide: {
     alignItems: 'flex-start',
-    minHeight: 16,
+    minHeight: 22,
     gap: 0,
+    paddingVertical: 2,
+  },
+  siblingLabelColonGroup: {
+    maxWidth: '72%',
+    flexShrink: 1,
   },
   siblingLabel: {
     color: colors.primary,
     fontFamily: fonts.inter,
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: 10,
+    lineHeight: 14,
     textAlign: 'left',
+    flexShrink: 1,
   },
   siblingBoxLabel: {
     color: colors.primary,
@@ -3956,16 +3965,20 @@ const reviewStyles = StyleSheet.create({
     textAlign: 'left',
   },
   siblingLabelWide: {
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: 10,
+    lineHeight: 14,
     fontFamily: fonts.interMedium,
   },
   siblingColon: {
     color: colors.primary,
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: 10,
+    lineHeight: 14,
     flexShrink: 0,
     marginLeft: 2,
+  },
+  siblingColonWide: {
+    fontSize: 10,
+    lineHeight: 14,
   },
   siblingValueColumn: {
     flex: 1,
@@ -3977,13 +3990,13 @@ const reviewStyles = StyleSheet.create({
   siblingValue: {
     color: colors.onSurface,
     fontFamily: fonts.interMedium,
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: 10,
+    lineHeight: 14,
     textAlign: 'left',
   },
   siblingValueWide: {
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: 10,
+    lineHeight: 14,
     textAlign: 'left',
   },
 });
@@ -4202,7 +4215,7 @@ export function CreateProfileBiodataForm({
       education: readValue('education'),
       dateOfBirth: readValue('dateOfBirth'),
       birthTiming: readValue('birthTiming'),
-      religion: readValue('religion'),
+      religion: normalizeRegistrationReligion(readValue('religion')),
       natchathiram: readValue('natchathiram'),
       rasi: readValue('rasi'),
       lagnam: readValue('lagnam'),
@@ -4759,7 +4772,6 @@ export function CreateProfileBiodataForm({
           dense={dense}
           registrationCommunity={registrationCommunity}
           religion={currentReligion}
-          isInitiallyChristian={isInitiallyChristian}
           primaryPhotoUri={reviewPhotoUri}
         />
       ) : null}
