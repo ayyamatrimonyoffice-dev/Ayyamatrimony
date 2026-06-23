@@ -19,6 +19,7 @@ import { MatchActionsProvider } from '@/context/MatchActionsContext';
 import { ProfileFormProvider } from '@/context/ProfileFormContext';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
 import { UserApprovalProvider } from '@/context/UserApprovalContext';
+import { MemberDirectoryProvider } from '@/context/MemberDirectoryContext';
 import { colors } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -59,6 +60,7 @@ export default function RootLayout() {
       <ProfileFormProvider>
         <SubscriptionProvider>
         <UserApprovalProvider>
+        <MemberDirectoryProvider>
         <ChatProvider>
         <MatchActionsProvider>
         <Stack
@@ -94,6 +96,7 @@ export default function RootLayout() {
         </Stack>
         </MatchActionsProvider>
         </ChatProvider>
+        </MemberDirectoryProvider>
         </UserApprovalProvider>
         </SubscriptionProvider>
       </ProfileFormProvider>

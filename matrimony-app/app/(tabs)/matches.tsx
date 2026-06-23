@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MatchCard } from '@/components/MatchCard';
 import { ApprovalStatusBanner } from '@/components/ApprovalStatusBanner';
+import { PendingPaymentBanner } from '@/components/PendingPaymentBanner';
 import { getMemberBiodataValues, type PublishedMember } from '@/constants/memberDirectory';
 import { resolveUserGender } from '@/constants/matchFilters';
 import { useLanguage } from '@/context/LanguageContext';
@@ -10,7 +11,7 @@ import { useProfileForm } from '@/context/ProfileFormContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useUserApproval } from '@/context/UserApprovalContext';
 import { useBrowsableMembers } from '@/hooks/useBrowsableMembers';
-import { useMemberDirectory } from '@/hooks/useMemberDirectory';
+import { useMemberDirectory } from '@/context/MemberDirectoryContext';
 import { borderRadius, colors, spacing, typography } from '@/constants/theme';
 
 function getMatchOccupation(id: string, published: PublishedMember[]): string {
@@ -58,6 +59,8 @@ export default function MatchesScreen() {
           <Text style={styles.headerTitle}>{translate('matches')}</Text>
 
           <ApprovalStatusBanner />
+
+          <PendingPaymentBanner />
         </View>
 
         <View style={styles.listContent}>

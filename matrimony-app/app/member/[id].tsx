@@ -12,7 +12,7 @@ import { getMemberBiodataValues, resolveMemberListing } from '@/constants/member
 import { colors, spacing, typography } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSubscription } from '@/context/SubscriptionContext';
-import { useMemberDirectory } from '@/hooks/useMemberDirectory';
+import { useMemberDirectory } from '@/context/MemberDirectoryContext';
 
 export default function MemberProfileScreen() {
   const router = useRouter();
@@ -26,6 +26,7 @@ export default function MemberProfileScreen() {
     profilesRemaining,
     canViewFullProfile,
     recordProfileView,
+    pendingPayment,
   } = useSubscription();
 
   const profileId = id ?? '';
@@ -101,21 +102,29 @@ export default function MemberProfileScreen() {
           <View style={styles.lockedCard}>
             <MaterialIcons name="lock" size={28} color={colors.primary} />
             <Text style={styles.lockedTitle}>{translate('detailsLocked')}</Text>
+            <View style={styles.previewRows}>
+              <Text style={styles.previewText}>{member.age}</Text>
+              <Text style={styles.previewText}>{member.community}</Text>
+            </View>
             <Text style={styles.lockedBody}>
-              {isPaidMember && profilesRemaining <= 0
-                ? translate('profileLimitReached')
-                : translate('unpaidAccessNote')}
+              {pendingPayment
+                ? translate('paymentPendingReviewMessage')
+                : isPaidMember && profilesRemaining <= 0
+                  ? translate('profileLimitReached')
+                  : translate('unpaidAccessNote')}
             </Text>
-            <PrimaryButton
-              label={translate('payRupee2000')}
-              onPress={() =>
-                router.push({
-                  pathname: '/payment-access',
-                  params: { reason: isPaidMember && profilesRemaining <= 0 ? 'batch' : 'initial' },
-                })
-              }
-            />
-            {!isPaidMember ? (
+            {!pendingPayment ? (
+              <PrimaryButton
+                label={translate('payRupee2000')}
+                onPress={() =>
+                  router.push({
+                    pathname: '/payment-access',
+                    params: { reason: isPaidMember && profilesRemaining <= 0 ? 'batch' : 'initial' },
+                  })
+                }
+              />
+            ) : null}
+            {!isPaidMember && !pendingPayment ? (
               <Pressable style={styles.backHint} onPress={() => router.back()}>
                 <Text style={styles.backHintText}>{translate('cancel')}</Text>
               </Pressable>
@@ -188,6 +197,14 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     textAlign: 'center',
     lineHeight: 22,
+  },
+  previewRows: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  previewText: {
+    ...typography.bodyMd,
+    color: colors.onSurface,
   },
   backHint: {
     paddingTop: spacing.xs,

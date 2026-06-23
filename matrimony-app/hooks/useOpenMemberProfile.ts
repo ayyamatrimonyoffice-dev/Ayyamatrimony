@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { useUserApproval } from '@/context/UserApprovalContext';
 
 export function useOpenMemberProfile() {
   const router = useRouter();
@@ -11,6 +12,7 @@ export function useOpenMemberProfile() {
     isReady,
     recordProfileView,
   } = useSubscription();
+  const { canBrowseProfiles } = useUserApproval();
 
   const openPayment = useCallback(
     (reason: 'initial' | 'batch') => {
@@ -24,16 +26,11 @@ export function useOpenMemberProfile() {
 
   return useCallback(
     (profileId: string) => {
-      if (!isReady) {
+      if (!isReady || !canBrowseProfiles) {
         return;
       }
 
-      if (!isPaidMember) {
-        openPayment('initial');
-        return;
-      }
-
-      if (!canOpenNewFullProfile(profileId)) {
+      if (isPaidMember && !canOpenNewFullProfile(profileId)) {
         openPayment('batch');
         return;
       }
@@ -45,6 +42,7 @@ export function useOpenMemberProfile() {
       router.push({ pathname: '/member/[id]', params: { id: profileId } });
     },
     [
+      canBrowseProfiles,
       canOpenNewFullProfile,
       canViewFullProfile,
       isPaidMember,

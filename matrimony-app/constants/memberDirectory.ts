@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { MemberProfile, getMemberProfileById, images } from '@/constants/images';
+import { MemberProfile, getMemberProfileById } from '@/constants/images';
+import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import { getMockMemberBiodata } from '@/constants/memberBiodata';
 import { filterByRecommendedGender, resolveUserGender, type MatchGender } from '@/constants/matchFilters';
 import { parseProfilePhotos, PROFILE_PHOTOS_KEY, isRemotePhotoUri, serializeProfilePhotos } from '@/constants/profilePhotos';
@@ -10,6 +11,7 @@ import {
   publishedMemberFromProfileDoc,
   upsertProfileFromValues,
 } from '@/lib/firestore/profileService';
+import { upsertSubscription } from '@/lib/firestore/subscriptionService';
 
 const MEMBER_DIRECTORY_KEY = 'member_directory';
 
@@ -195,6 +197,11 @@ export async function publishProfileFromValues(
 
   await AsyncStorage.setItem('user_profile', JSON.stringify(syncedBiodata));
 
+  const phone = biodata[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+  if (phone && !ownerKey.startsWith('admin-')) {
+    await upsertSubscription(phone, { accessMode: 'unpaid', batchesPaid: 0 }).catch(() => undefined);
+  }
+
   return { ...member, biodata: syncedBiodata, ownerKey };
 }
 
@@ -231,14 +238,9 @@ export function getAllBrowsableMembers(
   published: PublishedMember[],
   excludeOwnerKey = 'current-user',
 ): MemberProfile[] {
-  const publishedMembers = published
+  return published
     .filter((entry) => entry.ownerKey !== excludeOwnerKey)
     .map(({ biodata: _biodata, ownerKey: _ownerKey, ...member }) => member);
-
-  const publishedIds = new Set(publishedMembers.map((member) => member.id));
-  const staticMembers = images.matches.filter((member) => !publishedIds.has(member.id));
-
-  return [...staticMembers, ...publishedMembers];
 }
 
 export function getMemberRegistrationCommunity(

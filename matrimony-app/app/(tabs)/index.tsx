@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApprovalStatusBanner } from '@/components/ApprovalStatusBanner';
+import { PendingPaymentBanner } from '@/components/PendingPaymentBanner';
 import { ProtectedProfileImage } from '@/components/ProtectedProfileImage';
 import { UpgradePrimeBanner } from '@/components/UpgradePrimeBanner';
 import { ProfileQuickActionsRow } from '@/components/ProfileQuickActionsRow';
@@ -117,6 +118,8 @@ export default function HomeScreen() {
           <ProfileQuickActionsRow />
 
           <ApprovalStatusBanner />
+
+          <PendingPaymentBanner />
 
         </View>
 

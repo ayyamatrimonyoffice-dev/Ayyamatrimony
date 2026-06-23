@@ -4,7 +4,7 @@ import { resolveUserGender } from '@/constants/matchFilters';
 import { useProfileForm } from '@/context/ProfileFormContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useUserApproval } from '@/context/UserApprovalContext';
-import { useMemberDirectory } from '@/hooks/useMemberDirectory';
+import { useMemberDirectory } from '@/context/MemberDirectoryContext';
 
 export function useBrowsableMembers() {
   const { published } = useMemberDirectory();

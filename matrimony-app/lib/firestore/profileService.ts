@@ -117,11 +117,18 @@ function profileDocFromValues(
 }
 
 export function publishedMemberFromProfileDoc(docData: FirestoreProfileDoc): PublishedMember {
+  const approvedImage = docData.approvedPhotoUrls?.find((url) => Boolean(url?.trim())) ?? '';
+  const image =
+    approvedImage ||
+    (docData.registrationSource === 'admin'
+      ? docData.primaryPhotoUrl || docData.listing.image
+      : '');
+
   return {
     ...docData.listing,
     biodata: docData.biodata,
     ownerKey: docData.ownerKey,
-    image: docData.primaryPhotoUrl || docData.listing.image,
+    image,
     interestStatus: 'none',
     phoneNumber: docData.phone,
   };

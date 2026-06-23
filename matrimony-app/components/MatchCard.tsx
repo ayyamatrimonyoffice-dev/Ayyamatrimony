@@ -2,6 +2,7 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { ProtectedProfileImage } from '@/components/ProtectedProfileImage';
+import { getLimitedMemberPreview } from '@/constants/memberAccess';
 import { useLanguage } from '@/context/LanguageContext';
 import { useMatchActions } from '@/context/MatchActionsContext';
 import { useSubscription } from '@/context/SubscriptionContext';
@@ -40,6 +41,9 @@ export function MatchCard({
 
   const interestSent = hasSentInterest(id);
   const profileLocked = !canViewFullProfile(id);
+  const display = profileLocked
+    ? getLimitedMemberPreview({ name, age, community, location, image })
+    : { name, age, community, location, image, occupation, verified };
 
   const handleViewProfile = () => {
     openProfile(id);
@@ -79,7 +83,7 @@ export function MatchCard({
       <View style={styles.row}>
         <Pressable style={styles.photoWrap} onPress={handleViewProfile}>
           <ProtectedProfileImage
-            imageUri={image}
+            imageUri={display.image}
             locked={profileLocked}
             style={styles.photoWrap}
             imageStyle={styles.image}
@@ -96,15 +100,15 @@ export function MatchCard({
           <View style={styles.titleRow}>
             <View style={styles.nameRow}>
               <Text style={styles.name} numberOfLines={1}>
-                {name}
+                {display.name}
               </Text>
-              {verified ? (
+              {display.verified ? (
                 <View style={styles.verifiedIconWrap}>
                   <MaterialIcons name="verified" size={14} color={colors.gold} />
                 </View>
               ) : null}
             </View>
-            {verified ? (
+            {display.verified ? (
               <View style={styles.verifiedPill}>
                 <MaterialIcons name="verified-user" size={12} color={colors.primary} />
                 <Text style={styles.verifiedPillText}>{translate('verified')}</Text>
@@ -112,10 +116,10 @@ export function MatchCard({
             ) : null}
           </View>
 
-          <InfoRow icon="person-outline" text={age} />
-          <InfoRow icon="work-outline" text={occupation} />
-          <InfoRow icon="location-on" text={location} />
-          <InfoRow icon="groups" text={community} />
+          <InfoRow icon="person-outline" text={display.age} />
+          <InfoRow icon="work-outline" text={display.occupation ?? occupation} />
+          <InfoRow icon="location-on" text={display.location} />
+          <InfoRow icon="groups" text={display.community} />
 
           <View style={styles.actions}>
             <Pressable style={styles.outlineBtn} onPress={handleViewProfile}>

@@ -8,23 +8,33 @@ import { useProfileForm } from '@/context/ProfileFormContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useUserApproval } from '@/context/UserApprovalContext';
 import { hasCompletedProfile } from '@/constants/profileCompletion';
+import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
+import { useMemberDirectory } from '@/context/MemberDirectoryContext';
 import { images } from '@/constants/images';
 import { colors, typography } from '@/constants/theme';
 
 export default function TabLayout() {
   const router = useRouter();
   const { translate } = useLanguage();
-  const { isReady, isLoggedIn, needsPaymentAccess } = useSubscription();
+  const { isReady, isLoggedIn, needsPaymentAccess, syncFromFirestore } = useSubscription();
   const { values, isReady: profileReady } = useProfileForm();
   const { refresh: refreshApproval } = useUserApproval();
+  const { refresh: refreshDirectory } = useMemberDirectory();
   const sentToRegistration = useRef(false);
+  const phone = values[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
 
   useFocusEffect(
     useCallback(() => {
-      if (isLoggedIn) {
-        void refreshApproval();
+      if (!isLoggedIn) {
+        return;
       }
-    }, [isLoggedIn, refreshApproval]),
+
+      void refreshApproval();
+      void refreshDirectory();
+      if (phone) {
+        void syncFromFirestore(phone);
+      }
+    }, [isLoggedIn, phone, refreshApproval, refreshDirectory, syncFromFirestore]),
   );
 
   const profileComplete = hasCompletedProfile(values);

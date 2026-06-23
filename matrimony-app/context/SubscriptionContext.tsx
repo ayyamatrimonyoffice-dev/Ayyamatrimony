@@ -19,7 +19,7 @@ import {
 import { hasCompletedProfile } from '@/constants/profileCompletion';
 import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import { fetchLatestPaymentStatus, submitPaymentRequest } from '@/lib/firestore/paymentService';
-import { fetchSubscription, syncSubscriptionViewedProfiles } from '@/lib/firestore/subscriptionService';
+import { fetchSubscription, syncSubscriptionViewedProfiles, upsertSubscription } from '@/lib/firestore/subscriptionService';
 
 const PROFILE_STORAGE_KEY = 'user_profile';
 
@@ -157,24 +157,29 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
       setPendingPayment(paymentStatus === 'pending');
 
-      if (!remoteSubscription) {
+      const subscription =
+        remoteSubscription ??
+        (paymentStatus === 'verified' ? await fetchSubscription(digits) : null);
+
+      if (!subscription) {
         return;
       }
 
       updateState((current) => ({
         ...current,
-        accessMode: remoteSubscription.accessMode,
-        batchesPaid: remoteSubscription.batchesPaid,
-        viewedProfileIds: remoteSubscription.viewedProfileIds,
-        hiddenProfileIds: remoteSubscription.hiddenProfileIds ?? [],
+        accessMode: subscription.accessMode,
+        batchesPaid: subscription.batchesPaid,
+        viewedProfileIds: subscription.viewedProfileIds,
+        hiddenProfileIds: subscription.hiddenProfileIds ?? [],
         hasChosenAccessMode:
-          remoteSubscription.accessMode === 'paid' && remoteSubscription.batchesPaid > 0
+          subscription.accessMode === 'paid' && subscription.batchesPaid > 0
             ? true
             : current.hasChosenAccessMode,
         isLoggedIn: true,
       }));
 
-      if (remoteSubscription.accessMode === 'paid' && remoteSubscription.batchesPaid > 0) {
+      if (subscription.accessMode === 'paid' && subscription.batchesPaid > 0) {
+        setPendingPayment(false);
         setMembershipViewMode('prime');
       }
     },
@@ -343,6 +348,21 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         accessMode: 'unpaid',
       };
     });
+
+    const profileRaw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+    if (!profileRaw) {
+      return;
+    }
+
+    try {
+      const profileValues = JSON.parse(profileRaw) as Record<string, string>;
+      const phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+      if (phone) {
+        await upsertSubscription(phone, { accessMode: 'unpaid' }).catch(() => undefined);
+      }
+    } catch {
+      // ignore malformed profile cache
+    }
   }, [updateState]);
 
   const resetPaymentGate = useCallback(async () => {

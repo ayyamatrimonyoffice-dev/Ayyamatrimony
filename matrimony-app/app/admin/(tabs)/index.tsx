@@ -11,7 +11,7 @@ import { adminColors } from '@/constants/admin';
 import { useAdminApprovals } from '@/context/AdminApprovalsContext';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { useAdminNotifications } from '@/context/AdminNotificationsContext';
-import { useMemberDirectory } from '@/hooks/useMemberDirectory';
+import { useMemberDirectory } from '@/context/MemberDirectoryContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { adminStatusLabelKey } from '@/constants/adminLabels';
 import { listAdminUsers } from '@/lib/firestore/adminUserService';

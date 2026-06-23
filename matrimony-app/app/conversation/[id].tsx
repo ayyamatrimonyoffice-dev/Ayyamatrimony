@@ -18,7 +18,7 @@ import { getDefaultChatSeed, useChat } from '@/context/ChatContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useOpenMemberProfile } from '@/hooks/useOpenMemberProfile';
-import { useMemberDirectory } from '@/hooks/useMemberDirectory';
+import { useMemberDirectory } from '@/context/MemberDirectoryContext';
 import { colors, fonts, spacing, typography } from '@/constants/theme';
 
 function readParam(value: string | string[] | undefined): string {
