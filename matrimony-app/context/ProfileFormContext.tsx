@@ -2,9 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import {
+  isLocalPhotoUri,
+  mergeDraftProfilePhotos,
   parseProfilePhotos,
+  PROFILE_PHOTOS_DRAFT_KEY,
   PROFILE_PHOTOS_KEY,
   serializePersistedProfilePhotos,
+  serializeProfilePhotos,
 } from '@/constants/profilePhotos';
 import { hydrateLocalProfileFromFirestore, upsertProfileFromValues } from '@/lib/firestore/profileService';
 
@@ -76,11 +80,21 @@ export function ProfileFormProvider({ children }: { children: ReactNode }) {
   const setValue = useCallback(
     (key: string, nextValue: string) => {
       setValues((current) => {
-        const storedValue =
-          key === PROFILE_PHOTOS_KEY
-            ? serializePersistedProfilePhotos(parseProfilePhotos(nextValue))
-            : nextValue;
-        const next = { ...current, [key]: storedValue };
+        let next = { ...current, [key]: nextValue };
+
+        if (key === PROFILE_PHOTOS_KEY) {
+          const parsed = parseProfilePhotos(nextValue);
+          next = {
+            ...current,
+            [PROFILE_PHOTOS_KEY]: serializePersistedProfilePhotos(parsed),
+          };
+          if (parsed.some(isLocalPhotoUri)) {
+            next[PROFILE_PHOTOS_DRAFT_KEY] = serializeProfilePhotos(parsed);
+          } else if (!parsed.some((photo) => photo.length > 0)) {
+            next[PROFILE_PHOTOS_DRAFT_KEY] = '';
+          }
+        }
+
         void persistValues(next).catch(() => undefined);
         return next;
       });
@@ -110,7 +124,16 @@ export function ProfileFormProvider({ children }: { children: ReactNode }) {
       values,
       isReady,
       setValue,
-      getValue: (key: string) => values[key] ?? '',
+      getValue: (key: string) => {
+        if (key === PROFILE_PHOTOS_KEY) {
+          const merged = mergeDraftProfilePhotos(
+            values[PROFILE_PHOTOS_DRAFT_KEY] ?? '',
+            values[PROFILE_PHOTOS_KEY] ?? '',
+          );
+          return serializeProfilePhotos(merged);
+        }
+        return values[key] ?? '';
+      },
       replaceValues,
       syncProfileToFirestore,
       clearProfile,

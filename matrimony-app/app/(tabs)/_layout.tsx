@@ -3,6 +3,7 @@ import { ActivityIndicator, Image, Platform, View } from 'react-native';
 import { Redirect, Tabs, useFocusEffect, useRouter, type Href } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { LoginLandingScreen } from '@/components/LoginLandingScreen';
+import { TabBarLabel } from '@/components/TabBarLabel';
 import { useLanguage } from '@/context/LanguageContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
 import { useSubscription } from '@/context/SubscriptionContext';
@@ -89,9 +90,9 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: 'rgba(255, 251, 249, 0.98)',
           borderTopColor: 'rgba(87, 0, 0, 0.08)',
-          height: 76,
-          paddingBottom: 14,
-          paddingTop: 10,
+          height: 84,
+          paddingBottom: 10,
+          paddingTop: 8,
           ...Platform.select({
             web: { boxShadow: '0 -4px 16px rgba(87, 0, 0, 0.06)' },
             default: {
@@ -105,14 +106,20 @@ export default function TabLayout() {
         },
         tabBarLabelStyle: {
           ...typography.labelSm,
-          fontSize: 11,
+          fontSize: 10,
+        },
+        tabBarLabel: ({ color, children }) => (
+          <TabBarLabel color={color}>{String(children)}</TabBarLabel>
+        ),
+        tabBarItemStyle: {
+          paddingVertical: 2,
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: translate('home'),
+          title: translate('homeTab'),
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="home" size={size} color={color} />
           ),
@@ -121,7 +128,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="matches"
         options={{
-          title: translate('matches'),
+          title: translate('matchesTab'),
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="favorite" size={size} color={color} />
           ),
@@ -130,7 +137,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="interests"
         options={{
-          title: translate('interests'),
+          title: translate('interestsTab'),
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="star" size={size} color={color} />
           ),
@@ -139,7 +146,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="chat"
         options={{
-          title: translate('chat'),
+          title: translate('chatTab'),
           tabBarIcon: ({ color, size }) => (
             <MaterialIcons name="chat" size={size} color={color} />
           ),
@@ -148,7 +155,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: translate('profile'),
+          title: translate('profileTab'),
           tabBarIcon: ({ focused }) => (
             <Image
               source={images.logo}

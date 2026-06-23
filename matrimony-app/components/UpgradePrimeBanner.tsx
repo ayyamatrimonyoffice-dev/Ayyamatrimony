@@ -14,7 +14,8 @@ const BENEFIT_KEYS: TranslationKey[] = [
 
 export function UpgradePrimeBanner() {
   const router = useRouter();
-  const { translate } = useLanguage();
+  const { translate, language } = useLanguage();
+  const isTamil = language === 'ta';
 
   const goUpgrade = () => router.push('/upgrade');
 
@@ -27,7 +28,7 @@ export function UpgradePrimeBanner() {
         colors={['#800000', colors.primary]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0.5 }}
-        style={styles.banner}
+        style={[styles.banner, isTamil && styles.bannerTamil]}
       >
         <View style={styles.decorPattern} pointerEvents="none">
           {Array.from({ length: 16 }, (_, index) => (
@@ -56,19 +57,23 @@ export function UpgradePrimeBanner() {
           {BENEFIT_KEYS.map((key) => (
             <View key={key} style={styles.benefitRow}>
               <MaterialIcons name="check" size={12} color="#fff" />
-              <Text style={styles.benefitText}>{translate(key)}</Text>
+              <Text style={[styles.benefitText, isTamil && styles.benefitTextTamil]} numberOfLines={2}>
+                {translate(key)}
+              </Text>
             </View>
           ))}
         </View>
 
-        <Pressable onPress={goUpgrade} style={styles.ctaPressable}>
+        <Pressable onPress={goUpgrade} style={[styles.ctaPressable, isTamil && styles.ctaPressableTamil]}>
           <LinearGradient
             colors={['#FFE088', '#D4AF37']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.ctaButton}
           >
-            <Text style={styles.ctaText}>{translate('upgradeNow')}</Text>
+            <Text style={[styles.ctaText, isTamil && styles.ctaTextTamil]} numberOfLines={1}>
+              {translate('upgradeNow')}
+            </Text>
             <MaterialIcons name="chevron-right" size={16} color={colors.primary} />
           </LinearGradient>
         </Pressable>
@@ -93,6 +98,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     overflow: 'hidden',
     minHeight: 88,
+  },
+  bannerTamil: {
+    minHeight: 96,
+    paddingVertical: spacing.sm,
   },
   decorPattern: {
     ...StyleSheet.absoluteFillObject,
@@ -142,10 +151,19 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.92)',
     fontSize: 10,
     lineHeight: 14,
+    flex: 1,
     flexShrink: 1,
+  },
+  benefitTextTamil: {
+    fontSize: 9,
+    lineHeight: 12,
   },
   ctaPressable: {
     flexShrink: 0,
+    alignSelf: 'center',
+  },
+  ctaPressableTamil: {
+    maxWidth: 96,
   },
   ctaButton: {
     flexDirection: 'row',
@@ -161,5 +179,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.interSemi,
     fontSize: 11,
     letterSpacing: 0.2,
+  },
+  ctaTextTamil: {
+    fontSize: 10,
+    letterSpacing: 0,
   },
 });

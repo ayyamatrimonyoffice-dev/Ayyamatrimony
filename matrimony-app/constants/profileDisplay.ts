@@ -2,7 +2,12 @@ import { ImageSourcePropType } from 'react-native';
 import { getOptionLabel } from '@/constants/formOptions';
 import { Language } from '@/constants/i18n';
 import { images } from '@/constants/images';
-import { parseProfilePhotos, PROFILE_PHOTOS_KEY, isRemotePhotoUri } from '@/constants/profilePhotos';
+import {
+  isRemotePhotoUri,
+  mergeDraftProfilePhotos,
+  PROFILE_PHOTOS_DRAFT_KEY,
+  PROFILE_PHOTOS_KEY,
+} from '@/constants/profilePhotos';
 
 export function getProfileFirstName(fullName: string): string {
   const trimmed = fullName.trim();
@@ -19,7 +24,10 @@ export function getProfileAvatarUri(values: Record<string, string>): string {
     return remote;
   }
 
-  const photos = parseProfilePhotos(values[PROFILE_PHOTOS_KEY] ?? '');
+  const photos = mergeDraftProfilePhotos(
+    values[PROFILE_PHOTOS_DRAFT_KEY] ?? '',
+    values[PROFILE_PHOTOS_KEY] ?? '',
+  );
   return photos.find((photo) => photo.length > 0) ?? '';
 }
 

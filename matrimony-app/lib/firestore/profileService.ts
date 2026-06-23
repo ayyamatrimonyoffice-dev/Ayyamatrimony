@@ -20,7 +20,19 @@ import {
 } from '@/lib/firestore/collections';
 import { uploadProfilePhotos } from '@/lib/firestore/storageService';
 import { submitPhotoForApproval } from '@/lib/firestore/photoApprovalService';
-import { parseProfilePhotos, PROFILE_PHOTOS_KEY, serializeProfilePhotos, biodataForFirestore, isRemotePhotoUri, isLocalPhotoUri, mergeUploadedPhotos, serializeRemotePhotoUrls, MAX_PROFILE_PHOTOS } from '@/constants/profilePhotos';
+import {
+  biodataForFirestore,
+  isLocalPhotoUri,
+  isRemotePhotoUri,
+  MAX_PROFILE_PHOTOS,
+  mergeDraftProfilePhotos,
+  mergeUploadedPhotos,
+  parseProfilePhotos,
+  PROFILE_PHOTOS_DRAFT_KEY,
+  PROFILE_PHOTOS_KEY,
+  serializeProfilePhotos,
+  serializeRemotePhotoUrls,
+} from '@/constants/profilePhotos';
 
 function listingIdFromValues(values: Record<string, string>): string {
   const registration = values.registrationNumber?.trim();
@@ -162,7 +174,10 @@ export async function upsertProfileFromValues(
 
   let nextValues = { ...values };
   if (options.uploadPhotos !== false) {
-    const localPhotos = parseProfilePhotos(values[PROFILE_PHOTOS_KEY] ?? '');
+    const localPhotos = mergeDraftProfilePhotos(
+      values[PROFILE_PHOTOS_DRAFT_KEY] ?? '',
+      values[PROFILE_PHOTOS_KEY] ?? '',
+    );
     const needsUpload = localPhotos.some((uri) => isLocalPhotoUri(uri));
     if (needsUpload) {
       try {
@@ -172,6 +187,7 @@ export async function upsertProfileFromValues(
           ...nextValues,
           profilePhotoUrls: serializeRemotePhotoUrls(merged),
           [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(merged),
+          [PROFILE_PHOTOS_DRAFT_KEY]: '',
         };
 
         await Promise.all(

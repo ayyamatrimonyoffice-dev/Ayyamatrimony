@@ -1,4 +1,6 @@
 export const PROFILE_PHOTOS_KEY = 'profilePhotos';
+/** Local file/content URIs during biodata draft — survives Android activity restarts. */
+export const PROFILE_PHOTOS_DRAFT_KEY = 'profilePhotosDraft';
 export const BIODATA_SHOW_PHOTO_KEY = 'biodataShowPhoto';
 export const PHOTO_SKIP_KEY = 'photoSkipped';
 
@@ -28,6 +30,16 @@ export function photosForPersistence(photos: string[]): string[] {
 
 export function serializePersistedProfilePhotos(photos: string[]): string {
   return serializeProfilePhotos(photosForPersistence(photos));
+}
+
+/** Prefer in-progress local draft URIs over persisted remote-only slots. */
+export function mergeDraftProfilePhotos(draftRaw: string, persistedRaw: string): string[] {
+  const draftPhotos = parseProfilePhotos(draftRaw);
+  const storedPhotos = parseProfilePhotos(persistedRaw);
+  if (draftPhotos.some((photo) => photo.length > 0)) {
+    return draftPhotos;
+  }
+  return storedPhotos;
 }
 
 export function parseProfilePhotos(raw: string): string[] {

@@ -100,7 +100,11 @@ export function AdminMatrimonyProfileView({
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+      >
         <View style={styles.photoSection}>
           <View style={styles.imageWrap}>
             {displayPhoto ? (
@@ -222,7 +226,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   scroll: {
-    paddingBottom: 32,
+    paddingBottom: 48,
     gap: 12,
   },
   photoSection: {
@@ -311,9 +315,8 @@ const styles = StyleSheet.create({
   },
   formWrap: {
     marginHorizontal: 16,
-    minHeight: 480,
     borderRadius: 12,
-    overflow: 'hidden',
+    overflow: 'visible',
     backgroundColor: '#F3F7FC',
   },
   loader: {

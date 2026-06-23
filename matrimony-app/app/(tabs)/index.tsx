@@ -33,7 +33,7 @@ type HomeMatch = ReturnType<typeof useBrowsableMembers>[number];
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { translate, translateFormat, toggleLanguage } = useLanguage();
+  const { translate, translateFormat, toggleLanguage, language } = useLanguage();
   const { values } = useProfileForm();
   const { isPaidMember, isPrimeViewActive, membershipViewMode, setMembershipViewMode, profilesAllowed, canViewFullProfile } =
     useSubscription();
@@ -72,10 +72,20 @@ export default function HomeScreen() {
               </View>
 
               <View style={styles.greetingWrap}>
-                <Text style={styles.greetingHello} numberOfLines={1} ellipsizeMode="tail">
+                <Text
+                  style={[styles.greetingHello, language === 'ta' && styles.greetingHelloTamil]}
+                  numberOfLines={2}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.85}
+                >
                   {translateFormat('helloName', { name: profileName })}
                 </Text>
-                <Text style={styles.greetingSubtitle}>{translate('welcomeBackHome')}</Text>
+                <Text
+                  style={[styles.greetingSubtitle, language === 'ta' && styles.greetingSubtitleTamil]}
+                  numberOfLines={2}
+                >
+                  {translate('welcomeBackHome')}
+                </Text>
               </View>
             </Pressable>
 
@@ -355,11 +365,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
   },
+  greetingHelloTamil: {
+    fontSize: 14,
+    lineHeight: 18,
+  },
   greetingSubtitle: {
     ...typography.bodyMd,
     color: colors.onSurfaceVariant,
     fontSize: 12,
     lineHeight: 16,
+  },
+  greetingSubtitleTamil: {
+    fontSize: 11,
+    lineHeight: 14,
   },
   primeBadge: {
     flexDirection: 'row',

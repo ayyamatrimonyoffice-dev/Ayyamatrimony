@@ -38,6 +38,8 @@ type ProfilePhotoUploadStepProps = {
   showSkip?: boolean;
   compact?: boolean;
   layoutWidth?: number;
+  /** Skip native crop UI — avoids Android activity remount during biodata entry. */
+  skipNativeEditing?: boolean;
 };
 
 async function ensurePermission(source: 'camera' | 'library'): Promise<boolean> {
@@ -101,8 +103,8 @@ function cropToAspectRatio(
   return outputCanvas.toDataURL('image/jpeg', 0.85);
 }
 
-async function compressWebImage(uri: string, maxWidth = 1200): Promise<string> {
-  if (Platform.OS !== 'web' || !uri.startsWith('data:')) {
+async function normalizeWebImageUri(uri: string, maxWidth = 1200): Promise<string> {
+  if (Platform.OS !== 'web' || !uri.trim()) {
     return uri;
   }
 
@@ -110,8 +112,8 @@ async function compressWebImage(uri: string, maxWidth = 1200): Promise<string> {
     const image = new window.Image();
     image.onload = () => {
       const scale = Math.min(1, maxWidth / image.width);
-      const width = Math.round(image.width * scale);
-      const height = Math.round(image.height * scale);
+      const width = Math.max(1, Math.round(image.width * scale));
+      const height = Math.max(1, Math.round(image.height * scale));
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
@@ -284,6 +286,7 @@ export function ProfilePhotoUploadStep({
   showSkip = true,
   compact = false,
   layoutWidth,
+  skipNativeEditing = false,
 }: ProfilePhotoUploadStepProps) {
   const { width: windowWidth } = useWindowDimensions();
   const baseWidth = layoutWidth ?? windowWidth;
@@ -314,7 +317,7 @@ export function ProfilePhotoUploadStep({
 
       const pickerOptions: ImagePicker.ImagePickerOptions = {
         mediaTypes: ['images'],
-        allowsEditing: Platform.OS !== 'web',
+        allowsEditing: Platform.OS === 'web' ? false : !skipNativeEditing,
         aspect: [3, 4],
         quality: 0.85,
       };
@@ -331,7 +334,7 @@ export function ProfilePhotoUploadStep({
 
         const uri =
           Platform.OS === 'web'
-            ? await compressWebImage(result.assets[0].uri)
+            ? await normalizeWebImageUri(result.assets[0].uri)
             : result.assets[0].uri;
         applyPhotoToSlot(slotIndex, uri);
       } catch {
@@ -574,13 +577,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.primary,
+    position: 'relative',
   },
   filledSlotCompact: {
     borderRadius: 8,
   },
   photo: {
-    width: '100%',
-    height: '100%',
+    ...StyleSheet.absoluteFillObject,
   },
   removeButton: {
     position: 'absolute',

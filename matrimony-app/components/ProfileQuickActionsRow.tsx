@@ -1,12 +1,16 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLanguage } from '@/context/LanguageContext';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { colors, spacing, typography } from '@/constants/theme';
 
 export function ProfileQuickActionsRow() {
   const router = useRouter();
-  const { translate } = useLanguage();
+  const { translate, language } = useLanguage();
+  const { quickActionCardWidth } = useResponsiveLayout();
+  const isTamil = language === 'ta';
+  const cardWidth = Math.max(quickActionCardWidth, isTamil ? 112 : 100);
 
   const actions = [
     {
@@ -25,14 +29,6 @@ export function ProfileQuickActionsRow() {
       accent: '#1565C0',
       route: '/view-profile' as Href,
     },
-    {
-      key: 'add-profile',
-      label: translate('addProfile'),
-      icon: 'person-add' as const,
-      tint: '#E8F5E9',
-      accent: '#2E7D32',
-      route: '/add-profile' as Href,
-    },
   ];
 
   return (
@@ -44,13 +40,20 @@ export function ProfileQuickActionsRow() {
       {actions.map((action) => (
         <Pressable
           key={action.key}
-          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          style={({ pressed }) => [styles.card, { width: cardWidth }, pressed && styles.cardPressed]}
           onPress={() => router.push(action.route)}
         >
           <View style={[styles.iconWrap, { backgroundColor: action.tint }]}>
             <MaterialIcons name={action.icon} size={24} color={action.accent} />
           </View>
-          <Text style={styles.label}>{action.label}</Text>
+          <Text
+            style={[styles.label, isTamil && styles.labelTamil]}
+            numberOfLines={3}
+            adjustsFontSizeToFit
+            minimumFontScale={0.85}
+          >
+            {action.label}
+          </Text>
         </Pressable>
       ))}
     </ScrollView>
@@ -63,7 +66,6 @@ const styles = StyleSheet.create({
     paddingRight: spacing.containerMargin,
   },
   card: {
-    width: 108,
     alignItems: 'center',
     gap: spacing.xs,
   },
@@ -83,5 +85,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11,
     lineHeight: 14,
+    minHeight: 28,
+    ...Platform.select({
+      android: { includeFontPadding: false },
+      default: {},
+    }),
+  },
+  labelTamil: {
+    fontSize: 10,
+    lineHeight: 13,
+    minHeight: 36,
   },
 });

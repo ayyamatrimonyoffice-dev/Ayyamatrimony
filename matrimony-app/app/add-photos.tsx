@@ -9,9 +9,12 @@ import {
   ProfilePhotoUploadStep,
 } from '@/components/ProfilePhotoUploadStep';
 import {
+  isLocalPhotoUri,
+  mergeDraftProfilePhotos,
   mergeUploadedPhotos,
   parseProfilePhotos,
   PHOTO_SKIP_KEY,
+  PROFILE_PHOTOS_DRAFT_KEY,
   PROFILE_PHOTOS_KEY,
   serializeProfilePhotos,
   serializeRemotePhotoUrls,
@@ -19,12 +22,19 @@ import {
 import { colors, spacing, typography } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
-import { uploadProfilePhotos } from '@/lib/firestore/storageService';
+import {
+  shouldAttemptCloudPhotoUpload,
+  uploadProfilePhotos,
+} from '@/lib/firestore/storageService';
 import { upsertProfileFromValues } from '@/lib/firestore/profileService';
 import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import { hasCompletedProfile } from '@/constants/profileCompletion';
 
 const PROFILE_STORAGE_KEY = 'user_profile';
+
+function hasSavedLocalPhotos(photos: string[]): boolean {
+  return photos.some((photo) => photo.trim().length > 0);
+}
 
 export default function AddPhotosScreen() {
   const router = useRouter();
@@ -34,6 +44,7 @@ export default function AddPhotosScreen() {
   const [skipped, setSkipped] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [uploadNotice, setUploadNotice] = useState('');
   const hydratedRef = useRef(false);
   const uploadVersionRef = useRef(0);
 
@@ -43,20 +54,46 @@ export default function AddPhotosScreen() {
     }
 
     hydratedRef.current = true;
-    setPhotos(parseProfilePhotos(getValue(PROFILE_PHOTOS_KEY)));
+    setPhotos(
+      mergeDraftProfilePhotos(
+        getValue(PROFILE_PHOTOS_DRAFT_KEY),
+        getValue(PROFILE_PHOTOS_KEY),
+      ),
+    );
     setSkipped(getValue(PHOTO_SKIP_KEY) === 'true');
   }, [getValue, isReady]);
 
   const handlePhotosChange = useCallback(
     (nextPhotos: string[]) => {
+      const serialized = serializeProfilePhotos(nextPhotos);
       setPhotos(nextPhotos);
       setSkipped(false);
       setUploadError('');
+      setUploadNotice('');
       setValue(PHOTO_SKIP_KEY, 'false');
-      setValue(PROFILE_PHOTOS_KEY, serializeProfilePhotos(nextPhotos));
+      setValue(PROFILE_PHOTOS_DRAFT_KEY, serialized);
+      setValue(PROFILE_PHOTOS_KEY, serialized);
+
+      if (!hasSavedLocalPhotos(nextPhotos)) {
+        setUploading(false);
+        return;
+      }
+
+      const hasLocalPhoto = nextPhotos.some(isLocalPhotoUri);
+      if (!hasLocalPhoto) {
+        setUploadNotice(translate('photoAdded'));
+        setUploading(false);
+        return;
+      }
 
       const phone = getValue(CONTACT_PHONE_KEY).replace(/\D/g, '');
       if (!phone) {
+        setUploadNotice(translate('photoSavedLocally'));
+        return;
+      }
+
+      if (!shouldAttemptCloudPhotoUpload()) {
+        setUploadNotice(translate('photoSavedLocally'));
         return;
       }
 
@@ -65,20 +102,52 @@ export default function AddPhotosScreen() {
       setUploading(true);
 
       void (async () => {
+        let mergedPhotos = nextPhotos;
+        let mergedSerialized = serialized;
+        let remoteUrls = '';
+        let cloudUploadSucceeded = false;
+
         try {
           const uploaded = await uploadProfilePhotos(phone, nextPhotos);
           if (uploadVersionRef.current !== uploadVersion) {
             return;
           }
 
-          const mergedPhotos = mergeUploadedPhotos(nextPhotos, uploaded);
-          const remoteUrls = serializeRemotePhotoUrls(mergedPhotos);
-          const mergedSerialized = serializeProfilePhotos(mergedPhotos);
+          mergedPhotos = mergeUploadedPhotos(nextPhotos, uploaded);
+          remoteUrls = serializeRemotePhotoUrls(mergedPhotos);
+          if (!remoteUrls) {
+            throw new Error('Cloud upload returned no photo URLs.');
+          }
+
+          mergedSerialized = serializeProfilePhotos(mergedPhotos);
+          cloudUploadSucceeded = true;
 
           setPhotos(mergedPhotos);
           setValue(PROFILE_PHOTOS_KEY, mergedSerialized);
+          setValue(PROFILE_PHOTOS_DRAFT_KEY, '');
           setValue('profilePhotoUrls', remoteUrls);
+          setUploadNotice(translate('photoAdded'));
+        } catch {
+          if (uploadVersionRef.current !== uploadVersion) {
+            return;
+          }
 
+          if (hasSavedLocalPhotos(nextPhotos)) {
+            setUploadNotice(translate('photoSavedLocally'));
+          } else {
+            setUploadError(translate('photoUploadFailed'));
+          }
+        } finally {
+          if (uploadVersionRef.current === uploadVersion) {
+            setUploading(false);
+          }
+        }
+
+        if (uploadVersionRef.current !== uploadVersion || !cloudUploadSucceeded) {
+          return;
+        }
+
+        try {
           const raw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
           let currentValues: Record<string, string> = {};
           if (raw) {
@@ -92,29 +161,23 @@ export default function AddPhotosScreen() {
           const nextValues = {
             ...currentValues,
             [PROFILE_PHOTOS_KEY]: mergedSerialized,
+            [PROFILE_PHOTOS_DRAFT_KEY]: '',
             profilePhotoUrls: remoteUrls,
             [CONTACT_PHONE_KEY]: phone,
           };
 
           if (hasCompletedProfile(nextValues)) {
-            await upsertProfileFromValues(nextValues, 'current-user', {
+            void upsertProfileFromValues(nextValues, 'current-user', {
               published: true,
               uploadPhotos: false,
             }).catch(() => undefined);
           }
         } catch {
-          if (uploadVersionRef.current !== uploadVersion) {
-            return;
-          }
-          // Keep the selected local photos; cloud upload retries later.
-        } finally {
-          if (uploadVersionRef.current === uploadVersion) {
-            setUploading(false);
-          }
+          // Local photos are already saved; cloud profile sync can retry later.
         }
       })();
     },
-    [getValue, setValue],
+    [getValue, setValue, translate],
   );
 
   return (
@@ -133,6 +196,7 @@ export default function AddPhotosScreen() {
             <Text style={styles.uploadText}>{translate('photoUploading')}</Text>
           </View>
         ) : null}
+        {uploadNotice ? <Text style={styles.noticeText}>{uploadNotice}</Text> : null}
         {uploadError ? <Text style={styles.errorText}>{uploadError}</Text> : null}
         <ProfilePhotoUploadStep
           photos={photos}
@@ -176,6 +240,11 @@ const styles = StyleSheet.create({
   uploadText: {
     ...typography.bodyMd,
     color: colors.onSurfaceVariant,
+  },
+  noticeText: {
+    ...typography.bodyMd,
+    color: colors.primary,
+    textAlign: 'center',
   },
   errorText: {
     ...typography.bodyMd,

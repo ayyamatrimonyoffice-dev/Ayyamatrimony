@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
@@ -15,7 +15,7 @@ import type { BiodataExportOptions } from '@/lib/biodataExport';
 export default function ViewProfileScreen() {
   const router = useRouter();
   const { translate } = useLanguage();
-  const { values } = useProfileForm();
+  const { values, isReady } = useProfileForm();
   const exportOptionsRef = useRef<BiodataExportOptions>({ includePhoto: false, photoUri: '' });
 
   const profilePhotoUri = useMemo(() => getProfileAvatarUri(values), [values]);
@@ -31,6 +31,22 @@ export default function ViewProfileScreen() {
   exportOptionsRef.current = exportOptions;
   const getExportOptions = useCallback(() => exportOptionsRef.current, []);
 
+  if (!isReady) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <AppHeader
+          title={translate('viewProfile')}
+          showBack
+          showTamil={false}
+          onBack={() => router.back()}
+        />
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <AppHeader
@@ -39,7 +55,11 @@ export default function ViewProfileScreen() {
         showTamil={false}
         onBack={() => router.back()}
       />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+      >
         <BiodataExportPanel
           includePhoto={includePhoto}
           onIncludePhotoChange={setIncludePhoto}
@@ -52,6 +72,7 @@ export default function ViewProfileScreen() {
           <CreateProfileBiodataForm
             editable={false}
             viewOnly
+            profileValues={values}
             getExportOptions={getExportOptions}
             onSave={() => undefined}
           />
@@ -69,14 +90,18 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: spacing.containerMargin,
     paddingTop: 56,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + 80,
     gap: spacing.md,
   },
   formWrap: {
-    flex: 1,
-    minHeight: 480,
+    width: '100%',
     borderRadius: 12,
-    overflow: 'hidden',
     backgroundColor: colors.surface,
+    overflow: 'visible',
+  },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

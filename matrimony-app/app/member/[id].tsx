@@ -72,6 +72,7 @@ export default function MemberProfileScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
+        nestedScrollEnabled
       >
         <View style={styles.photoSection}>
           <ProtectedProfileImage
@@ -173,8 +174,8 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   biodataWrap: {
-    flex: 1,
-    minHeight: 480,
+    width: '100%',
+    overflow: 'visible',
   },
   lockedCard: {
     marginHorizontal: spacing.containerMargin,
