@@ -4,25 +4,30 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { adminColors } from '@/constants/admin';
 import { images } from '@/constants/images';
+import { AdminLanguageToggle } from '@/components/admin/AdminLanguageToggle';
 
 type AdminScreenShellProps = {
   title?: string;
   subtitle?: string;
   showLogo?: boolean;
+  showLanguageToggle?: boolean;
   hideHeader?: boolean;
   onBack?: () => void;
   children: ReactNode;
   headerRight?: ReactNode;
+  pinnedContent?: ReactNode;
 };
 
 export function AdminScreenShell({
   title,
   subtitle,
   showLogo = false,
+  showLanguageToggle = false,
   hideHeader = false,
   onBack,
   children,
   headerRight,
+  pinnedContent,
 }: AdminScreenShellProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -42,17 +47,26 @@ export function AdminScreenShell({
               </View>
             ) : null}
             <View style={styles.headerTextWrap}>
-              {title ? <Text style={styles.title}>{title}</Text> : null}
+              {title ? (
+                <View style={styles.titleRow}>
+                  <Text style={styles.title} numberOfLines={1}>
+                    {title}
+                  </Text>
+                  {showLanguageToggle ? <AdminLanguageToggle /> : null}
+                </View>
+              ) : null}
               {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
             </View>
           </View>
           {headerRight}
         </View>
       )}
+      {pinnedContent ? <View style={styles.pinned}>{pinnedContent}</View> : null}
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {children}
       </ScrollView>
@@ -124,7 +138,13 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   title: {
+    flex: 1,
     color: adminColors.text,
     fontSize: 22,
     fontWeight: '700',
@@ -133,6 +153,17 @@ const styles = StyleSheet.create({
     color: adminColors.textMuted,
     fontSize: 13,
     marginTop: 2,
+  },
+  pinned: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+    backgroundColor: adminColors.background,
+    zIndex: 2,
+    ...Platform.select({
+      web: { position: 'relative' as const },
+      default: {},
+    }),
   },
   scroll: {
     flex: 1,

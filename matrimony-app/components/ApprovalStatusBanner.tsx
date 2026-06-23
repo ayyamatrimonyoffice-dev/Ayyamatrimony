@@ -8,7 +8,7 @@ export function ApprovalStatusBanner() {
   const { translate } = useLanguage();
   const { approvalStatus, canBrowseProfiles } = useUserApproval();
 
-  if (canBrowseProfiles || !approvalStatus) {
+  if (canBrowseProfiles) {
     return null;
   }
 

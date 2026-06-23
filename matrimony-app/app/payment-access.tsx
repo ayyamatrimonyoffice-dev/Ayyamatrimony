@@ -1,5 +1,5 @@
 import { useMemo, useCallback } from 'react';
-import { BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, BackHandler, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
@@ -28,6 +28,8 @@ export default function PaymentAccessScreen() {
     batchesPaid,
     hasChosenAccessMode,
     isReady,
+    isLoggedIn,
+    needsPaymentAccess,
   } = useSubscription();
   const {
     paymentModalVisible,
@@ -83,6 +85,22 @@ export default function PaymentAccessScreen() {
     });
   };
 
+  if (!isReady) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return <Redirect href="/" />;
+  }
+
+  if (!needsPaymentAccess && !isBatchRenewal) {
+    return <Redirect href="/(tabs)" />;
+  }
+
   if (shouldRedirectPaidUser) {
     return <Redirect href="/(tabs)" />;
   }
@@ -104,7 +122,7 @@ export default function PaymentAccessScreen() {
             <MaterialIcons name="payments" size={34} color={colors.primary} />
           </View>
 
-          {isBatchRenewal ? <Text style={styles.subtitle}>{headline}</Text> : null}
+          <Text style={styles.subtitle}>{headline}</Text>
 
           <View style={styles.priceCard}>
             <Text style={styles.priceLabel}>{translate('profileAccessPlan')}</Text>
@@ -172,6 +190,12 @@ export default function PaymentAccessScreen() {
 }
 
 const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: colors.background,

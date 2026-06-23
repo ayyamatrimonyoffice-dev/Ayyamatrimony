@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { getBrowsableMembersForUser } from '@/constants/memberDirectory';
 import { resolveUserGender } from '@/constants/matchFilters';
 import { useProfileForm } from '@/context/ProfileFormContext';
+import { useSubscription } from '@/context/SubscriptionContext';
 import { useUserApproval } from '@/context/UserApprovalContext';
 import { useMemberDirectory } from '@/hooks/useMemberDirectory';
 
@@ -9,6 +10,7 @@ export function useBrowsableMembers() {
   const { published } = useMemberDirectory();
   const { values } = useProfileForm();
   const { canBrowseProfiles } = useUserApproval();
+  const { hiddenProfileIds } = useSubscription();
   const userGender = resolveUserGender(values);
 
   return useMemo(
@@ -21,7 +23,8 @@ export function useBrowsableMembers() {
         },
         'current-user',
         canBrowseProfiles,
+        hiddenProfileIds,
       ),
-    [canBrowseProfiles, published, userGender, values.registrationCommunity],
+    [canBrowseProfiles, hiddenProfileIds, published, userGender, values.registrationCommunity],
   );
 }

@@ -2,6 +2,7 @@ import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-nati
 import { useRouter, type Href } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ApprovalStatusBanner } from '@/components/ApprovalStatusBanner';
 import { useLanguage } from '@/context/LanguageContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
 import { useLogout } from '@/hooks/useLogout';
@@ -71,6 +72,8 @@ export default function ProfileScreen() {
             </Text>
           ) : null}
         </View>
+
+        <ApprovalStatusBanner />
 
         <View style={styles.menu}>
           {menuItems.map((item) => (

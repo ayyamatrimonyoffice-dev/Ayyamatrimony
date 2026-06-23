@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { adminColors } from '@/constants/admin';
 
@@ -7,6 +7,7 @@ type AdminStatCardProps = {
   value: string | number;
   icon: keyof typeof MaterialIcons.glyphMap;
   tone?: 'default' | 'success' | 'warning' | 'danger';
+  onPress?: () => void;
 };
 
 const toneColors = {
@@ -16,11 +17,11 @@ const toneColors = {
   danger: adminColors.danger,
 };
 
-export function AdminStatCard({ label, value, icon, tone = 'default' }: AdminStatCardProps) {
+export function AdminStatCard({ label, value, icon, tone = 'default', onPress }: AdminStatCardProps) {
   const accent = toneColors[tone];
 
-  return (
-    <View style={styles.card}>
+  const content = (
+    <>
       <Text style={styles.label} numberOfLines={2}>
         {label}
       </Text>
@@ -31,8 +32,18 @@ export function AdminStatCard({ label, value, icon, tone = 'default' }: AdminSta
         <Text style={styles.value}>{value}</Text>
         <View style={styles.iconSpacer} />
       </View>
-    </View>
+    </>
   );
+
+  if (onPress) {
+    return (
+      <Pressable style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={onPress}>
+        {content}
+      </Pressable>
+    );
+  }
+
+  return <View style={styles.card}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -46,6 +57,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: adminColors.border,
     gap: 8,
+  },
+  cardPressed: {
+    opacity: 0.92,
   },
   label: {
     color: adminColors.textMuted,

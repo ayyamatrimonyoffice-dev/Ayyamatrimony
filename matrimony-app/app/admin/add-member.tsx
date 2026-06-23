@@ -1,30 +1,44 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CreateProfileBiodataForm } from '@/components/CreateProfileBiodataForm';
 import { adminColors } from '@/constants/admin';
+import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import { publishProfileFromValues } from '@/constants/memberDirectory';
+import { updateApprovalStatus } from '@/lib/firestore/approvalService';
+import { approvalDocIdFromPhone } from '@/lib/firestore/collections';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { hydrateLocalProfileFromFirestore } from '@/lib/firestore/profileService';
 
 export default function AdminAddMemberScreen() {
   const router = useRouter();
+  const { phone: editPhone } = useLocalSearchParams<{ phone?: string }>();
   const { isReady: authReady, isAuthenticated } = useAdminAuth();
-  const { clearProfile, setValue, isReady } = useProfileForm();
+  const { translate } = useLanguage();
+  const { clearProfile, setValue, replaceValues, isReady } = useProfileForm();
   const [step, setStep] = useState(1);
+  const isEditing = Boolean(editPhone?.trim());
 
   useEffect(() => {
     if (!authReady || !isAuthenticated || !isReady) return;
     void (async () => {
+      if (isEditing && editPhone) {
+        const biodata = await hydrateLocalProfileFromFirestore(editPhone);
+        if (biodata) {
+          await replaceValues(biodata);
+          return;
+        }
+      }
       await clearProfile();
       setValue('registrationCommunity', 'hindu');
       setValue('religion', 'hindu');
       setValue('gender', 'male');
     })();
-  }, [authReady, isAuthenticated, clearProfile, isReady, setValue]);
+  }, [authReady, isAuthenticated, clearProfile, editPhone, isEditing, isReady, replaceValues, setValue]);
 
   if (!authReady) {
     return null;
@@ -34,23 +48,21 @@ export default function AdminAddMemberScreen() {
     return <Redirect href="/" />;
   }
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback((profileValues: Record<string, string>) => {
     void (async () => {
-      await new Promise((resolve) => setTimeout(resolve, 80));
-
-      const raw = await AsyncStorage.getItem('user_profile');
-      let profileValues: Record<string, string> = {};
-      if (raw) {
-        try {
-          profileValues = JSON.parse(raw) as Record<string, string>;
-        } catch {
-          profileValues = {};
-        }
+      await publishProfileFromValues(profileValues, `admin-${Date.now()}`, {
+        autoApprovePhotos: true,
+      });
+      const phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+      if (phone) {
+        await updateApprovalStatus(approvalDocIdFromPhone(phone), 'approved');
       }
-
-      await publishProfileFromValues(profileValues, `admin-${Date.now()}`);
       await clearProfile();
-      router.replace('/admin/(tabs)/');
+      if (phone) {
+        router.replace(`/admin/view-profile/${phone}` as never);
+        return;
+      }
+      router.replace('/admin/(tabs)/matches' as never);
     })();
   }, [clearProfile, router]);
 
@@ -61,7 +73,9 @@ export default function AdminAddMemberScreen() {
           <MaterialIcons name="arrow-back" size={22} color={adminColors.text} />
         </Pressable>
         <View style={styles.headerText}>
-          <Text style={styles.title}>Add member</Text>
+          <Text style={styles.title}>
+            {isEditing ? translate('adminEditMember') : translate('adminAddMember')}
+          </Text>
         </View>
       </View>
 

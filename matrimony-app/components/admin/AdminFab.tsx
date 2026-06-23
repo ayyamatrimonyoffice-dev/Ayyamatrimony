@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { adminColors, getAdminFabBottom } from '@/constants/admin';
+import { useLanguage } from '@/context/LanguageContext';
 
 type AdminFabProps = {
   onPress: () => void;
@@ -9,6 +10,7 @@ type AdminFabProps = {
 
 export function AdminFab({ onPress }: AdminFabProps) {
   const insets = useSafeAreaInsets();
+  const { translate } = useLanguage();
   const bottom = getAdminFabBottom(insets.bottom);
 
   return (
@@ -17,7 +19,7 @@ export function AdminFab({ onPress }: AdminFabProps) {
         style={({ pressed }) => [styles.fab, pressed && styles.fabPressed]}
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel="Add member"
+        accessibilityLabel={translate('adminAddMemberFab')}
       >
         <MaterialIcons name="add" size={30} color="#fff" />
       </Pressable>

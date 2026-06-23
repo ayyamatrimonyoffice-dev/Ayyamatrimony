@@ -64,8 +64,12 @@ export default function MatchesScreen() {
           {!isReady ? null : matches.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>
-                {!canBrowseProfiles && approvalStatus
-                  ? translate(approvalStatus === 'rejected' ? 'approvalRejectedMessage' : 'approvalPendingMessage')
+                {!canBrowseProfiles
+                  ? translate(
+                      approvalStatus === 'rejected'
+                        ? 'approvalRejectedMessage'
+                        : 'approvalPendingMessage',
+                    )
                   : !userGender
                     ? translate('setGenderToSeeMatches')
                     : translate('noMatchesYet')}

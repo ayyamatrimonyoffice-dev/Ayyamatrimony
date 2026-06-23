@@ -26,7 +26,9 @@ import { isChristianRegistration, type RegistrationCommunityId } from '@/constan
 import { useProfileForm } from '@/context/ProfileFormContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { borderRadius, colors, fonts, spacing } from '@/constants/theme';
+import { applyDefaultRegistrationCommunity } from '@/constants/profileCompletion';
 import { getProfileAvatarUri } from '@/constants/profileDisplay';
+import { applyExportPhotoToPrintBox, type BiodataExportOptions } from '@/lib/biodataExport';
 import {
   getPhotoUploadStepLabels,
   ProfilePhotoUploadStep,
@@ -646,7 +648,7 @@ function ensureBiodataPrintStyles(): void {
   style.textContent = BIODATA_PRINT_CSS;
 }
 
-function printBiodataSheetWeb(): void {
+function printBiodataSheetWeb(exportOptions?: BiodataExportOptions): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') {
     return;
   }
@@ -666,6 +668,11 @@ function printBiodataSheetWeb(): void {
     return;
   }
 
+  const restorePhoto =
+    exportOptions !== undefined
+      ? applyExportPhotoToPrintBox(exportOptions.includePhoto !== false, exportOptions.photoUri ?? '')
+      : undefined;
+
   originalParent.insertBefore(placeholder, printRoot);
   document.body.appendChild(printRoot);
   document.body.classList.add('biodata-print-active');
@@ -683,6 +690,7 @@ function printBiodataSheetWeb(): void {
       originalParent.insertBefore(printRoot, placeholder);
       originalParent.removeChild(placeholder);
     }
+    restorePhoto?.();
   };
 
   const cleanup = () => {
@@ -4223,11 +4231,12 @@ const christianReviewStyles = StyleSheet.create({
 
 type CreateProfileBiodataFormProps = {
   editable: boolean;
-  onSave: () => void;
+  onSave: (values: Record<string, string>) => void | Promise<void>;
   onStepChange?: (step: number) => void;
   viewOnly?: boolean;
   profileValues?: Record<string, string>;
   hideActionBar?: boolean;
+  getExportOptions?: () => BiodataExportOptions;
 };
 
 export function CreateProfileBiodataForm({
@@ -4237,13 +4246,15 @@ export function CreateProfileBiodataForm({
   viewOnly = false,
   profileValues,
   hideActionBar = false,
+  getExportOptions,
 }: CreateProfileBiodataFormProps) {
   const { width: screenWidth } = useWindowDimensions();
   const sideBySide = Platform.OS === 'web' ? screenWidth >= 320 : screenWidth >= 560;
   const dense = true;
   const stacked = !sideBySide;
   const { translate, language } = useLanguage();
-  const { getValue, setValue, isReady } = useProfileForm();
+  const { getValue, setValue, replaceValues, values, isReady } = useProfileForm();
+  const [isSaving, setIsSaving] = useState(false);
   const [rasiChart, setRasiChart] = useState(emptyHoroscope);
   const [amsamChart, setAmsamChart] = useState(emptyHoroscope);
   const [detailGrid, setDetailGrid] = useState<string[]>(createDefaultDetailGrid);
@@ -4402,61 +4413,64 @@ export function CreateProfileBiodataForm({
     [setValue],
   );
 
-  const persistForm = useCallback(() => {
-    setValue('fullName', form.fullName.trim());
-    setValue('gender', form.gender.trim());
-    setValue('education', form.education.trim());
-    setValue('dateOfBirth', form.dateOfBirth.trim());
-    setValue('birthTiming', form.birthTiming.trim());
-    setValue('religion', form.religion);
-    setValue('natchathiram', form.natchathiram.trim());
-    setValue('rasi', form.rasi.trim());
-    setValue('lagnam', form.lagnam.trim());
+  const persistForm = useCallback(async (): Promise<Record<string, string>> => {
     const occupationWorkKey = resolveStoredOptionValue('occupation', form.occupation, language);
+    const registrationNumber = getValue('registrationNumber').trim() || form.registrationNumber.trim();
+    const nextValues = applyDefaultRegistrationCommunity({
+      ...values,
+      fullName: form.fullName.trim(),
+      gender: form.gender.trim(),
+      education: form.education.trim(),
+      dateOfBirth: form.dateOfBirth.trim(),
+      birthTiming: form.birthTiming.trim(),
+      religion: form.religion,
+      natchathiram: form.natchathiram.trim(),
+      rasi: form.rasi.trim(),
+      lagnam: form.lagnam.trim(),
+      occupationType: form.occupationType.trim(),
+      occupation: occupationWorkKey,
+      occupationDesignation: form.occupationDesignation.trim(),
+      workType: form.occupationType.trim() || values.workType || '',
+      monthlyIncome: form.monthlyIncome.trim(),
+      propertyDetails: form.propertyDetails.trim(),
+      propertyHouseType: form.propertyHouseType.trim(),
+      propertyHouseCount: form.propertyHouseCount.trim(),
+      fatherName: form.fatherName.trim(),
+      motherName: form.motherName.trim(),
+      irupidam: form.irupidam.trim(),
+      nativePlace: form.nativePlace.trim(),
+      totalFamilyMembers: form.totalFamilyMembers.trim(),
+      birthOrder: form.birthOrder.trim(),
+      marriedBrother: form.marriedBrother.trim(),
+      marriedYoungerBrother: form.marriedYoungerBrother.trim(),
+      marriedSister: form.marriedSister.trim(),
+      marriedYoungerSister: form.marriedYoungerSister.trim(),
+      unmarriedBrother: form.unmarriedBrother.trim(),
+      unmarriedYoungerBrother: form.unmarriedYoungerBrother.trim(),
+      unmarriedSister: form.unmarriedSister.trim(),
+      unmarriedYoungerSister: form.unmarriedYoungerSister.trim(),
+      complexion: form.complexion.trim(),
+      height: form.height.trim(),
+      seervarisai: form.seervarisai.trim(),
+      dasaBalance: form.dasaBalance.trim(),
+      dasaYear: form.dasaYear.trim(),
+      dasaMonth: form.dasaMonth.trim(),
+      dasaDay: form.dasaDay.trim(),
+      registrationNumber,
+      numSiblings: form.numSiblings.trim(),
+      maritalStatus: form.maritalStatus.trim(),
+      livingStatus: form.livingStatus.trim(),
+      eatingHabits: form.eatingHabits.trim(),
+      birthOrderRelation: form.birthOrder.trim(),
+      biodataHoroscopeRasi: JSON.stringify(rasiChart),
+      biodataHoroscopeAmsam: JSON.stringify(amsamChart),
+      biodataDetailGrid: JSON.stringify(detailGrid),
+      [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(photos),
+    });
 
-    setValue('occupationType', form.occupationType.trim());
-    setValue('occupation', occupationWorkKey);
-    setValue('occupationDesignation', form.occupationDesignation.trim());
-    if (form.occupationType.trim()) {
-      setValue('workType', form.occupationType.trim());
-    }
-    setValue('monthlyIncome', form.monthlyIncome.trim());
-    setValue('propertyDetails', form.propertyDetails.trim());
-    setValue('propertyHouseType', form.propertyHouseType.trim());
-    setValue('propertyHouseCount', form.propertyHouseCount.trim());
-    setValue('fatherName', form.fatherName.trim());
-    setValue('motherName', form.motherName.trim());
-    setValue('irupidam', form.irupidam.trim());
-    setValue('nativePlace', form.nativePlace.trim());
-    setValue('totalFamilyMembers', form.totalFamilyMembers.trim());
-    setValue('birthOrder', form.birthOrder.trim());
-    setValue('marriedBrother', form.marriedBrother.trim());
-    setValue('marriedYoungerBrother', form.marriedYoungerBrother.trim());
-    setValue('marriedSister', form.marriedSister.trim());
-    setValue('marriedYoungerSister', form.marriedYoungerSister.trim());
-    setValue('unmarriedBrother', form.unmarriedBrother.trim());
-    setValue('unmarriedYoungerBrother', form.unmarriedYoungerBrother.trim());
-    setValue('unmarriedSister', form.unmarriedSister.trim());
-    setValue('unmarriedYoungerSister', form.unmarriedYoungerSister.trim());
-    setValue('complexion', form.complexion.trim());
-    setValue('height', form.height.trim());
-    setValue('seervarisai', form.seervarisai.trim());
-    setValue('dasaBalance', form.dasaBalance.trim());
-    setValue('dasaYear', form.dasaYear.trim());
-    setValue('dasaMonth', form.dasaMonth.trim());
-    setValue('dasaDay', form.dasaDay.trim());
-    setValue('registrationNumber', getValue('registrationNumber').trim() || form.registrationNumber.trim());
-    setValue('numSiblings', form.numSiblings.trim());
-    setValue('maritalStatus', form.maritalStatus.trim());
-    setValue('livingStatus', form.livingStatus.trim());
-    setValue('eatingHabits', form.eatingHabits.trim());
-    setValue('birthOrder', form.birthOrder.trim());
-    setValue('birthOrderRelation', form.birthOrder.trim());
-    setValue('biodataHoroscopeRasi', JSON.stringify(rasiChart));
-    setValue('biodataHoroscopeAmsam', JSON.stringify(amsamChart));
-    setValue('biodataDetailGrid', JSON.stringify(detailGrid));
-    setValue(PROFILE_PHOTOS_KEY, serializeProfilePhotos(photos));
-  }, [detailGrid, form, language, photos, rasiChart, amsamChart, setValue, getValue]);
+    await replaceValues(nextValues);
+    return nextValues;
+  }, [detailGrid, form, language, photos, rasiChart, amsamChart, getValue, replaceValues, values]);
 
   const validateOccupationFields = useCallback(() => {
     const hasOccupation = form.occupationType.trim().length > 0;
@@ -4482,6 +4496,10 @@ export function CreateProfileBiodataForm({
   ]);
 
   const handleSavePress = useCallback(() => {
+    if (isSaving) {
+      return;
+    }
+
     if (form.gender !== 'male' && form.gender !== 'female') {
       Alert.alert(translate('gender'), translate('selectGender'));
       return;
@@ -4491,18 +4509,28 @@ export function CreateProfileBiodataForm({
       return;
     }
 
-    persistForm();
-    onSave();
-  }, [form.gender, onSave, persistForm, translate, validateOccupationFields]);
+    setIsSaving(true);
+    void (async () => {
+      try {
+        const profileValues = await persistForm();
+        await onSave(profileValues);
+      } catch {
+        Alert.alert(translate('saveChanges'), translate('profileSaveFailed'));
+      } finally {
+        setIsSaving(false);
+      }
+    })();
+  }, [form.gender, isSaving, onSave, persistForm, translate, validateOccupationFields]);
 
   const handlePrintPress = useCallback(() => {
+    const exportOptions = getExportOptions?.();
     if (Platform.OS === 'web' && typeof window !== 'undefined' && typeof document !== 'undefined') {
-      printBiodataSheetWeb();
+      printBiodataSheetWeb(exportOptions);
       return;
     }
 
-    Alert.alert(translate('print'), translate('downloadPdfAlertBody'));
-  }, [translate]);
+    Alert.alert(translate('downloadPdfAlertTitle'), translate('downloadPdfAlertBody'));
+  }, [getExportOptions, translate]);
 
   const handleSharePress = useCallback(async () => {
     const lines = [

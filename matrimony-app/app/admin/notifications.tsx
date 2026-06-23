@@ -4,20 +4,23 @@ import { AdminEmptyState } from '@/components/admin/AdminEmptyState';
 import { AdminScreenShell } from '@/components/admin/AdminScreenShell';
 import { adminColors } from '@/constants/admin';
 import { useAdminNotifications } from '@/context/AdminNotificationsContext';
+import { useLanguage } from '@/context/LanguageContext';
 
 export default function AdminNotificationsScreen() {
   const router = useRouter();
+  const { translate, translateFormat } = useLanguage();
   const { items, unreadCount, markRead, markAllRead } = useAdminNotifications();
 
   return (
     <AdminScreenShell
-      title="Notifications"
-      subtitle={`${unreadCount} unread alerts`}
+      title={translate('adminNotifications')}
+      subtitle={translateFormat('adminUnreadAlerts', { count: unreadCount })}
       onBack={() => router.back()}
+      showLanguageToggle
       headerRight={
         unreadCount > 0 ? (
           <Pressable onPress={() => void markAllRead()}>
-            <Text style={styles.markAll}>Mark all read</Text>
+            <Text style={styles.markAll}>{translate('adminMarkAllRead')}</Text>
           </Pressable>
         ) : null
       }
@@ -25,8 +28,8 @@ export default function AdminNotificationsScreen() {
       {items.length === 0 ? (
         <AdminEmptyState
           icon="notifications-none"
-          title="No notifications"
-          message="Admin alerts will appear here when users register or submit profiles."
+          title={translate('adminNoNotifications')}
+          message={translate('adminNoNotificationsMessage')}
         />
       ) : (
         items.map((item) => (
@@ -91,7 +94,7 @@ const styles = StyleSheet.create({
   cardBody: {
     color: adminColors.textMuted,
     fontSize: 13,
-    lineHeight: 19,
+    lineHeight: 18,
   },
   cardTime: {
     color: adminColors.textMuted,

@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { doc, setDoc } from 'firebase/firestore';
+import { getFirebaseFirestore } from '@/lib/firebase';
+import { FIRESTORE_COLLECTIONS } from '@/lib/firestore/collections';
 
 export const adminColors = {
   primary: '#8B0000',
@@ -29,12 +32,34 @@ export function isAdminPhone(phone: string): boolean {
 
 export async function grantAdminSession(): Promise<void> {
   await AsyncStorage.setItem(ADMIN_SESSION_KEY, 'true');
+
+  const db = await getFirebaseFirestore();
+  if (!db) {
+    return;
+  }
+
+  await setDoc(
+    doc(db, FIRESTORE_COLLECTIONS.adminUsers, `phone_${ADMIN_PHONE}`),
+    {
+      adminId: `phone_${ADMIN_PHONE}`,
+      phone: ADMIN_PHONE,
+      name: 'Ayya Admin',
+      role: 'super_admin',
+      active: true,
+      createdAt: Date.now(),
+    },
+    { merge: true },
+  );
 }
 
 export const adminTabs = {
   dashboard: 'Dashboard',
-  users: 'Users',
+  users: 'Approvals',
   approvals: 'Approvals',
+  members: 'Approvals',
+  payments: 'Payments',
+  photos: 'Photos',
+  matches: 'Matches',
   notifications: 'Alerts',
   settings: 'Settings',
 } as const;

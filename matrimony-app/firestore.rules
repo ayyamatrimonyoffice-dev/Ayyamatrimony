@@ -31,5 +31,25 @@ service cloud.firestore {
     match /approvals/{approvalId} {
       allow read, write: if true;
     }
+
+    match /payments/{paymentId} {
+      allow read, write: if true;
+    }
+
+    match /photoApprovals/{photoApprovalId} {
+      allow read, write: if true;
+    }
+
+    match /subscriptions/{subscriptionId} {
+      allow read, write: if true;
+    }
+
+    match /adminUsers/{adminId} {
+      allow read, write: if true;
+    }
+
+    match /adminNotifications/{notificationId} {
+      allow read, write: if true;
+    }
   }
 }

@@ -7,6 +7,7 @@ import {
   query,
   setDoc,
 } from 'firebase/firestore';
+import { createAdminNotification } from '@/lib/firestore/adminNotificationService';
 import type { AdminApprovalRecord } from '@/constants/adminMockData';
 import { isAdminPhone } from '@/constants/admin';
 import { getFirebaseFirestore } from '@/lib/firebase';
@@ -59,7 +60,7 @@ export async function submitLoginApproval(
   const existing = await getDoc(docRef);
   const existingData = existing.exists() ? (existing.data() as FirestoreApprovalDoc) : null;
 
-  if (existingData?.status === 'approved' || existingData?.status === 'rejected') {
+  if (existingData?.status === 'approved') {
     return;
   }
 
@@ -77,12 +78,28 @@ export async function submitLoginApproval(
     registrationCommunity:
       options.registrationCommunity ?? existingData?.registrationCommunity,
     status: 'pending',
-    submittedAt: existingData?.submittedAt ?? now,
+    submittedAt: existingData?.status === 'pending' ? existingData.submittedAt : now,
     updatedAt: now,
-    source: options.source ?? 'login',
+    source: options.source ?? existingData?.source ?? 'login',
   };
 
   await setDoc(docRef, payload, { merge: true });
+
+  const profileId = profileDocIdFromPhone(digits);
+  if (profileId) {
+    await setDoc(
+      doc(db, FIRESTORE_COLLECTIONS.profiles, profileId),
+      { approvalStatus: 'pending', updatedAt: now },
+      { merge: true },
+    );
+  }
+
+  void createAdminNotification({
+    title: 'New profile approval',
+    body: `${nextName} submitted a profile for review.`,
+    type: 'profile',
+    relatedPhone: digits,
+  }).catch(() => undefined);
 }
 
 export async function fetchUserApprovalStatus(
@@ -138,13 +155,7 @@ export function resolveUserApprovalStatus(
 }
 
 export function canUserBrowseProfiles(status: FirestoreApprovalDoc['status'] | null): boolean {
-  if (status === 'approved') {
-    return true;
-  }
-  if (status === 'rejected' || status === 'pending') {
-    return false;
-  }
-  return true;
+  return status === 'approved';
 }
 
 export async function listApprovals(): Promise<AdminApprovalRecord[]> {
@@ -153,13 +164,20 @@ export async function listApprovals(): Promise<AdminApprovalRecord[]> {
     return [];
   }
 
-  const snapshot = await getDocs(
-    query(collection(db, FIRESTORE_COLLECTIONS.approvals), orderBy('updatedAt', 'desc')),
-  );
-
-  return snapshot.docs.map((entry) =>
-    toAdminApprovalRecord(entry.data() as FirestoreApprovalDoc),
-  );
+  try {
+    const snapshot = await getDocs(
+      query(collection(db, FIRESTORE_COLLECTIONS.approvals), orderBy('updatedAt', 'desc')),
+    );
+    return snapshot.docs.map((entry) =>
+      toAdminApprovalRecord(entry.data() as FirestoreApprovalDoc),
+    );
+  } catch {
+    const snapshot = await getDocs(collection(db, FIRESTORE_COLLECTIONS.approvals));
+    return snapshot.docs
+      .map((entry) => entry.data() as FirestoreApprovalDoc)
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .map(toAdminApprovalRecord);
+  }
 }
 
 export async function updateApprovalStatus(

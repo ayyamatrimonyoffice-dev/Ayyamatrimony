@@ -1,5 +1,7 @@
 node_modules/
 .expo/
+.expo-web-test/
+.expo-web-test-tmp/
 dist/
 npm-debug.*
 *.jks

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MemberProfile, getMemberProfileById, images } from '@/constants/images';
 import { getMockMemberBiodata } from '@/constants/memberBiodata';
 import { filterByRecommendedGender, resolveUserGender, type MatchGender } from '@/constants/matchFilters';
-import { parseProfilePhotos, PROFILE_PHOTOS_KEY, isRemotePhotoUri } from '@/constants/profilePhotos';
+import { parseProfilePhotos, PROFILE_PHOTOS_KEY, isRemotePhotoUri, serializeProfilePhotos } from '@/constants/profilePhotos';
 import { hasCompletedProfile } from '@/constants/profileCompletion';
 import { matchesRegistrationCommunity } from '@/constants/registrationCommunities';
 import {
@@ -174,11 +174,28 @@ export async function publishProfileFromValues(
 
   await AsyncStorage.setItem(MEMBER_DIRECTORY_KEY, JSON.stringify(stored));
 
-  void upsertProfileFromValues(values, ownerKey, { published: true, uploadPhotos: true }).catch(() => {
-    // Keep local publish working even if remote sync fails.
+  const biodataWithApproval = {
+    ...biodata,
+    approvalStatus: ownerKey.startsWith('admin-') ? 'approved' : 'pending',
+  };
+
+  const remoteProfile = await upsertProfileFromValues(biodataWithApproval, ownerKey, {
+    published: true,
+    uploadPhotos: true,
   });
 
-  return { ...member, biodata, ownerKey };
+  const syncedBiodata = remoteProfile
+    ? {
+        ...biodataWithApproval,
+        approvalStatus: remoteProfile.approvalStatus ?? biodataWithApproval.approvalStatus,
+        profilePhotoUrls: remoteProfile.photoUrls.join('|'),
+        [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(remoteProfile.photoUrls),
+      }
+    : biodataWithApproval;
+
+  await AsyncStorage.setItem('user_profile', JSON.stringify(syncedBiodata));
+
+  return { ...member, biodata: syncedBiodata, ownerKey };
 }
 
 export function getStaticMemberListing(id: string): MemberProfile | undefined {
@@ -243,6 +260,7 @@ export function getBrowsableMembersForUser(
   userValues: Pick<Record<string, string>, 'registrationCommunity' | 'gender'>,
   excludeOwnerKey = 'current-user',
   canBrowse = true,
+  hiddenProfileIds: string[] = [],
 ): MemberProfile[] {
   if (!canBrowse) {
     return [];
@@ -255,7 +273,10 @@ export function getBrowsableMembersForUser(
     return [];
   }
 
-  const members = getAllBrowsableMembers(published, excludeOwnerKey);
+  const hidden = new Set(hiddenProfileIds);
+  const members = getAllBrowsableMembers(published, excludeOwnerKey).filter(
+    (member) => !hidden.has(member.id),
+  );
   const byGender = filterByRecommendedGender(members, userGender);
 
   return byGender.filter((member) =>

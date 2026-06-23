@@ -6,7 +6,7 @@ import { useSubscription } from '@/context/SubscriptionContext';
 
 export function usePaymentCheckout(onSuccess: () => void) {
   const { translate, translateFormat } = useLanguage();
-  const { processPayment, accessPrice, batchSize } = useSubscription();
+  const { submitPaymentRequest, accessPrice, batchSize } = useSubscription();
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
 
   const openPaymentMethods = useCallback(() => {
@@ -22,22 +22,24 @@ export function usePaymentCheckout(onSuccess: () => void) {
       setPaymentModalVisible(false);
 
       void (async () => {
-        await processPayment();
-        onSuccess();
-
         const methodOption = PAYMENT_METHODS.find((item) => item.id === method);
         const methodLabel = methodOption ? translate(methodOption.labelKey) : method;
+        const referenceNumber = `${method}-${Date.now()}`;
+
+        await submitPaymentRequest(methodLabel, referenceNumber);
 
         Alert.alert(
-          translate('paymentSuccessTitle'),
-          translateFormat('paymentSuccessBody', {
+          translate('paymentSubmittedTitle'),
+          translateFormat('paymentSubmittedBody', {
             method: methodLabel,
-            count: batchSize,
+            amount: accessPrice,
           }),
         );
+
+        onSuccess();
       })();
     },
-    [batchSize, onSuccess, processPayment, translate, translateFormat],
+    [accessPrice, onSuccess, submitPaymentRequest, translate, translateFormat],
   );
 
   return {

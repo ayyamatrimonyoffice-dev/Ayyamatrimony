@@ -17,6 +17,9 @@ import {
   SUBSCRIPTION_STORAGE_KEY,
 } from '@/constants/subscription';
 import { hasCompletedProfile } from '@/constants/profileCompletion';
+import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
+import { fetchLatestPaymentStatus, submitPaymentRequest } from '@/lib/firestore/paymentService';
+import { fetchSubscription, syncSubscriptionViewedProfiles } from '@/lib/firestore/subscriptionService';
 
 const PROFILE_STORAGE_KEY = 'user_profile';
 
@@ -29,6 +32,7 @@ type SubscriptionState = {
   accessMode: AccessMode;
   batchesPaid: number;
   viewedProfileIds: string[];
+  hiddenProfileIds: string[];
 };
 
 type SubscriptionContextValue = {
@@ -43,11 +47,17 @@ type SubscriptionContextValue = {
   profilesViewedCount: number;
   profilesRemaining: number;
   viewedProfileIds: string[];
+  hiddenProfileIds: string[];
+  needsPaymentAccess: boolean;
   canViewFullProfile: (profileId: string) => boolean;
   canOpenNewFullProfile: (profileId: string) => boolean;
   recordProfileView: (profileId: string) => Promise<boolean>;
   login: () => Promise<'home' | 'register'>;
   chooseUnpaidAccess: () => Promise<void>;
+  resetPaymentGate: () => Promise<void>;
+  submitPaymentRequest: (method: string, referenceNumber?: string) => Promise<void>;
+  syncFromFirestore: (phone: string) => Promise<void>;
+  pendingPayment: boolean;
   processPayment: () => Promise<void>;
   logout: () => Promise<void>;
   accessPrice: number;
@@ -63,7 +73,15 @@ const defaultState: SubscriptionState = {
   accessMode: 'unpaid',
   batchesPaid: 0,
   viewedProfileIds: [],
+  hiddenProfileIds: [],
 };
+
+export function userNeedsPaymentAccess(state: Pick<SubscriptionState, 'hasChosenAccessMode' | 'accessMode' | 'batchesPaid'>) {
+  if (state.accessMode === 'paid' && state.batchesPaid > 0) {
+    return false;
+  }
+  return !state.hasChosenAccessMode;
+}
 
 const SubscriptionContext = createContext<SubscriptionContextValue | null>(null);
 
@@ -82,6 +100,9 @@ function parseStoredSubscription(raw: string | null): SubscriptionState {
       viewedProfileIds: Array.isArray(parsed.viewedProfileIds)
         ? parsed.viewedProfileIds.filter((id): id is string => typeof id === 'string')
         : [],
+      hiddenProfileIds: Array.isArray(parsed.hiddenProfileIds)
+        ? parsed.hiddenProfileIds.filter((id): id is string => typeof id === 'string')
+        : [],
     };
   } catch {
     return defaultState;
@@ -92,40 +113,15 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SubscriptionState>(defaultState);
   const [isReady, setIsReady] = useState(false);
   const [membershipViewMode, setMembershipViewMode] = useState<MembershipViewMode>('regular');
+  const [pendingPayment, setPendingPayment] = useState(false);
 
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem(SUBSCRIPTION_STORAGE_KEY),
-      AsyncStorage.getItem(PROFILE_STORAGE_KEY),
     ])
-      .then(([stored, profileRaw]) => {
+      .then(([stored]) => {
         const parsed = parseStoredSubscription(stored);
-        let profileValues: Record<string, string> = {};
-        if (profileRaw) {
-          try {
-            profileValues = JSON.parse(profileRaw) as Record<string, string>;
-          } catch {
-            profileValues = {};
-          }
-        }
-        const profileComplete = hasCompletedProfile(profileValues);
-        let nextState = parsed;
-
-        if (
-          parsed.isLoggedIn &&
-          profileComplete &&
-          !parsed.hasChosenAccessMode &&
-          !(parsed.accessMode === 'paid' && parsed.batchesPaid > 0)
-        ) {
-          nextState = {
-            ...parsed,
-            hasChosenAccessMode: true,
-            accessMode: 'unpaid' as const,
-          };
-          void AsyncStorage.setItem(SUBSCRIPTION_STORAGE_KEY, JSON.stringify(nextState));
-        }
-
-        setState(nextState);
+        setState(parsed);
       })
       .finally(() => {
         setIsReady(true);
@@ -146,6 +142,66 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     },
     [persistState],
   );
+
+  const syncFromFirestore = useCallback(
+    async (phone: string) => {
+      const digits = phone.replace(/\D/g, '');
+      if (!digits) {
+        return;
+      }
+
+      const [remoteSubscription, paymentStatus] = await Promise.all([
+        fetchSubscription(digits),
+        fetchLatestPaymentStatus(digits),
+      ]);
+
+      setPendingPayment(paymentStatus === 'pending');
+
+      if (!remoteSubscription) {
+        return;
+      }
+
+      updateState((current) => ({
+        ...current,
+        accessMode: remoteSubscription.accessMode,
+        batchesPaid: remoteSubscription.batchesPaid,
+        viewedProfileIds: remoteSubscription.viewedProfileIds,
+        hiddenProfileIds: remoteSubscription.hiddenProfileIds ?? [],
+        hasChosenAccessMode:
+          remoteSubscription.accessMode === 'paid' && remoteSubscription.batchesPaid > 0
+            ? true
+            : current.hasChosenAccessMode,
+        isLoggedIn: true,
+      }));
+
+      if (remoteSubscription.accessMode === 'paid' && remoteSubscription.batchesPaid > 0) {
+        setMembershipViewMode('prime');
+      }
+    },
+    [updateState],
+  );
+
+  useEffect(() => {
+    if (!isReady || !state.isLoggedIn) {
+      return;
+    }
+
+    void (async () => {
+      const profileRaw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+      if (!profileRaw) {
+        return;
+      }
+      try {
+        const profileValues = JSON.parse(profileRaw) as Record<string, string>;
+        const phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+        if (phone) {
+          await syncFromFirestore(phone);
+        }
+      } catch {
+        // ignore malformed profile cache
+      }
+    })();
+  }, [isReady, state.isLoggedIn, syncFromFirestore]);
 
   const profilesAllowed = getProfilesAllowed(state.batchesPaid);
   const profilesViewedCount = state.viewedProfileIds.length;
@@ -221,9 +277,23 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         }
 
         recorded = true;
+        const nextViewed = [...current.viewedProfileIds, profileId];
+        void (async () => {
+          const profileRaw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+          if (!profileRaw) return;
+          try {
+            const profileValues = JSON.parse(profileRaw) as Record<string, string>;
+            const phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+            if (phone) {
+              await syncSubscriptionViewedProfiles(phone, nextViewed);
+            }
+          } catch {
+            // ignore
+          }
+        })();
         return {
           ...current,
-          viewedProfileIds: [...current.viewedProfileIds, profileId],
+          viewedProfileIds: nextViewed,
         };
       });
 
@@ -250,11 +320,6 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     const next: SubscriptionState = {
       ...current,
       isLoggedIn: true,
-      ...(profileComplete &&
-      !current.hasChosenAccessMode &&
-      !(current.accessMode === 'paid' && current.batchesPaid > 0)
-        ? { hasChosenAccessMode: true, accessMode: 'unpaid' as const }
-        : {}),
     };
     setState(next);
     await persistState(next);
@@ -279,6 +344,50 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       };
     });
   }, [updateState]);
+
+  const resetPaymentGate = useCallback(async () => {
+    updateState((current) => ({
+      ...current,
+      hasChosenAccessMode: false,
+      accessMode: 'unpaid',
+      batchesPaid: 0,
+      viewedProfileIds: [],
+      hiddenProfileIds: [],
+    }));
+  }, [updateState]);
+
+  const submitPaymentRequestHandler = useCallback(
+    async (method: string, referenceNumber?: string) => {
+      const profileRaw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+      let phone = '';
+      let memberName = '';
+      if (profileRaw) {
+        try {
+          const profileValues = JSON.parse(profileRaw) as Record<string, string>;
+          phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+          memberName = profileValues.fullName ?? '';
+        } catch {
+          phone = '';
+        }
+      }
+
+      if (!phone) {
+        return;
+      }
+
+      await submitPaymentRequest(phone, {
+        memberName,
+        method,
+        referenceNumber: referenceNumber ?? `${method}-${Date.now()}`,
+      });
+      updateState((current) => ({
+        ...current,
+        hasChosenAccessMode: true,
+      }));
+      setPendingPayment(true);
+    },
+    [updateState],
+  );
 
   const processPayment = useCallback(async () => {
     let persistedState: SubscriptionState = defaultState;
@@ -307,6 +416,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     setMembershipViewMode('regular');
   }, [persistState]);
 
+  const needsPaymentAccess = userNeedsPaymentAccess(state);
+
   const value = useMemo(
     () => ({
       isReady,
@@ -320,11 +431,17 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       profilesViewedCount,
       profilesRemaining,
       viewedProfileIds: state.viewedProfileIds,
+      hiddenProfileIds: state.hiddenProfileIds,
+      needsPaymentAccess,
       canViewFullProfile,
       canOpenNewFullProfile,
       recordProfileView,
       login,
       chooseUnpaidAccess,
+      resetPaymentGate,
+      submitPaymentRequest: submitPaymentRequestHandler,
+      syncFromFirestore,
+      pendingPayment,
       processPayment,
       logout,
       accessPrice: PROFILE_ACCESS_PRICE,
@@ -337,6 +454,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       canOpenNewFullProfile,
       canViewFullProfile,
       chooseUnpaidAccess,
+      resetPaymentGate,
       hasPaidProfileQuota,
       isPaidMember,
       isPrimeViewActive,
@@ -344,6 +462,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       login,
       logout,
       membershipViewMode,
+      pendingPayment,
       processPayment,
       profilesAllowed,
       profilesRemaining,
@@ -353,8 +472,12 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       state.accessMode,
       state.batchesPaid,
       state.hasChosenAccessMode,
+      state.hiddenProfileIds,
       state.isLoggedIn,
       state.viewedProfileIds,
+      needsPaymentAccess,
+      submitPaymentRequestHandler,
+      syncFromFirestore,
     ],
   );
 

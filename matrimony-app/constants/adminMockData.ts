@@ -4,6 +4,8 @@ export type AdminUserRecord = {
   phone: string;
   status: 'active' | 'pending' | 'blocked';
   registeredAt: string;
+  paidBatches?: number;
+  registrationSource?: 'self' | 'admin';
 };
 
 export type AdminApprovalRecord = {

@@ -8,6 +8,7 @@ import {
   type FirestoreApprovalDoc,
   type FirestoreProfileDoc,
 } from '@/lib/firestore/collections';
+import { fetchSubscription } from '@/lib/firestore/subscriptionService';
 
 function formatRegisteredDate(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString('en-GB', {
@@ -19,7 +20,11 @@ function formatRegisteredDate(timestamp: number): string {
 
 function mapApprovalToUserStatus(
   status: FirestoreApprovalDoc['status'] | null,
+  accountStatus?: FirestoreProfileDoc['accountStatus'],
 ): AdminUserRecord['status'] {
+  if (accountStatus === 'blocked') {
+    return 'blocked';
+  }
   if (status === 'approved') {
     return 'active';
   }
@@ -52,19 +57,22 @@ export async function listAdminUsers(): Promise<AdminUserRecord[]> {
 
   for (const entry of profileSnapshot.docs) {
     const profile = entry.data() as FirestoreProfileDoc;
-    if (!profile.phone || isAdminPhone(profile.phone)) {
+    if (!profile.phone || isAdminPhone(profile.phone) || profile.accountStatus === 'deleted') {
       continue;
     }
 
     const approval = approvalsByPhone.get(profile.phone);
     const approvalStatus = resolveUserApprovalStatus(approval?.status, profile.approvalStatus);
+    const subscription = await fetchSubscription(profile.phone).catch(() => null);
 
     usersByPhone.set(profile.phone, {
       id: profile.profileId,
       name: profile.fullName?.trim() || profile.listing?.name?.trim() || `Member ${profile.phone.slice(-4)}`,
       phone: profile.phone,
-      status: mapApprovalToUserStatus(approvalStatus),
+      status: mapApprovalToUserStatus(approvalStatus, profile.accountStatus),
       registeredAt: formatRegisteredDate(profile.createdAt),
+      paidBatches: subscription?.batchesPaid ?? profile.paidBatches ?? 0,
+      registrationSource: profile.registrationSource ?? (profile.ownerKey.startsWith('admin-') ? 'admin' : 'self'),
       sortTime: profile.createdAt,
     });
   }
@@ -80,6 +88,8 @@ export async function listAdminUsers(): Promise<AdminUserRecord[]> {
       phone: approval.phone,
       status: mapApprovalToUserStatus(approval.status),
       registeredAt: formatRegisteredDate(approval.submittedAt),
+      paidBatches: 0,
+      registrationSource: 'self',
       sortTime: approval.submittedAt,
     });
   }

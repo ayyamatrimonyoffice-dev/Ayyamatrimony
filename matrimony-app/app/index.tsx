@@ -7,7 +7,7 @@ import { useProfileForm } from '@/context/ProfileFormContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 
 export default function Index() {
-  const { isReady: subscriptionReady, isLoggedIn } = useSubscription();
+  const { isReady: subscriptionReady, isLoggedIn, needsPaymentAccess } = useSubscription();
   const { values, isReady: profileReady } = useProfileForm();
 
   if (!subscriptionReady || !profileReady) {
@@ -26,6 +26,9 @@ export default function Index() {
   }
 
   if (isLoggedIn && hasCompletedProfile(values)) {
+    if (needsPaymentAccess) {
+      return <Redirect href="/payment-access" />;
+    }
     return <Redirect href="/(tabs)" />;
   }
 

@@ -7,6 +7,7 @@ import { colors, fonts, spacing, typography } from '@/constants/theme';
 type ProtectedProfileImageProps = {
   imageUri: string;
   locked: boolean;
+  pendingModeration?: boolean;
   style?: object;
   imageStyle?: object;
 };
@@ -14,27 +15,31 @@ type ProtectedProfileImageProps = {
 export function ProtectedProfileImage({
   imageUri,
   locked,
+  pendingModeration = false,
   style,
   imageStyle,
 }: ProtectedProfileImageProps) {
   const { translate } = useLanguage();
   const hasImage = Boolean(imageUri?.trim());
+  const isLocked = locked || pendingModeration;
 
   return (
     <View style={[styles.wrap, style]}>
       {hasImage ? (
         <Image
           source={{ uri: imageUri }}
-          style={[styles.image, imageStyle, locked && styles.imageLocked]}
-          blurRadius={locked ? 18 : 0}
+          style={[styles.image, imageStyle, isLocked && styles.imageLocked]}
+          blurRadius={isLocked ? 18 : 0}
         />
       ) : (
         <Image source={images.logo} style={[styles.image, imageStyle]} resizeMode="cover" />
       )}
-      {locked ? (
+      {isLocked ? (
         <View style={styles.overlay}>
           <MaterialIcons name="lock" size={22} color="#fff" />
-          <Text style={styles.overlayText}>{translate('photoLocked')}</Text>
+          <Text style={styles.overlayText}>
+            {pendingModeration ? translate('photoPendingReview') : translate('photoLocked')}
+          </Text>
         </View>
       ) : null}
     </View>

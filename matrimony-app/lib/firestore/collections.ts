@@ -10,7 +10,15 @@ export const FIRESTORE_COLLECTIONS = {
   chatMessages: 'messages',
   vendors: 'vendors',
   approvals: 'approvals',
+  payments: 'payments',
+  photoApprovals: 'photoApprovals',
+  subscriptions: 'subscriptions',
+  adminUsers: 'adminUsers',
+  adminNotifications: 'adminNotifications',
 } as const;
+
+export type ProfileAccountStatus = 'active' | 'blocked' | 'deleted';
+export type ProfileRegistrationSource = 'self' | 'admin';
 
 export type FirestoreProfileDoc = {
   profileId: string;
@@ -18,12 +26,18 @@ export type FirestoreProfileDoc = {
   ownerKey: string;
   biodata: Record<string, string>;
   photoUrls: string[];
+  approvedPhotoUrls?: string[];
   primaryPhotoUrl: string;
   registrationCommunity: string;
   gender: MatchGender | '';
   fullName: string;
   published: boolean;
   approvalStatus?: FirestoreApprovalDoc['status'];
+  accountStatus?: ProfileAccountStatus;
+  registrationSource?: ProfileRegistrationSource;
+  paidBatches?: number;
+  /** When true, profile is hidden from member browse/matches lists. */
+  browseHidden?: boolean;
   listing: {
     id: string;
     name: string;
@@ -119,6 +133,65 @@ export type FirestoreApprovalDoc = {
   source: 'login' | 'profile';
 };
 
+export type FirestorePaymentDoc = {
+  paymentId: string;
+  phone: string;
+  memberName: string;
+  amount: number;
+  method: string;
+  referenceNumber?: string;
+  status: 'pending' | 'verified' | 'rejected';
+  submittedAt: number;
+  updatedAt: number;
+  verifiedAt?: number;
+  verifiedBy?: string;
+  batchNumber?: number;
+  rejectReason?: string;
+};
+
+export type FirestorePhotoApprovalDoc = {
+  photoApprovalId: string;
+  phone: string;
+  memberName: string;
+  profileId: string;
+  photoUrl: string;
+  slot: number;
+  status: 'pending' | 'approved' | 'rejected';
+  submittedAt: number;
+  updatedAt: number;
+  reviewedBy?: string;
+  rejectReason?: string;
+};
+
+export type FirestoreSubscriptionDoc = {
+  phone: string;
+  accessMode: 'unpaid' | 'paid';
+  batchesPaid: number;
+  viewedProfileIds: string[];
+  updatedAt: number;
+  /** Profile listing IDs hidden from this member by admin. */
+  hiddenProfileIds?: string[];
+};
+
+export type FirestoreAdminUserDoc = {
+  adminId: string;
+  phone: string;
+  name: string;
+  role: 'super_admin' | 'staff';
+  active: boolean;
+  createdAt: number;
+};
+
+export type FirestoreAdminNotificationDoc = {
+  notificationId: string;
+  title: string;
+  body: string;
+  type: 'profile' | 'payment' | 'photo' | 'system';
+  read: boolean;
+  createdAt: number;
+  relatedPhone?: string;
+};
+
 export function profileDocIdFromPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   return digits ? `phone_${digits}` : '';
@@ -137,4 +210,17 @@ export function interestDocId(fromPhone: string, toProfileId: string): string {
 export function approvalDocIdFromPhone(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   return digits ? `phone_${digits}` : '';
+}
+
+export function subscriptionDocIdFromPhone(phone: string): string {
+  return approvalDocIdFromPhone(phone);
+}
+
+export function paymentDocId(paymentId: string): string {
+  return paymentId;
+}
+
+export function photoApprovalDocId(phone: string, slot: number): string {
+  const digits = phone.replace(/\D/g, '');
+  return digits ? `photo_${digits}_${slot}` : '';
 }

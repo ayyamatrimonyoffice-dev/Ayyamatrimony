@@ -85,7 +85,7 @@ function mergeLoginProfileWithApproval(
 export function LoginLandingScreen() {
   const router = useRouter();
   const { translate } = useLanguage();
-  const { login } = useSubscription();
+  const { login, resetPaymentGate } = useSubscription();
   const { clearActions } = useMatchActions();
   const { clearProfile, replaceValues } = useProfileForm();
   const [phone, setPhone] = useState('');
@@ -129,6 +129,10 @@ export function LoginLandingScreen() {
     mergedProfile: Record<string, string>,
     source: 'login' | 'register',
   ) => {
+    if (source === 'register') {
+      await resetPaymentGate();
+    }
+
     await replaceValues(applyDefaultRegistrationCommunity(mergedProfile));
     await login();
     await submitLoginApproval(digits, {

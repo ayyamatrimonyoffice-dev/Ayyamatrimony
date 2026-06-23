@@ -19,6 +19,7 @@ import {
   profileDocIdFromPhone,
 } from '@/lib/firestore/collections';
 import { uploadProfilePhotos } from '@/lib/firestore/storageService';
+import { submitPhotoForApproval } from '@/lib/firestore/photoApprovalService';
 import { parseProfilePhotos, PROFILE_PHOTOS_KEY, serializeProfilePhotos, biodataForFirestore, isRemotePhotoUri, isLocalPhotoUri, mergeUploadedPhotos, serializeRemotePhotoUrls, MAX_PROFILE_PHOTOS } from '@/constants/profilePhotos';
 
 function listingIdFromValues(values: Record<string, string>): string {
@@ -129,7 +130,7 @@ export function publishedMemberFromProfileDoc(docData: FirestoreProfileDoc): Pub
 export async function upsertProfileFromValues(
   values: Record<string, string>,
   ownerKey = 'current-user',
-  options: { published?: boolean; uploadPhotos?: boolean } = {},
+  options: { published?: boolean; uploadPhotos?: boolean; autoApprovePhotos?: boolean } = {},
 ): Promise<FirestoreProfileDoc | null> {
   if (!hasCompletedProfile(values)) {
     return null;
@@ -150,13 +151,35 @@ export async function upsertProfileFromValues(
     const localPhotos = parseProfilePhotos(values[PROFILE_PHOTOS_KEY] ?? '');
     const needsUpload = localPhotos.some((uri) => isLocalPhotoUri(uri));
     if (needsUpload) {
-      const uploaded = await uploadProfilePhotos(phone, localPhotos);
-      const merged = mergeUploadedPhotos(localPhotos, uploaded);
-      nextValues = {
-        ...nextValues,
-        profilePhotoUrls: serializeRemotePhotoUrls(merged),
-        [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(merged),
-      };
+      try {
+        const uploaded = await uploadProfilePhotos(phone, localPhotos);
+        const merged = mergeUploadedPhotos(localPhotos, uploaded);
+        nextValues = {
+          ...nextValues,
+          profilePhotoUrls: serializeRemotePhotoUrls(merged),
+          [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(merged),
+        };
+
+        await Promise.all(
+          merged.map((photoUrl, slot) => {
+            if (!isRemotePhotoUri(photoUrl)) {
+              return Promise.resolve();
+            }
+            return submitPhotoForApproval(phone, {
+              memberName: values.fullName,
+              photoUrl,
+              slot,
+              autoApprove: options.autoApprovePhotos ?? ownerKey.startsWith('admin-'),
+            });
+          }),
+        );
+      } catch {
+        // Keep local photo URIs so profile save still succeeds; admin can approve later.
+        nextValues = {
+          ...nextValues,
+          [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(localPhotos),
+        };
+      }
     }
   }
 
@@ -170,6 +193,15 @@ export async function upsertProfileFromValues(
 
   const merged: FirestoreProfileDoc = {
     ...payload,
+    registrationSource: ownerKey.startsWith('admin-') ? 'admin' : 'self',
+    approvalStatus: ownerKey.startsWith('admin-')
+      ? 'approved'
+      : existing.exists()
+        ? (existing.data() as FirestoreProfileDoc).approvalStatus ?? 'pending'
+        : 'pending',
+    accountStatus: existing.exists()
+      ? (existing.data() as FirestoreProfileDoc).accountStatus ?? 'active'
+      : 'active',
     createdAt: existing.exists() ? (existing.data() as FirestoreProfileDoc).createdAt : payload.createdAt,
     updatedAt: Date.now(),
   };
@@ -203,7 +235,70 @@ export async function listPublishedProfiles(): Promise<FirestoreProfileDoc[]> {
     query(collection(db, FIRESTORE_COLLECTIONS.profiles), where('published', '==', true)),
   );
 
-  return snapshot.docs.map((entry) => entry.data() as FirestoreProfileDoc);
+  return snapshot.docs
+    .map((entry) => entry.data() as FirestoreProfileDoc)
+    .filter(
+      (profile) =>
+        profile.browseHidden !== true &&
+        profile.accountStatus !== 'blocked' &&
+        profile.accountStatus !== 'deleted' &&
+        profile.approvalStatus === 'approved',
+    );
+}
+
+export async function setProfileBrowseHidden(phone: string, browseHidden: boolean): Promise<void> {
+  const db = await getFirebaseFirestore();
+  const profileId = profileDocIdFromPhone(phone);
+  if (!db || !profileId) {
+    return;
+  }
+
+  await setDoc(
+    doc(db, FIRESTORE_COLLECTIONS.profiles, profileId),
+    { browseHidden, updatedAt: Date.now() },
+    { merge: true },
+  );
+}
+
+export async function listAllProfiles(): Promise<FirestoreProfileDoc[]> {
+  const db = await getFirebaseFirestore();
+  if (!db) {
+    return [];
+  }
+
+  const snapshot = await getDocs(collection(db, FIRESTORE_COLLECTIONS.profiles));
+  return snapshot.docs
+    .map((entry) => entry.data() as FirestoreProfileDoc)
+    .filter((profile) => profile.accountStatus !== 'deleted');
+}
+
+export async function updateProfileAccountStatus(
+  phone: string,
+  accountStatus: FirestoreProfileDoc['accountStatus'],
+): Promise<void> {
+  const db = await getFirebaseFirestore();
+  const profileId = profileDocIdFromPhone(phone);
+  if (!db || !profileId) {
+    return;
+  }
+
+  await setDoc(
+    doc(db, FIRESTORE_COLLECTIONS.profiles, profileId),
+    { accountStatus, updatedAt: Date.now() },
+    { merge: true },
+  );
+}
+
+export async function deleteProfileByPhone(phone: string): Promise<void> {
+  await updateProfileAccountStatus(phone, 'deleted');
+}
+
+export async function blockProfileByPhone(phone: string): Promise<void> {
+  await updateProfileAccountStatus(phone, 'blocked');
+}
+
+export async function unblockProfileByPhone(phone: string): Promise<void> {
+  await updateProfileAccountStatus(phone, 'active');
 }
 
 export async function hydrateLocalProfileFromFirestore(phone: string): Promise<Record<string, string> | null> {

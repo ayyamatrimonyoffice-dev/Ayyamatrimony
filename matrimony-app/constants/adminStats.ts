@@ -1,22 +1,62 @@
 import type { AdminApprovalRecord, AdminUserRecord } from '@/constants/adminMockData';
 import type { PublishedMember } from '@/constants/memberDirectory';
+import { PROFILE_ACCESS_PRICE } from '@/constants/subscription';
+
+export type AdminDashboardStats = {
+  totalUsers: number;
+  adminAdded: number;
+  pendingApprovals: number;
+  pendingPayments: number;
+  pendingPhotos: number;
+  verifiedPayments: number;
+  totalRevenue: number;
+  activeToday: number;
+  unreadCount: number;
+  selfRegistered: number;
+  paidMembers: number;
+};
 
 export function computeAdminDashboardStats(
   users: AdminUserRecord[],
   published: PublishedMember[],
   approvals: AdminApprovalRecord[],
-  unreadCount = 0,
-) {
+  options: {
+    unreadCount?: number;
+    pendingPayments?: number;
+    pendingPhotos?: number;
+    verifiedPayments?: number;
+    totalRevenue?: number;
+    paidMembers?: number;
+  } = {},
+): AdminDashboardStats {
   const totalUsers = users.length;
   const activeToday = users.filter((user) => user.status === 'active').length;
   const adminAdded = published.filter((entry) => entry.ownerKey.startsWith('admin-')).length;
-  const pendingCount = approvals.filter((item) => item.status === 'pending').length;
+  const selfRegistered = published.filter((entry) => !entry.ownerKey.startsWith('admin-')).length;
+  const pendingApprovals = approvals.filter((item) => item.status === 'pending').length;
 
   return {
     totalUsers,
     adminAdded,
-    pendingCount,
-    unreadCount,
+    selfRegistered,
+    pendingApprovals,
+    pendingPayments: options.pendingPayments ?? 0,
+    pendingPhotos: options.pendingPhotos ?? 0,
+    verifiedPayments: options.verifiedPayments ?? 0,
+    totalRevenue: options.totalRevenue ?? 0,
     activeToday,
+    paidMembers: options.paidMembers ?? 0,
+    unreadCount: options.unreadCount ?? 0,
   };
+}
+
+export function formatRevenue(amount: number): string {
+  if (amount >= 100000) {
+    return `₹${(amount / 100000).toFixed(1)}L`;
+  }
+  return `₹${amount.toLocaleString('en-IN')}`;
+}
+
+export function revenueFromVerifiedCount(count: number): number {
+  return count * PROFILE_ACCESS_PRICE;
 }

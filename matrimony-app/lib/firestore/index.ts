@@ -6,3 +6,8 @@ export * from '@/lib/firestore/matchService';
 export * from '@/lib/firestore/chatService';
 export * from '@/lib/firestore/approvalService';
 export * from '@/lib/firestore/vendorService';
+export * from '@/lib/firestore/paymentService';
+export * from '@/lib/firestore/photoApprovalService';
+export * from '@/lib/firestore/subscriptionService';
+export * from '@/lib/firestore/adminNotificationService';
+export * from '@/lib/firestore/adminUserService';

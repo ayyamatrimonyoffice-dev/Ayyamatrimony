@@ -13,11 +13,13 @@ import { useRouter, type Href } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AdminScreenShell } from '@/components/admin/AdminScreenShell';
 import { useAdminAuth } from '@/context/AdminAuthContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { ADMIN_PHONE, adminColors } from '@/constants/admin';
 
 export default function AdminSettingsScreen() {
   const router = useRouter();
   const { signOut } = useAdminAuth();
+  const { translate } = useLanguage();
   const { width: screenWidth } = useWindowDimensions();
   const contentMaxWidth = Math.min(screenWidth - 32, 520);
   const [approvalAlerts, setApprovalAlerts] = useState(true);
@@ -37,32 +39,32 @@ export default function AdminSettingsScreen() {
 
   const handleSignOut = useCallback(() => {
     if (Platform.OS === 'web') {
-      if (typeof window !== 'undefined' && window.confirm('Leave the admin panel?')) {
+      if (typeof window !== 'undefined' && window.confirm(translate('adminLeaveAdmin'))) {
         void performSignOut();
       }
       return;
     }
 
-    Alert.alert('Sign out', 'Leave the admin panel?', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(translate('adminSignOutTitle'), translate('adminSignOutBody'), [
+      { text: translate('cancel'), style: 'cancel' },
       {
-        text: 'Sign out',
+        text: translate('logout'),
         style: 'destructive',
         onPress: () => {
           void performSignOut();
         },
       },
     ]);
-  }, [performSignOut]);
+  }, [performSignOut, translate]);
 
   return (
-    <AdminScreenShell title="Settings">
+    <AdminScreenShell title={translate('adminSettings')} showLanguageToggle>
       <View style={[styles.content, { maxWidth: contentMaxWidth }]}>
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Account</Text>
+          <Text style={styles.cardTitle}>{translate('adminSettingsAccount')}</Text>
           <View style={styles.row}>
             <View style={styles.rowText}>
-              <Text style={styles.rowLabel}>Admin phone</Text>
+              <Text style={styles.rowLabel}>{translate('adminSettingsAdminPhone')}</Text>
               <Text style={styles.rowValue} numberOfLines={1} adjustsFontSizeToFit>
                 +91 {ADMIN_PHONE}
               </Text>
@@ -72,10 +74,10 @@ export default function AdminSettingsScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Preferences</Text>
+          <Text style={styles.cardTitle}>{translate('adminSettingsPreferences')}</Text>
           <View style={styles.row}>
             <Text style={styles.rowLabel} numberOfLines={2}>
-              Approval alerts
+              {translate('adminSettingsApprovalAlerts')}
             </Text>
             <Switch
               {...switchProps}
@@ -87,7 +89,7 @@ export default function AdminSettingsScreen() {
           <View style={styles.divider} />
           <View style={styles.row}>
             <Text style={styles.rowLabel} numberOfLines={2}>
-              New user alerts
+              {translate('adminSettingsNewUserAlerts')}
             </Text>
             <Switch
               {...switchProps}
@@ -99,7 +101,7 @@ export default function AdminSettingsScreen() {
           <View style={styles.divider} />
           <View style={styles.row}>
             <Text style={styles.rowLabel} numberOfLines={2}>
-              Email digest
+              {translate('adminSettingsEmailDigest')}
             </Text>
             <Switch
               {...switchProps}
@@ -114,10 +116,10 @@ export default function AdminSettingsScreen() {
           style={({ pressed }) => [styles.signOutButton, pressed && styles.signOutButtonPressed]}
           onPress={handleSignOut}
           accessibilityRole="button"
-          accessibilityLabel="Sign out of Admin"
+          accessibilityLabel={translate('adminSignOutOfAdmin')}
         >
           <MaterialIcons name="logout" size={18} color="#fff" />
-          <Text style={styles.signOutText}>Sign out of Admin</Text>
+          <Text style={styles.signOutText}>{translate('adminSignOutOfAdmin')}</Text>
         </Pressable>
       </View>
     </AdminScreenShell>
