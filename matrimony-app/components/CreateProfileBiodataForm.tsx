@@ -259,10 +259,10 @@ const BIODATA_PRINT_CSS = `
     }
 
     body.biodata-print-hindu #biodata-print-body-row {
-      flex: 0 0 auto !important;
+      flex: 1 1 auto !important;
       display: flex !important;
       flex-direction: row !important;
-      max-height: 112mm !important;
+      max-height: none !important;
       overflow: hidden !important;
       border-bottom: 1px solid #570000 !important;
     }
@@ -271,6 +271,8 @@ const BIODATA_PRINT_CSS = `
       flex: 1.38 1 0 !important;
       min-width: 0 !important;
       border-right: 1px solid #570000 !important;
+      display: flex !important;
+      flex-direction: column !important;
     }
 
     body.biodata-print-hindu #biodata-print-right-pane {
@@ -279,6 +281,8 @@ const BIODATA_PRINT_CSS = `
       max-width: none !important;
       padding: 0 !important;
       gap: 0 !important;
+      display: flex !important;
+      flex-direction: column !important;
     }
 
     body.biodata-print-hindu #biodata-print-body-row * {
@@ -299,6 +303,7 @@ const BIODATA_PRINT_CSS = `
     }
 
     body.biodata-print-hindu #biodata-print-left-pane > div {
+      flex: 1 1 auto !important;
       padding-top: 1.4mm !important;
       padding-bottom: 1.4mm !important;
       padding-left: 2mm !important;
@@ -311,6 +316,7 @@ const BIODATA_PRINT_CSS = `
     body.biodata-print-hindu #biodata-print-right-pane > div:not(#biodata-print-sibling-married):not(#biodata-print-sibling-unmarried),
     body.biodata-print-hindu #biodata-print-sibling-married > div,
     body.biodata-print-hindu #biodata-print-sibling-unmarried > div {
+      flex: 1 1 auto !important;
       padding-top: 1.4mm !important;
       padding-bottom: 1.4mm !important;
       padding-left: 2mm !important;
@@ -321,7 +327,7 @@ const BIODATA_PRINT_CSS = `
     }
 
     body.biodata-print-hindu #biodata-print-horoscope-section {
-      flex: 1 1 auto !important;
+      flex: 0 0 auto !important;
       min-height: 0 !important;
       display: flex !important;
       flex-direction: column !important;
