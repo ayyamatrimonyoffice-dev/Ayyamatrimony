@@ -22,9 +22,15 @@ export function getProfileFirstName(fullName: string): string {
 }
 
 export function getProfileAvatarUri(values: Record<string, string>): string {
-  const remote = values.profilePhotoUrls?.split('|').find((photo) => isRemotePhotoUri(photo)) ?? '';
+  const remote =
+    values.profilePhotoUrls?.split('|').find((photo) => isRemotePhotoUri(photo)) ?? '';
   if (remote) {
     return resolveDisplayPhotoUri(remote, displayPlatform);
+  }
+
+  const listingImage = values.listingImage?.trim() ?? '';
+  if (isRemotePhotoUri(listingImage)) {
+    return resolveDisplayPhotoUri(listingImage, displayPlatform);
   }
 
   const photos = mergeDraftProfilePhotos(

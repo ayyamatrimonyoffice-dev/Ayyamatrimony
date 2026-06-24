@@ -30,7 +30,6 @@ import Animated, { FadeIn, FadeInDown, FadeOutUp } from 'react-native-reanimated
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { SelectField, ComboBoxField } from '@/components/FormControls';
-import { BiodataPropertyField } from '@/components/BiodataPropertyField';
 import { getPropertyDisplayValue } from '@/constants/biodataProperty';
 import { FormOptionsKey, getFormOptions, getOptionLabel } from '@/constants/formOptions';
 import { getLogoUri, images } from '@/constants/images';
@@ -5693,14 +5692,32 @@ export function CreateProfileBiodataForm({
     <View style={[styles.leftColumn, styles.leftColumnFull]}>
       <SectionCard dense={dense}>
         <View style={styles.fieldStack}>
-          <BiodataPropertyField
+          <BiodataRow
             label={translate('biodataFieldProperty')}
-            propertyDetails={form.propertyDetails}
-            legacyHouseType={form.propertyHouseType}
-            legacyHouseCount={form.propertyHouseCount}
-            onSave={(serialized) => updateField('propertyDetails', serialized)}
+            value={
+              form.propertyDetails.trim().startsWith('{')
+                ? getPropertyDisplayValue(
+                    form.propertyDetails,
+                    language,
+                    translate,
+                    form.propertyHouseType,
+                    form.propertyHouseCount,
+                  )
+                : form.propertyDetails
+            }
+            onChangeText={(text) => {
+              updateField('propertyDetails', text);
+              if (form.propertyHouseType) {
+                updateField('propertyHouseType', '');
+              }
+              if (form.propertyHouseCount) {
+                updateField('propertyHouseCount', '');
+              }
+            }}
             editable={editable}
             dense={dense}
+            multiline
+            placeholder={translate('biodataPlaceholderProperty')}
           />
           <BiodataRow
             label={translate('biodataFieldResidence')}

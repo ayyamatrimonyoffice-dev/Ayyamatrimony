@@ -20,7 +20,7 @@ import {
   profileDocIdFromPhone,
 } from '@/lib/firestore/collections';
 import { uploadProfilePhotos, shouldAttemptCloudPhotoUpload } from '@/lib/firestore/storageService';
-import { submitPhotoForApproval } from '@/lib/firestore/photoApprovalService';
+import { listPhotoApprovals, submitPhotoForApproval } from '@/lib/firestore/photoApprovalService';
 import {
   biodataForFirestore,
   isLocalPhotoUri,
@@ -28,11 +28,13 @@ import {
   MAX_PROFILE_PHOTOS,
   mergeDraftProfilePhotos,
   mergeUploadedPhotos,
+  mergeProfilePhotosIntoBiodata,
   parseProfilePhotos,
   PROFILE_PHOTOS_DRAFT_KEY,
   PROFILE_PHOTOS_KEY,
   resolveDisplayPhotoUri,
   resolvePortableListingPhotoUri,
+  resolveProfilePhotoSlots,
   serializeProfilePhotos,
   serializeRemotePhotoUrls,
 } from '@/constants/profilePhotos';
@@ -126,13 +128,21 @@ function profileDocFromValues(
 
   const profileId = profileDocIdFromPhone(phone) || listingIdFromValues(values);
   const mergedPhotos = resolveListingPhotos(values);
+  const slotPhotoUrls = resolveProfilePhotoSlots(
+    {
+      photoUrls: mergedPhotos,
+      primaryPhotoUrl: mergedPhotos.find(isRemotePhotoUri) ?? '',
+      biodata: values,
+    },
+    mergedPhotos,
+  );
   const now = Date.now();
 
   const listing = buildListingFromValues(
     {
       ...values,
-      profilePhotoUrls: serializeRemotePhotoUrls(mergedPhotos),
-      [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(mergedPhotos),
+      profilePhotoUrls: serializeRemotePhotoUrls(slotPhotoUrls),
+      [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(slotPhotoUrls),
     },
     listingIdFromValues(values),
   );
@@ -148,8 +158,8 @@ function profileDocFromValues(
       gender: resolvedGender,
       memberListingId: listingIdFromValues(values),
     },
-    photoUrls: mergedPhotos.filter(isRemotePhotoUri),
-    primaryPhotoUrl: mergedPhotos.find(isRemotePhotoUri) ?? '',
+    photoUrls: slotPhotoUrls,
+    primaryPhotoUrl: slotPhotoUrls.find(Boolean) ?? '',
     registrationCommunity: values.registrationCommunity?.trim() ?? '',
     gender: resolvedGender,
     fullName: values.fullName?.trim() ?? '',
@@ -216,6 +226,7 @@ export async function upsertProfileFromValues(
   }
 
   let nextValues = { ...preparedValues };
+  let uploadedSlots: string[] = [];
   if (options.uploadPhotos !== false) {
     const localPhotos = mergeDraftProfilePhotos(
       preparedValues[PROFILE_PHOTOS_DRAFT_KEY] ?? '',
@@ -227,33 +238,23 @@ export async function upsertProfileFromValues(
       try {
         const uploaded = await uploadProfilePhotos(phone, localPhotos);
         const merged = mergeUploadedPhotos(localPhotos, uploaded);
+        uploadedSlots = merged;
         nextValues = {
           ...nextValues,
           profilePhotoUrls: serializeRemotePhotoUrls(merged),
           [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(merged),
           [PROFILE_PHOTOS_DRAFT_KEY]: '',
         };
-
-        await Promise.all(
-          merged.map((photoUrl, slot) => {
-            if (!isRemotePhotoUri(photoUrl)) {
-              return Promise.resolve();
-            }
-            return submitPhotoForApproval(phone, {
-              memberName: preparedValues.fullName,
-              photoUrl,
-              slot,
-              autoApprove: options.autoApprovePhotos ?? ownerKey.startsWith('admin-'),
-            });
-          }),
-        );
       } catch {
         // Keep local photo URIs so profile save still succeeds; admin can approve later.
         nextValues = {
           ...nextValues,
           [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(localPhotos),
         };
+        uploadedSlots = localPhotos;
       }
+    } else {
+      uploadedSlots = localPhotos;
     }
   }
 
@@ -281,6 +282,26 @@ export async function upsertProfileFromValues(
   };
 
   await setDoc(docRef, merged, { merge: true });
+
+  if (options.uploadPhotos !== false) {
+    const slots = resolveProfilePhotoSlots(merged, uploadedSlots);
+    const previousSlots = existing.exists()
+      ? resolveProfilePhotoSlots(existing.data() as FirestoreProfileDoc)
+      : [];
+    await Promise.all(
+      slots.map((photoUrl, slot) => {
+        if (!isRemotePhotoUri(photoUrl) || photoUrl === previousSlots[slot]) {
+          return Promise.resolve();
+        }
+        return submitPhotoForApproval(phone, {
+          memberName: preparedValues.fullName,
+          photoUrl,
+          slot,
+          autoApprove: options.autoApprovePhotos ?? ownerKey.startsWith('admin-'),
+        });
+      }),
+    );
+  }
 
   if (!ownerKey.startsWith('admin-')) {
     await submitLoginApproval(phone, {
@@ -392,12 +413,8 @@ export async function hydrateLocalProfileFromFirestore(phone: string): Promise<R
     return null;
   }
 
-  const biodata = { ...(remote.biodata ?? {}) };
-  const photoUrls = Array.isArray(remote.photoUrls) ? remote.photoUrls : [];
-  if (photoUrls.length > 0) {
-    biodata.profilePhotoUrls = photoUrls.join('|');
-    biodata[PROFILE_PHOTOS_KEY] = serializeProfilePhotos(photoUrls);
-  }
+  const approvalPhotoSlots = await fetchPhotoSlotsFromApprovals(phone);
+  let biodata = mergeProfilePhotosIntoBiodata({ ...(remote.biodata ?? {}) }, remote, approvalPhotoSlots);
 
   const approvalStatus = await fetchUserApprovalStatus(phone).catch(() => remote.approvalStatus ?? null);
   if (approvalStatus) {
@@ -417,4 +434,52 @@ export async function hydrateLocalProfileFromFirestore(phone: string): Promise<R
   biodata._profileUpdatedAt = String(remote.updatedAt ?? Date.now());
 
   return biodata;
+}
+
+async function fetchPhotoSlotsFromApprovals(phone: string): Promise<string[]> {
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) {
+    return [];
+  }
+
+  try {
+    const approvals = await listPhotoApprovals();
+    const slots = Array.from({ length: MAX_PROFILE_PHOTOS }, () => '');
+    for (const entry of approvals) {
+      if (entry.phone !== digits || entry.status === 'rejected' || !entry.photoUrl.trim()) {
+        continue;
+      }
+      if (entry.slot >= 0 && entry.slot < MAX_PROFILE_PHOTOS) {
+        slots[entry.slot] = entry.photoUrl.trim();
+      }
+    }
+    return slots;
+  } catch {
+    return [];
+  }
+}
+
+export async function buildPhotoApprovalSlotsByPhone(): Promise<Map<string, string[]>> {
+  const map = new Map<string, string[]>();
+
+  try {
+    const approvals = await listPhotoApprovals();
+    for (const entry of approvals) {
+      if (entry.status === 'rejected' || !entry.photoUrl.trim()) {
+        continue;
+      }
+      const phone = entry.phone.replace(/\D/g, '');
+      if (!phone || entry.slot < 0 || entry.slot >= MAX_PROFILE_PHOTOS) {
+        continue;
+      }
+      const slots =
+        map.get(phone) ?? Array.from({ length: MAX_PROFILE_PHOTOS }, () => '');
+      slots[entry.slot] = entry.photoUrl.trim();
+      map.set(phone, slots);
+    }
+  } catch {
+    return map;
+  }
+
+  return map;
 }

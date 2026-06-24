@@ -16,14 +16,16 @@ import { BiodataExportPanel } from '@/components/BiodataExportPanel';
 import { adminColors } from '@/constants/admin';
 import { getOptionLabel } from '@/constants/formOptions';
 import { getProfileAvatarUri } from '@/constants/profileDisplay';
-import { resolveDisplayPhotoUri } from '@/constants/profilePhotos';
+import { getAdminProfilePhotoUri, parseProfilePhotos, PROFILE_PHOTOS_KEY, resolveDisplayPhotoUri } from '@/constants/profilePhotos';
 import { images } from '@/constants/images';
 import { useLanguage } from '@/context/LanguageContext';
 import { useBiodataExportPhoto } from '@/hooks/useBiodataExportPhoto';
 import type { BiodataExportOptions } from '@/lib/biodataExport';
+import type { FirestoreProfileDoc } from '@/lib/firestore/collections';
 
 type AdminMatrimonyProfileViewProps = {
   profileValues: Record<string, string>;
+  profileDoc?: FirestoreProfileDoc | null;
   phone: string;
   community?: string;
   browseHidden?: boolean;
@@ -35,6 +37,7 @@ type AdminMatrimonyProfileViewProps = {
 
 export function AdminMatrimonyProfileView({
   profileValues,
+  profileDoc = null,
   phone,
   community,
   browseHidden = false,
@@ -50,7 +53,32 @@ export function AdminMatrimonyProfileView({
     setHiddenFromBrowse(browseHidden);
   }, [browseHidden]);
   const exportOptionsRef = useRef<BiodataExportOptions>({ includePhoto: false, photoUri: '' });
-  const profilePhotoUri = useMemo(() => getProfileAvatarUri(profileValues), [profileValues]);
+  const profilePhotoUri = useMemo(() => {
+    if (profileDoc) {
+      const fromDoc = getAdminProfilePhotoUri(
+        profileDoc,
+        Platform.OS === 'web' ? 'web' : 'native',
+      );
+      if (fromDoc) {
+        return fromDoc;
+      }
+    }
+
+    const avatar = getProfileAvatarUri(profileValues);
+    if (avatar) {
+      return avatar;
+    }
+
+    return getAdminProfilePhotoUri(
+      {
+        biodata: profileValues,
+        listing: { image: profileValues.listingImage },
+        primaryPhotoUrl: profileValues.profilePhotoUrls?.split('|').find(Boolean),
+        photoUrls: profileValues.profilePhotoUrls?.split('|').filter(Boolean),
+      },
+      Platform.OS === 'web' ? 'web' : 'native',
+    );
+  }, [profileDoc, profileValues]);
   const displayPhoto = resolveDisplayPhotoUri(
     profilePhotoUri || profileValues.listingImage || '',
     Platform.OS === 'web' ? 'web' : 'native',

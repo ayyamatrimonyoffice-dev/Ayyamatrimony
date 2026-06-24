@@ -1,4 +1,16 @@
 {
-  "compilerOptions": {},
-  "extends": "expo/tsconfig.base"
+  "extends": "./matrimony-app/node_modules/expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": ["./matrimony-app/*"]
+    }
+  },
+  "include": [
+    "matrimony-app/**/*.ts",
+    "matrimony-app/**/*.tsx",
+    "matrimony-app/.expo/types/**/*.ts",
+    "matrimony-app/expo-env.d.ts"
+  ],
+  "exclude": ["node_modules", "**/node_modules"]
 }

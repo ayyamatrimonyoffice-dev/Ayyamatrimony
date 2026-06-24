@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppSplashGate } from '@/components/AppSplashGate';
 import {
   NotoSansTamil_400Regular,
@@ -40,6 +41,7 @@ export default function RootLayout() {
   const fontsReady = Boolean(loaded || error);
 
   return (
+    <SafeAreaProvider>
     <LanguageProvider>
       <ProfileFormProvider>
         <SubscriptionProvider>
@@ -87,5 +89,6 @@ export default function RootLayout() {
         </SubscriptionProvider>
       </ProfileFormProvider>
     </LanguageProvider>
+    </SafeAreaProvider>
   );
 }

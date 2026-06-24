@@ -1,6 +1,6 @@
-import expo.modules.splashscreen.SplashScreenManager
 package com.matrimony.app
 
+import expo.modules.splashscreen.SplashScreenManager
 import android.os.Build
 import android.os.Bundle
 

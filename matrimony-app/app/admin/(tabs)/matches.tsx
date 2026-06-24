@@ -16,11 +16,11 @@ import { adminFilterLabelKeys } from '@/constants/adminLabels';
 
 import { images } from '@/constants/images';
 
-import { firstDisplayablePhotoUri } from '@/constants/profilePhotos';
+import { getAdminProfilePhotoUri } from '@/constants/profilePhotos';
 
 import { useLanguage } from '@/context/LanguageContext';
 
-import { listAllProfiles } from '@/lib/firestore/profileService';
+import { listAllProfiles, buildPhotoApprovalSlotsByPhone } from '@/lib/firestore/profileService';
 
 import type { FirestoreProfileDoc } from '@/lib/firestore/collections';
 
@@ -34,15 +34,16 @@ const filters: ProfileFilter[] = ['all', 'male', 'female'];
 
 
 
-function profilePhoto(profile: FirestoreProfileDoc): string {
-  return firstDisplayablePhotoUri(
-    [
-      profile.primaryPhotoUrl ?? '',
-      profile.listing?.image ?? '',
-      ...(profile.photoUrls ?? []),
-      ...(profile.approvedPhotoUrls ?? []),
-    ],
+function profilePhoto(
+  profile: FirestoreProfileDoc,
+  approvalSlotsByPhone: Map<string, string[]>,
+): string {
+  const phone = profile.phone.replace(/\D/g, '');
+  const approvalSlots = approvalSlotsByPhone.get(phone) ?? [];
+  return getAdminProfilePhotoUri(
+    profile,
     Platform.OS === 'web' ? 'web' : 'native',
+    approvalSlots,
   );
 }
 
@@ -55,6 +56,9 @@ export default function AdminMatchesScreen() {
   const { translate } = useLanguage();
 
   const [profiles, setProfiles] = useState<FirestoreProfileDoc[]>([]);
+  const [approvalSlotsByPhone, setApprovalSlotsByPhone] = useState<Map<string, string[]>>(
+    () => new Map(),
+  );
 
   const [filter, setFilter] = useState<ProfileFilter>('all');
 
@@ -68,7 +72,12 @@ export default function AdminMatchesScreen() {
 
     try {
 
-      const entries = await listAllProfiles();
+      const [entries, approvalSlots] = await Promise.all([
+        listAllProfiles(),
+        buildPhotoApprovalSlotsByPhone(),
+      ]);
+
+      setApprovalSlotsByPhone(approvalSlots);
 
       setProfiles(
 
@@ -204,7 +213,7 @@ export default function AdminMatchesScreen() {
 
           {filteredProfiles.map((profile) => {
 
-            const photo = profilePhoto(profile);
+            const photo = profilePhoto(profile, approvalSlotsByPhone);
 
             return (
 

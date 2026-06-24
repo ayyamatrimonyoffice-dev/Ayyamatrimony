@@ -34,10 +34,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexShrink: 0,
   },
   btn: {
-    minWidth: 28,
-    height: 28,
+    minWidth: 30,
+    height: 30,
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',

@@ -142,6 +142,102 @@ export function serializeRemotePhotoUrls(photos: string[]): string {
   return remotePhotoUrlList(photos).join('|');
 }
 
+/** Merge every Firestore photo field into fixed slots for admin display and biodata hydration. */
+export function resolveProfilePhotoSlots(
+  profile: {
+    photoUrls?: string[];
+    approvedPhotoUrls?: string[];
+    primaryPhotoUrl?: string;
+    listing?: { image?: string };
+    biodata?: Record<string, string>;
+  },
+  fallbackSlots: string[] = [],
+): string[] {
+  const biodata = profile.biodata ?? {};
+  const fromDoc = Array.isArray(profile.photoUrls) ? profile.photoUrls : [];
+  const fromApproved = Array.isArray(profile.approvedPhotoUrls) ? profile.approvedPhotoUrls : [];
+  const fromBiodataPhotos = parseProfilePhotos(biodata[PROFILE_PHOTOS_KEY] ?? '');
+  const fromPipe = (biodata.profilePhotoUrls ?? '').split('|');
+  const primary = profile.primaryPhotoUrl?.trim() ?? '';
+  const listingImage = profile.listing?.image?.trim() ?? '';
+
+  return Array.from({ length: MAX_PROFILE_PHOTOS }, (_, index) => {
+    const candidates = [
+      fromDoc[index],
+      fromApproved[index],
+      fromBiodataPhotos[index],
+      fromPipe[index],
+      fallbackSlots[index],
+      index === 0 ? primary : '',
+      index === 0 ? listingImage : '',
+    ];
+
+    for (const candidate of candidates) {
+      if (candidate && isRemotePhotoUri(candidate)) {
+        return candidate;
+      }
+    }
+
+    return '';
+  });
+}
+
+export function mergeProfilePhotosIntoBiodata(
+  biodata: Record<string, string>,
+  profile: {
+    photoUrls?: string[];
+    approvedPhotoUrls?: string[];
+    primaryPhotoUrl?: string;
+    listing?: { image?: string };
+    biodata?: Record<string, string>;
+  },
+  fallbackSlots: string[] = [],
+): Record<string, string> {
+  const slots = resolveProfilePhotoSlots(profile, fallbackSlots);
+  if (!slots.some(Boolean)) {
+    return biodata;
+  }
+
+  const primary = slots.find(Boolean) ?? '';
+  return {
+    ...biodata,
+    profilePhotoUrls: serializeRemotePhotoUrls(slots),
+    [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(slots),
+    listingImage: primary,
+  };
+}
+
+/** Admin lists and profile view — only cloud URLs (not device-local paths). */
+export function getAdminProfilePhotoUri(
+  profile: {
+    photoUrls?: string[];
+    approvedPhotoUrls?: string[];
+    primaryPhotoUrl?: string;
+    listing?: { image?: string };
+    biodata?: Record<string, string>;
+  },
+  platform: 'web' | 'native' = 'native',
+  fallbackSlots: string[] = [],
+): string {
+  const slots = resolveProfilePhotoSlots(profile, fallbackSlots);
+  const resolved = firstDisplayablePhotoUri(slots, platform);
+  if (resolved) {
+    return resolved;
+  }
+
+  const listingImage = profile.listing?.image?.trim() ?? '';
+  if (isRemotePhotoUri(listingImage)) {
+    return resolveDisplayPhotoUri(listingImage, platform);
+  }
+
+  const biodataPrimary = profile.biodata?.listingImage?.trim() ?? '';
+  if (isRemotePhotoUri(biodataPrimary)) {
+    return resolveDisplayPhotoUri(biodataPrimary, platform);
+  }
+
+  return '';
+}
+
 export function biodataForFirestore(values: Record<string, string>): Record<string, string> {
   const remoteUrls = values.profilePhotoUrls?.split('|').filter(isRemotePhotoUri) ?? [];
   const localPhotos = parseProfilePhotos(values[PROFILE_PHOTOS_KEY] ?? '');

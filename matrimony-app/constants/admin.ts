@@ -65,6 +65,7 @@ export const adminTabs = {
 } as const;
 
 export const ADMIN_FAB_GAP = 12;
+export const ADMIN_TAB_BAR_CONTENT_HEIGHT = 56;
 
 export type AdminTabBarMetrics = {
   height: number;
@@ -73,25 +74,33 @@ export type AdminTabBarMetrics = {
 };
 
 export function getAdminTabBarMetrics(bottomInset = 0): AdminTabBarMetrics {
-  const paddingTop = 8;
-
   if (Platform.OS === 'web') {
     return {
-      paddingTop,
+      paddingTop: 8,
       paddingBottom: 20,
       height: 92,
     };
   }
 
-  const paddingBottom = Math.max(bottomInset + 10, 16);
-
   return {
-    paddingTop,
-    paddingBottom,
-    height: 56 + paddingBottom,
+    paddingTop: 6,
+    paddingBottom: 0,
+    // Height is content-only; AdminTabBar SafeAreaView handles the home-indicator inset.
+    height: ADMIN_TAB_BAR_CONTENT_HEIGHT,
   };
 }
 
 export function getAdminFabBottom(bottomInset = 0): number {
-  return getAdminTabBarMetrics(bottomInset).height + ADMIN_FAB_GAP;
+  if (Platform.OS === 'web') {
+    return getAdminTabBarMetrics(bottomInset).height + ADMIN_FAB_GAP;
+  }
+  return ADMIN_TAB_BAR_CONTENT_HEIGHT + Math.max(bottomInset, 0) + ADMIN_FAB_GAP;
+}
+
+/** Space reserved above the pinned admin tab bar (content + safe area). */
+export function getAdminSceneBottomInset(bottomInset = 0): number {
+  if (Platform.OS === 'web') {
+    return getAdminTabBarMetrics(bottomInset).height;
+  }
+  return ADMIN_TAB_BAR_CONTENT_HEIGHT + 6 + Math.max(bottomInset, 0);
 }

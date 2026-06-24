@@ -3,9 +3,10 @@ import { Redirect, Tabs, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AdminFab } from '@/components/admin/AdminFab';
+import { AdminTabBar } from '@/components/admin/AdminTabBar';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { adminColors, getAdminTabBarMetrics } from '@/constants/admin';
+import { adminColors, getAdminSceneBottomInset, getAdminTabBarMetrics } from '@/constants/admin';
 
 const TAB_ICON_SIZE = 22;
 
@@ -38,86 +39,91 @@ export default function AdminTabsLayout() {
       minHeight: tabBarMetrics.height,
     },
     default: {
-      backgroundColor: adminColors.surface,
-      borderTopColor: adminColors.border,
-      borderTopWidth: 1,
-      paddingTop: tabBarMetrics.paddingTop,
-      paddingBottom: tabBarMetrics.paddingBottom,
-      height: tabBarMetrics.height,
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'transparent',
+      borderTopWidth: 0,
+      paddingTop: 0,
+      paddingBottom: 0,
+      elevation: 0,
     },
   });
 
   return (
     <View style={styles.shell}>
-      <View style={styles.tabsHost}>
-        <Tabs
-          key={language}
-          screenOptions={{
-            headerShown: false,
-            tabBarActiveTintColor: adminColors.primary,
-            tabBarInactiveTintColor: adminColors.textMuted,
-            tabBarStyle,
-            tabBarLabelStyle: styles.tabLabel,
-            safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
-            sceneContainerStyle: styles.scene,
+      <Tabs
+        key={language}
+        tabBar={(props) => <AdminTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: adminColors.primary,
+          tabBarInactiveTintColor: adminColors.textMuted,
+          tabBarStyle,
+          tabBarLabelStyle: styles.tabLabel,
+          tabBarItemStyle: styles.tabItem,
+          sceneContainerStyle: [
+            styles.scene,
+            Platform.OS !== 'web' ? { paddingBottom: getAdminSceneBottomInset(insets.bottom) } : null,
+          ],
+        }}
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: translate('adminTabDashboard'),
+            tabBarIcon: ({ color }) => (
+              <MaterialIcons name="dashboard" size={TAB_ICON_SIZE} color={color} />
+            ),
           }}
-        >
-          <Tabs.Screen
-            name="index"
-            options={{
-              title: translate('adminTabDashboard'),
-              tabBarIcon: ({ color }) => (
-                <MaterialIcons name="dashboard" size={TAB_ICON_SIZE} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="users"
-            options={{
-              title: translate('adminTabApprovals'),
-              tabBarIcon: ({ color }) => (
-                <MaterialIcons name="fact-check" size={TAB_ICON_SIZE} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="approvals"
-            options={{
-              href: null,
-            }}
-          />
-          <Tabs.Screen
-            name="payments"
-            options={{
-              title: translate('adminTabPayments'),
-              tabBarIcon: ({ color }) => (
-                <MaterialIcons name="payments" size={TAB_ICON_SIZE} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="photos"
-            options={{
-              href: null,
-            }}
-          />
-          <Tabs.Screen
-            name="matches"
-            options={{
-              title: translate('adminTabMatches'),
-              tabBarIcon: ({ color }) => (
-                <MaterialIcons name="favorite" size={TAB_ICON_SIZE} color={color} />
-              ),
-            }}
-          />
-          <Tabs.Screen
-            name="settings"
-            options={{
-              href: null,
-            }}
-          />
-        </Tabs>
-      </View>
+        />
+        <Tabs.Screen
+          name="users"
+          options={{
+            title: translate('adminTabApprovals'),
+            tabBarIcon: ({ color }) => (
+              <MaterialIcons name="fact-check" size={TAB_ICON_SIZE} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="approvals"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="payments"
+          options={{
+            title: translate('adminTabPayments'),
+            tabBarIcon: ({ color }) => (
+              <MaterialIcons name="payments" size={TAB_ICON_SIZE} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="photos"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="matches"
+          options={{
+            title: translate('adminTabMatches'),
+            tabBarIcon: ({ color }) => (
+              <MaterialIcons name="favorite" size={TAB_ICON_SIZE} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            href: null,
+          }}
+        />
+      </Tabs>
       <AdminFab onPress={() => router.push('/admin/add-member')} />
     </View>
   );
@@ -126,20 +132,10 @@ export default function AdminTabsLayout() {
 const styles = StyleSheet.create({
   shell: {
     flex: 1,
-    minHeight: 0,
-    overflow: 'visible',
-  },
-  tabsHost: {
-    flex: 1,
-    minHeight: 0,
-    ...Platform.select({
-      web: {
-        height: '100%',
-      },
-      default: {},
-    }),
+    backgroundColor: adminColors.background,
   },
   scene: {
+    flex: 1,
     backgroundColor: adminColors.background,
   },
   loader: {
@@ -153,5 +149,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 12,
     marginTop: 2,
+    marginBottom: 2,
+  },
+  tabItem: {
+    paddingTop: 2,
+    paddingBottom: 2,
   },
 });

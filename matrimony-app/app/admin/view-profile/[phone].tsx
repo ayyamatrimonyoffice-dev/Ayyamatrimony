@@ -5,6 +5,7 @@ import { AdminMatrimonyProfileLoader, AdminMatrimonyProfileView } from '@/compon
 import { adminColors } from '@/constants/admin';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { useLanguage } from '@/context/LanguageContext';
+import type { FirestoreProfileDoc } from '@/lib/firestore/collections';
 import {
   fetchProfileByPhone,
   hydrateLocalProfileFromFirestore,
@@ -18,12 +19,14 @@ export default function AdminViewProfileScreen() {
   const { isReady, isAuthenticated } = useAdminAuth();
   const { translate } = useLanguage();
   const [profileValues, setProfileValues] = useState<Record<string, string> | null>(null);
+  const [profileDoc, setProfileDoc] = useState<FirestoreProfileDoc | null>(null);
   const [browseHidden, setBrowseHidden] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   const loadProfile = useCallback(async () => {
     if (!phone) {
       setProfileValues(null);
+      setProfileDoc(null);
       setBrowseHidden(false);
       setIsLoading(false);
       return;
@@ -36,6 +39,7 @@ export default function AdminViewProfileScreen() {
         fetchProfileByPhone(phone),
       ]);
       setProfileValues(biodata);
+      setProfileDoc(profileDoc);
       setBrowseHidden(profileDoc?.browseHidden === true);
     } finally {
       setIsLoading(false);
@@ -80,6 +84,7 @@ export default function AdminViewProfileScreen() {
       ) : (
         <AdminMatrimonyProfileView
           profileValues={profileValues}
+          profileDoc={profileDoc}
           phone={phone}
           browseHidden={browseHidden}
           onBrowseHiddenChange={handleBrowseHiddenChange}

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CreateProfileBiodataForm, PhotoVisibilityToggle } from '@/components/CreateProfileBiodataForm';
 import { adminColors } from '@/constants/admin';
 import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
@@ -17,6 +17,7 @@ import { hydrateLocalProfileFromFirestore } from '@/lib/firestore/profileService
 
 export default function AdminAddMemberScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { phone: editPhone } = useLocalSearchParams<{ phone?: string }>();
   const { isReady: authReady, isAuthenticated } = useAdminAuth();
   const { translate } = useLanguage();
@@ -95,7 +96,7 @@ export default function AdminAddMemberScreen() {
 
   if (isEditing && isEditLoading) {
     return (
-      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.loading}>
           <ActivityIndicator size="large" color={adminColors.primary} />
         </View>
@@ -105,8 +106,8 @@ export default function AdminAddMemberScreen() {
 
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 8) }]}>
         <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={8}>
           <MaterialIcons name="arrow-back" size={22} color={adminColors.text} />
         </Pressable>

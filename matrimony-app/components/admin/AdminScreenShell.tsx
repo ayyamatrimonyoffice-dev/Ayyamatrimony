@@ -1,8 +1,8 @@
 import { ReactNode } from 'react';
 import { Image, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { adminColors } from '@/constants/admin';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { adminColors, getAdminFabBottom } from '@/constants/admin';
 import { images } from '@/constants/images';
 import { AdminLanguageToggle } from '@/components/admin/AdminLanguageToggle';
 
@@ -29,16 +29,19 @@ export function AdminScreenShell({
   headerRight,
   pinnedContent,
 }: AdminScreenShellProps) {
+  const insets = useSafeAreaInsets();
+  const scrollBottomPad = getAdminFabBottom(insets.bottom) + 20;
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       {hideHeader ? null : (
         <View style={styles.header}>
-          {onBack ? (
-            <Pressable style={styles.backBtn} onPress={onBack} hitSlop={8}>
-              <MaterialIcons name="arrow-back" size={22} color={adminColors.text} />
-            </Pressable>
-          ) : null}
-          <View style={showLogo ? styles.headerBrandRow : styles.headerTextWrap}>
+          <View style={styles.headerLeading}>
+            {onBack ? (
+              <Pressable style={styles.backBtn} onPress={onBack} hitSlop={8}>
+                <MaterialIcons name="arrow-back" size={22} color={adminColors.text} />
+              </Pressable>
+            ) : null}
             {showLogo ? (
               <View style={styles.logoRing}>
                 <View style={styles.logoWrap}>
@@ -48,23 +51,23 @@ export function AdminScreenShell({
             ) : null}
             <View style={styles.headerTextWrap}>
               {title ? (
-                <View style={styles.titleRow}>
-                  <Text style={styles.title} numberOfLines={1}>
-                    {title}
-                  </Text>
-                  {showLanguageToggle ? <AdminLanguageToggle /> : null}
-                </View>
+                <Text style={styles.title} numberOfLines={2}>
+                  {title}
+                </Text>
               ) : null}
               {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
             </View>
           </View>
-          {headerRight}
+          <View style={styles.headerTrailing}>
+            {showLanguageToggle ? <AdminLanguageToggle /> : null}
+            {headerRight}
+          </View>
         </View>
       )}
       {pinnedContent ? <View style={styles.pinned}>{pinnedContent}</View> : null}
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollBottomPad }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -83,13 +86,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'web' ? 8 : 6,
     paddingBottom: 12,
     backgroundColor: adminColors.surface,
     borderBottomWidth: 1,
     borderBottomColor: adminColors.border,
-    gap: 8,
+    gap: 10,
+  },
+  headerLeading: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    minWidth: 0,
+  },
+  headerTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    flexShrink: 0,
   },
   backBtn: {
     width: 36,
@@ -98,19 +115,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: adminColors.background,
-  },
-  headerBrandRow: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    minWidth: 0,
+    flexShrink: 0,
   },
   logoRing: {
     padding: 2,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(139, 0, 0, 0.2)',
+    flexShrink: 0,
     ...Platform.select({
       web: { boxShadow: '0 4px 12px rgba(87, 0, 0, 0.12)' },
       default: {
@@ -123,30 +135,26 @@ const styles = StyleSheet.create({
     }),
   },
   logoWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: adminColors.primaryLight,
     padding: 4,
   },
   logo: {
     width: '100%',
     height: '100%',
-    borderRadius: 16,
+    borderRadius: 14,
   },
   headerTextWrap: {
     flex: 1,
     minWidth: 0,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+    justifyContent: 'center',
   },
   title: {
-    flex: 1,
     color: adminColors.text,
-    fontSize: 22,
+    fontSize: Platform.OS === 'web' ? 22 : 17,
+    lineHeight: Platform.OS === 'web' ? 28 : 22,
     fontWeight: '700',
   },
   subtitle: {
@@ -170,7 +178,6 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
-    paddingBottom: 100,
     gap: 12,
   },
 });
