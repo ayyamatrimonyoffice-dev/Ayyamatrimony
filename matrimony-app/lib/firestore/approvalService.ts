@@ -16,6 +16,7 @@ import {
   FIRESTORE_COLLECTIONS,
   profileDocIdFromPhone,
   type FirestoreApprovalDoc,
+  type FirestoreProfileDoc,
 } from '@/lib/firestore/collections';
 
 function formatApprovalDate(timestamp: number): string {
@@ -158,26 +159,90 @@ export function canUserBrowseProfiles(status: FirestoreApprovalDoc['status'] | n
   return status === 'approved';
 }
 
+function isSelfRegisteredProfile(profile: FirestoreProfileDoc): boolean {
+  if (profile.registrationSource === 'admin' || profile.ownerKey?.startsWith('admin-')) {
+    return false;
+  }
+  return true;
+}
+
+function mergeApprovalRecords(
+  approvalDocs: FirestoreApprovalDoc[],
+  profiles: FirestoreProfileDoc[],
+): AdminApprovalRecord[] {
+  const records = new Map<string, { record: AdminApprovalRecord; sortTime: number }>();
+
+  for (const entry of approvalDocs) {
+    const phone = entry.phone.replace(/\D/g, '');
+    if (!phone || isAdminPhone(phone)) {
+      continue;
+    }
+    records.set(phone, {
+      record: toAdminApprovalRecord(entry),
+      sortTime: entry.updatedAt,
+    });
+  }
+
+  for (const profile of profiles) {
+    const phone = profile.phone?.replace(/\D/g, '') ?? '';
+    if (!phone || isAdminPhone(phone) || records.has(phone) || !isSelfRegisteredProfile(profile)) {
+      continue;
+    }
+
+    const status = resolveUserApprovalStatus(profile.approvalStatus);
+    if (status === 'approved') {
+      continue;
+    }
+
+    const resolvedStatus: FirestoreApprovalDoc['status'] = status ?? 'pending';
+    records.set(phone, {
+      record: {
+        id: approvalDocIdFromPhone(phone),
+        name:
+          profile.fullName?.trim() ||
+          profile.listing?.name?.trim() ||
+          `Member ${phone.slice(-4)}`,
+        phone,
+        submittedAt: formatApprovalDate(profile.updatedAt ?? profile.createdAt ?? Date.now()),
+        status: resolvedStatus,
+      },
+      sortTime: profile.updatedAt ?? profile.createdAt ?? 0,
+    });
+  }
+
+  return Array.from(records.values())
+    .sort((left, right) => right.sortTime - left.sortTime)
+    .map(({ record }) => record);
+}
+
 export async function listApprovals(): Promise<AdminApprovalRecord[]> {
   const db = await getFirebaseFirestore();
   if (!db) {
     return [];
   }
 
+  let approvalDocs: FirestoreApprovalDoc[] = [];
   try {
     const snapshot = await getDocs(
       query(collection(db, FIRESTORE_COLLECTIONS.approvals), orderBy('updatedAt', 'desc')),
     );
-    return snapshot.docs.map((entry) =>
-      toAdminApprovalRecord(entry.data() as FirestoreApprovalDoc),
-    );
+    approvalDocs = snapshot.docs.map((entry) => entry.data() as FirestoreApprovalDoc);
   } catch {
     const snapshot = await getDocs(collection(db, FIRESTORE_COLLECTIONS.approvals));
-    return snapshot.docs
+    approvalDocs = snapshot.docs
       .map((entry) => entry.data() as FirestoreApprovalDoc)
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-      .map(toAdminApprovalRecord);
+      .sort((a, b) => b.updatedAt - a.updatedAt);
   }
+
+  let profiles: FirestoreProfileDoc[] = [];
+  try {
+    const profileSnapshot = await getDocs(collection(db, FIRESTORE_COLLECTIONS.profiles));
+    profiles = profileSnapshot.docs.map((entry) => entry.data() as FirestoreProfileDoc);
+  } catch {
+    profiles = [];
+  }
+
+  return mergeApprovalRecords(approvalDocs, profiles);
 }
 
 export async function updateApprovalStatus(
@@ -191,28 +256,63 @@ export async function updateApprovalStatus(
 
   const docRef = doc(db, FIRESTORE_COLLECTIONS.approvals, approvalId);
   const existing = await getDoc(docRef);
+  const now = Date.now();
+  let phone = '';
+
   if (!existing.exists()) {
-    return;
+    phone = approvalId.startsWith('phone_') ? approvalId.slice('phone_'.length) : '';
+    if (!phone) {
+      return;
+    }
+
+    const profileId = profileDocIdFromPhone(phone);
+    if (!profileId) {
+      return;
+    }
+
+    const profileSnapshot = await getDoc(doc(db, FIRESTORE_COLLECTIONS.profiles, profileId));
+    if (!profileSnapshot.exists()) {
+      return;
+    }
+
+    const profile = profileSnapshot.data() as FirestoreProfileDoc;
+    phone = profile.phone?.replace(/\D/g, '') || phone;
+    const payload: FirestoreApprovalDoc = {
+      approvalId,
+      phone,
+      name:
+        profile.fullName?.trim() ||
+        profile.listing?.name?.trim() ||
+        `Member ${phone.slice(-4)}`,
+      profileId: profile.profileId,
+      registrationCommunity: profile.registrationCommunity,
+      status,
+      submittedAt: profile.createdAt ?? now,
+      updatedAt: now,
+      source: 'profile',
+    };
+    await setDoc(docRef, payload, { merge: true });
+  } else {
+    const current = existing.data() as FirestoreApprovalDoc;
+    phone = current.phone.replace(/\D/g, '');
+    await setDoc(
+      docRef,
+      {
+        ...current,
+        status,
+        updatedAt: now,
+      } satisfies FirestoreApprovalDoc,
+      { merge: true },
+    );
   }
 
-  const current = existing.data() as FirestoreApprovalDoc;
-  await setDoc(
-    docRef,
-    {
-      ...current,
-      status,
-      updatedAt: Date.now(),
-    } satisfies FirestoreApprovalDoc,
-    { merge: true },
-  );
-
-  const profileId = profileDocIdFromPhone(current.phone);
+  const profileId = profileDocIdFromPhone(phone);
   if (profileId) {
     await setDoc(
       doc(db, FIRESTORE_COLLECTIONS.profiles, profileId),
       {
         approvalStatus: status,
-        updatedAt: Date.now(),
+        updatedAt: now,
       },
       { merge: true },
     );

@@ -1,7 +1,8 @@
 import { MaterialIcons } from '@expo/vector-icons';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Platform, StyleSheet, Text, View } from 'react-native';
 import { useLanguage } from '@/context/LanguageContext';
 import { images } from '@/constants/images';
+import { resolveDisplayPhotoUri } from '@/constants/profilePhotos';
 import { colors, fonts, spacing, typography } from '@/constants/theme';
 
 type ProtectedProfileImageProps = {
@@ -20,14 +21,15 @@ export function ProtectedProfileImage({
   imageStyle,
 }: ProtectedProfileImageProps) {
   const { translate } = useLanguage();
-  const hasImage = Boolean(imageUri?.trim());
+  const displayUri = resolveDisplayPhotoUri(imageUri, Platform.OS === 'web' ? 'web' : 'native');
+  const hasImage = Boolean(displayUri);
   const isLocked = locked || pendingModeration;
 
   return (
     <View style={[styles.wrap, style]}>
       {hasImage ? (
         <Image
-          source={{ uri: imageUri }}
+          source={{ uri: displayUri }}
           style={[styles.image, imageStyle, isLocked && styles.imageLocked]}
           blurRadius={isLocked ? 18 : 0}
         />

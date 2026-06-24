@@ -16,6 +16,7 @@ import { BiodataExportPanel } from '@/components/BiodataExportPanel';
 import { adminColors } from '@/constants/admin';
 import { getOptionLabel } from '@/constants/formOptions';
 import { getProfileAvatarUri } from '@/constants/profileDisplay';
+import { resolveDisplayPhotoUri } from '@/constants/profilePhotos';
 import { images } from '@/constants/images';
 import { useLanguage } from '@/context/LanguageContext';
 import { useBiodataExportPhoto } from '@/hooks/useBiodataExportPhoto';
@@ -50,7 +51,10 @@ export function AdminMatrimonyProfileView({
   }, [browseHidden]);
   const exportOptionsRef = useRef<BiodataExportOptions>({ includePhoto: false, photoUri: '' });
   const profilePhotoUri = useMemo(() => getProfileAvatarUri(profileValues), [profileValues]);
-  const displayPhoto = profilePhotoUri || profileValues.listingImage || '';
+  const displayPhoto = resolveDisplayPhotoUri(
+    profilePhotoUri || profileValues.listingImage || '',
+    Platform.OS === 'web' ? 'web' : 'native',
+  );
 
   const {
     includePhoto,
@@ -58,7 +62,6 @@ export function AdminMatrimonyProfileView({
     exportPhotoUri,
     exportOptions,
     pickExportPhoto,
-    clearExportPhoto,
   } = useBiodataExportPhoto({ profilePhotoUri });
 
   exportOptionsRef.current = exportOptions;
@@ -155,7 +158,6 @@ export function AdminMatrimonyProfileView({
             includePhoto={includePhoto}
             onIncludePhotoChange={setIncludePhoto}
             onPickPhoto={pickExportPhoto}
-            onClearPhoto={clearExportPhoto}
             hasExportPhoto={Boolean(exportPhotoUri)}
             hasProfilePhoto={Boolean(profilePhotoUri)}
           />
@@ -164,9 +166,11 @@ export function AdminMatrimonyProfileView({
 
         <View style={styles.formWrap}>
           <CreateProfileBiodataForm
+            key={`admin-view-${phone}-${profileValues._profileUpdatedAt ?? profileValues.registrationNumber ?? '0'}`}
             editable={false}
             viewOnly
             profileValues={profileValues}
+            exportPhotoOptions={exportOptions}
             getExportOptions={getExportOptions}
             onSave={() => undefined}
           />

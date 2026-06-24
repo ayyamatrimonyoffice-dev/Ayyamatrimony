@@ -4,6 +4,10 @@ import { captureRef } from 'react-native-view-shot';
 import type { RefObject } from 'react';
 import type { View } from 'react-native';
 
+/** ~150 DPI width for A4 portrait — readable when printed at a shop from a shared image. */
+const A4_CAPTURE_WIDTH = 1240;
+const A4_CAPTURE_HEIGHT = Math.round(A4_CAPTURE_WIDTH * 1.414);
+
 export async function shareBiodataSheetAsImage(
   printRootRef: RefObject<View>,
   options?: { fileName?: string; dialogTitle?: string },
@@ -21,6 +25,8 @@ export async function shareBiodataSheetAsImage(
     format: 'png',
     quality: 1,
     result: 'tmpfile',
+    width: A4_CAPTURE_WIDTH,
+    height: A4_CAPTURE_HEIGHT,
   });
 
   const safeName = (options?.fileName ?? `biodata-${Date.now()}`)

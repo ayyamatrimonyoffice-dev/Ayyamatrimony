@@ -20,6 +20,58 @@ export function isLocalPhotoUri(uri: string): boolean {
   return Boolean(uri.trim()) && !isRemotePhotoUri(uri);
 }
 
+/** URLs that can render in a browser (admin web, Expo web). */
+export function isWebDisplayablePhotoUri(uri: string): boolean {
+  const trimmed = uri.trim();
+  if (!trimmed) {
+    return false;
+  }
+  return (
+    isRemotePhotoUri(trimmed) || trimmed.startsWith('data:') || trimmed.startsWith('blob:')
+  );
+}
+
+/** URLs that can render on a native device (includes local cache paths). */
+export function isNativeDisplayablePhotoUri(uri: string): boolean {
+  const trimmed = uri.trim();
+  if (!trimmed) {
+    return false;
+  }
+  return (
+    isWebDisplayablePhotoUri(trimmed) ||
+    trimmed.startsWith('file://') ||
+    trimmed.startsWith('content://')
+  );
+}
+
+export function isDisplayablePhotoUri(uri: string, platform: 'web' | 'native' = 'native'): boolean {
+  return platform === 'web' ? isWebDisplayablePhotoUri(uri) : isNativeDisplayablePhotoUri(uri);
+}
+
+/** Drop device-local paths on web so Image does not throw "Not allowed to load local resource". */
+export function resolveDisplayPhotoUri(uri: string, platform: 'web' | 'native' = 'native'): string {
+  const trimmed = uri?.trim() ?? '';
+  return isDisplayablePhotoUri(trimmed, platform) ? trimmed : '';
+}
+
+export function firstDisplayablePhotoUri(
+  photos: string[],
+  platform: 'web' | 'native' = 'native',
+): string {
+  for (const photo of photos) {
+    const resolved = resolveDisplayPhotoUri(photo, platform);
+    if (resolved) {
+      return resolved;
+    }
+  }
+  return '';
+}
+
+/** Listing cards and Firestore should only store cloud URLs — never device cache paths. */
+export function resolvePortableListingPhotoUri(photos: string[]): string {
+  return photos.find(isRemotePhotoUri) ?? '';
+}
+
 /** Keep only cloud URLs in persisted profile storage — never base64/blob/file paths. */
 export function photosForPersistence(photos: string[]): string[] {
   return Array.from({ length: MAX_PROFILE_PHOTOS }, (_, index) => {

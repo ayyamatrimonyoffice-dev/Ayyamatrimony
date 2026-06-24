@@ -85,7 +85,7 @@ export function ProfileFormProvider({ children }: { children: ReactNode }) {
         if (key === PROFILE_PHOTOS_KEY) {
           const parsed = parseProfilePhotos(nextValue);
           next = {
-            ...current,
+            ...next,
             [PROFILE_PHOTOS_KEY]: serializePersistedProfilePhotos(parsed),
           };
           if (parsed.some(isLocalPhotoUri)) {

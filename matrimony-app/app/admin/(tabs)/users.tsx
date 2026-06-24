@@ -79,8 +79,6 @@ export default function AdminUsersScreen() {
     [photoItems],
   );
 
-  const pendingTotal = pendingProfileCount + pendingPhotoCount;
-
   const updateItemStatus = (id: string, status: AdminApprovalRecord['status']) => {
     void updateStatus(id, status).then(() => {
       Alert.alert(
@@ -122,11 +120,6 @@ export default function AdminUsersScreen() {
     <AdminScreenShell
       title={translate('adminApprovals')}
       showLanguageToggle
-      subtitle={
-        pendingTotal > 0
-          ? translateFormat('adminApprovalsCombinedPendingSubtitle', { count: pendingTotal })
-          : translate('adminApprovalsSubtitle')
-      }
     >
       <View style={styles.sectionToggle}>
         <Pressable

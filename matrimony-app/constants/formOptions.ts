@@ -585,10 +585,10 @@ const familyInformationFields: FamilyFieldDefinition[] = [
     },
   },
   {
-    config: { fieldKey: 'totalFamilyMembers', kind: 'select', optionsKey: 'siblingCount' },
+    config: { fieldKey: 'totalFamilyMembers', kind: 'text' },
     display: {
-      en: { label: 'Total Family Members', placeholder: 'Select count' },
-      ta: { label: 'மொத்த குடும்ப உறுப்பினர்கள்', placeholder: 'எண்ணிக்கையைத் தேர்ந்தெடுக்கவும்' },
+      en: { label: 'Total Family Members', placeholder: 'Enter number' },
+      ta: { label: 'மொத்த குடும்ப உறுப்பினர்கள்', placeholder: 'எண்ணை உள்ளிடவும்' },
     },
   },
   {

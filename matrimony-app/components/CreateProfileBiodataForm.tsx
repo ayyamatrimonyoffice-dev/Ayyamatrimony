@@ -41,6 +41,7 @@ import { useProfileForm } from '@/context/ProfileFormContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { borderRadius, colors, fonts, spacing } from '@/constants/theme';
 import { applyDefaultRegistrationCommunity } from '@/constants/profileCompletion';
+import { CONTACT_PHONE_KEY, normalizePhoneDigits } from '@/constants/contactDetails';
 import { getProfileAvatarUri } from '@/constants/profileDisplay';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { applyExportPhotoToPrintBox, type BiodataExportOptions } from '@/lib/biodataExport';
@@ -52,10 +53,13 @@ import {
 import {
   BIODATA_SHOW_PHOTO_KEY,
   parseBiodataShowPhoto,
+  isLocalPhotoUri,
   mergeDraftProfilePhotos,
   parseProfilePhotos,
   PROFILE_PHOTOS_DRAFT_KEY,
   PROFILE_PHOTOS_KEY,
+  resolveDisplayPhotoUri,
+  serializePersistedProfilePhotos,
   serializeProfilePhotos,
 } from '@/constants/profilePhotos';
 
@@ -86,7 +90,7 @@ function getReviewLayoutMetrics(screenWidth: number): ReviewLayoutMetrics {
 
   const compact = screenWidth < 400;
   return {
-    mainLabelWidthPercent: compact ? 36 : 38,
+    mainLabelWidthPercent: compact ? 40 : 42,
     sidebarLabelWidthPercent: compact ? 50 : 52,
     stackInlinePairs: true,
     leftPaneFlex: compact ? 1.65 : 1.55,
@@ -125,7 +129,7 @@ const BIODATA_PRINT_CSS = `
   @media print {
     @page {
       size: A4 portrait;
-      margin: 2mm;
+      margin: 4mm;
     }
 
     html, body {
@@ -137,6 +141,12 @@ const BIODATA_PRINT_CSS = `
       background: #ffffff !important;
     }
 
+    body.biodata-print-active {
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
     body.biodata-print-active > :not(#biodata-print-root) {
       display: none !important;
     }
@@ -144,16 +154,22 @@ const BIODATA_PRINT_CSS = `
     #biodata-print-root {
       display: block !important;
       position: relative !important;
-      left: auto !important;
+      left: 0 !important;
+      right: 0 !important;
       top: auto !important;
-      width: 100% !important;
-      max-width: 100% !important;
+      width: 202mm !important;
+      min-width: 202mm !important;
+      max-width: 202mm !important;
       min-height: 0 !important;
       height: auto !important;
       margin: 0 auto !important;
+      padding: 0 !important;
       overflow: visible !important;
       box-shadow: none !important;
       background: #ffffff !important;
+      box-sizing: border-box !important;
+      transform: none !important;
+      zoom: 1 !important;
       page-break-inside: avoid !important;
       break-inside: avoid !important;
       -webkit-print-color-adjust: exact !important;
@@ -180,11 +196,12 @@ const BIODATA_PRINT_CSS = `
     body.biodata-print-hindu #biodata-print-root {
       display: flex !important;
       flex-direction: column !important;
-      min-height: 287mm !important;
-      height: 287mm !important;
-      max-height: 287mm !important;
-      width: 100% !important;
-      max-width: 100% !important;
+      min-height: 289mm !important;
+      height: 289mm !important;
+      max-height: 289mm !important;
+      width: 202mm !important;
+      min-width: 202mm !important;
+      max-width: 202mm !important;
       border: 2px solid #570000 !important;
       border-radius: 0 !important;
       box-sizing: border-box !important;
@@ -262,6 +279,10 @@ const BIODATA_PRINT_CSS = `
       flex: 1 1 auto !important;
       display: flex !important;
       flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      align-items: stretch !important;
+      width: 100% !important;
+      min-width: 0 !important;
       max-height: none !important;
       overflow: hidden !important;
       border-bottom: 1px solid #570000 !important;
@@ -269,7 +290,9 @@ const BIODATA_PRINT_CSS = `
 
     body.biodata-print-hindu #biodata-print-left-pane {
       flex: 1.38 1 0 !important;
+      width: auto !important;
       min-width: 0 !important;
+      max-width: none !important;
       border-right: 1px solid #570000 !important;
       display: flex !important;
       flex-direction: column !important;
@@ -277,7 +300,8 @@ const BIODATA_PRINT_CSS = `
 
     body.biodata-print-hindu #biodata-print-right-pane {
       flex: 1 1 0 !important;
-      min-width: 32% !important;
+      width: auto !important;
+      min-width: 0 !important;
       max-width: none !important;
       padding: 0 !important;
       gap: 0 !important;
@@ -504,11 +528,12 @@ const BIODATA_PRINT_CSS = `
     body.biodata-print-christian #biodata-print-root {
       display: flex !important;
       flex-direction: column !important;
-      min-height: 258mm !important;
-      height: 258mm !important;
-      max-height: 258mm !important;
-      width: 100% !important;
-      max-width: 100% !important;
+      min-height: 289mm !important;
+      height: 289mm !important;
+      max-height: 289mm !important;
+      width: 202mm !important;
+      min-width: 202mm !important;
+      max-width: 202mm !important;
       border: 2px solid #570000 !important;
       border-radius: 0 !important;
       background: #ffffff !important;
@@ -567,19 +592,23 @@ const BIODATA_PRINT_CSS = `
     body.biodata-print-christian #biodata-print-christian-body {
       flex: 1 1 0 !important;
       min-height: 0 !important;
-      max-height: calc(258mm - 14mm) !important;
+      max-height: calc(289mm - 14mm) !important;
       height: auto !important;
       overflow: hidden !important;
       display: flex !important;
       flex-direction: column !important;
+      width: 100% !important;
     }
 
     body.biodata-print-christian #biodata-print-christian-body-row {
       display: flex !important;
       flex-direction: row !important;
+      flex-wrap: nowrap !important;
       align-items: stretch !important;
       flex: 1 1 0 !important;
       min-height: 0 !important;
+      min-width: 0 !important;
+      width: 100% !important;
       max-height: 100% !important;
       height: auto !important;
       overflow: hidden !important;
@@ -734,6 +763,19 @@ function printBiodataSheetWeb(exportOptions?: BiodataExportOptions): void {
       ? applyExportPhotoToPrintBox(exportOptions.includePhoto !== false, exportOptions.photoUri ?? '')
       : undefined;
 
+  const savedPrintStyles = {
+    width: printRoot.style.width,
+    minWidth: printRoot.style.minWidth,
+    maxWidth: printRoot.style.maxWidth,
+    margin: printRoot.style.margin,
+    transform: printRoot.style.transform,
+  };
+  printRoot.style.width = '202mm';
+  printRoot.style.minWidth = '202mm';
+  printRoot.style.maxWidth = '202mm';
+  printRoot.style.margin = '0 auto';
+  printRoot.style.transform = 'none';
+
   originalParent.insertBefore(placeholder, printRoot);
   document.body.appendChild(printRoot);
   document.body.classList.add('biodata-print-active');
@@ -747,6 +789,11 @@ function printBiodataSheetWeb(exportOptions?: BiodataExportOptions): void {
     document.body.classList.remove('biodata-print-active');
     document.body.classList.remove('biodata-print-christian');
     document.body.classList.remove('biodata-print-hindu');
+    printRoot.style.width = savedPrintStyles.width;
+    printRoot.style.minWidth = savedPrintStyles.minWidth;
+    printRoot.style.maxWidth = savedPrintStyles.maxWidth;
+    printRoot.style.margin = savedPrintStyles.margin;
+    printRoot.style.transform = savedPrintStyles.transform;
     if (printRoot.parentNode === document.body && originalParent) {
       originalParent.insertBefore(printRoot, placeholder);
       originalParent.removeChild(placeholder);
@@ -858,6 +905,7 @@ type BiodataState = {
   unmarriedYoungerSister: string;
   complexion: string;
   height: string;
+  heightUnit: string;
   seervarisai: string;
   dasaBalance: string;
   dasaYear: string;
@@ -897,6 +945,7 @@ function buildBiodataDraftValues({
   existingValues,
   language,
   registrationNumber,
+  adminContactPhone = '',
 }: {
   form: BiodataState;
   photos: string[];
@@ -907,9 +956,12 @@ function buildBiodataDraftValues({
   existingValues: Record<string, string>;
   language: Language;
   registrationNumber: string;
+  adminContactPhone?: string;
 }): Record<string, string> {
   const occupationWorkKey = resolveStoredOptionValue('occupation', form.occupation, language);
   const serializedPhotos = serializeProfilePhotos(photos);
+  const persistedPhotos = serializePersistedProfilePhotos(photos);
+  const phoneDigits = normalizePhoneDigits(adminContactPhone);
 
   return applyDefaultRegistrationCommunity({
     ...existingValues,
@@ -946,6 +998,7 @@ function buildBiodataDraftValues({
     unmarriedYoungerSister: form.unmarriedYoungerSister.trim(),
     complexion: form.complexion.trim(),
     height: form.height.trim(),
+    heightUnit: form.heightUnit.trim() || 'ft',
     seervarisai: form.seervarisai.trim(),
     dasaBalance: form.dasaBalance.trim(),
     dasaYear: form.dasaYear.trim(),
@@ -960,9 +1013,15 @@ function buildBiodataDraftValues({
     biodataHoroscopeRasi: JSON.stringify(rasiChart),
     biodataHoroscopeAmsam: JSON.stringify(amsamChart),
     biodataDetailGrid: JSON.stringify(detailGrid),
-    [PROFILE_PHOTOS_KEY]: serializedPhotos,
+    [PROFILE_PHOTOS_KEY]: persistedPhotos,
     [PROFILE_PHOTOS_DRAFT_KEY]: serializedPhotos,
     [BIODATA_SHOW_PHOTO_KEY]: showPhotoInBiodata ? 'true' : 'false',
+    ...(phoneDigits
+      ? {
+          [CONTACT_PHONE_KEY]: phoneDigits,
+          phoneNumber: phoneDigits,
+        }
+      : {}),
   });
 }
 
@@ -1521,32 +1580,42 @@ function DasaBalanceFields({
   );
 
   if (!editable) {
+    const planetLabel = getOptionLabel('dasaPlanet', resolvedPlanet, language, dasaBalance) || '';
+    const yearLabel = getOptionLabel('dasaYear', resolvedYear, language, dasaYear) || '';
+    const monthLabel = getOptionLabel('dasaMonth', resolvedMonth, language, dasaMonth) || '';
+    const dayLabel = getOptionLabel('dasaDay', resolvedDay, language, dasaDay) || '';
+    const readonlySegments = [
+      { label: translate('biodataDasaBalanceShort'), value: planetLabel, emphasize: true },
+      { label: translate('selectDasaYear'), value: yearLabel },
+      { label: translate('selectDasaMonth'), value: monthLabel },
+      { label: translate('selectDasaDay'), value: dayLabel },
+    ];
+
     return (
-      <View style={[styles.dasaBalanceRow, dense && styles.dasaBalanceRowDense]}>
-        <Text style={[styles.dasaBalanceTitle, dense && styles.dasaBalanceTitleDense]} numberOfLines={1}>
-          {translate('biodataDasaBalanceShort')}
-        </Text>
-        <Text style={[styles.dasaReadonlyValue, dense && styles.dasaReadonlyValueDense, { color: 'red', fontWeight: 'bold', flexShrink: 0 }]} numberOfLines={1}>
-          {getOptionLabel('dasaPlanet', resolvedPlanet, language, dasaBalance) || ''}
-        </Text>
-        <Text style={[styles.dasaReadonlyLabel, dense && styles.dasaReadonlyLabelDense]} numberOfLines={1}>
-          {translate('selectDasaYear')}
-        </Text>
-        <Text style={[styles.dasaReadonlyValue, dense && styles.dasaReadonlyValueDense]} numberOfLines={1}>
-          {getOptionLabel('dasaYear', resolvedYear, language, dasaYear) || ''}
-        </Text>
-        <Text style={[styles.dasaReadonlyLabel, dense && styles.dasaReadonlyLabelDense]} numberOfLines={1}>
-          {translate('selectDasaMonth')}
-        </Text>
-        <Text style={[styles.dasaReadonlyValue, dense && styles.dasaReadonlyValueDense]} numberOfLines={1}>
-          {getOptionLabel('dasaMonth', resolvedMonth, language, dasaMonth) || ''}
-        </Text>
-        <Text style={[styles.dasaReadonlyLabel, dense && styles.dasaReadonlyLabelDense]} numberOfLines={1}>
-          {translate('selectDasaDay')}
-        </Text>
-        <Text style={[styles.dasaReadonlyValue, dense && styles.dasaReadonlyValueDense]} numberOfLines={1}>
-          {getOptionLabel('dasaDay', resolvedDay, language, dasaDay) || ''}
-        </Text>
+      <View style={[styles.dasaReadonlySpreadRow, dense && styles.dasaReadonlySpreadRowDense]}>
+        {readonlySegments.map((segment) => (
+          <View
+            key={segment.label}
+            style={[styles.dasaReadonlySegment, dense && styles.dasaReadonlySegmentDense]}
+          >
+            <Text
+              style={[styles.dasaReadonlyLabel, dense && styles.dasaReadonlyLabelDense]}
+              numberOfLines={1}
+            >
+              {segment.label}:
+            </Text>
+            <Text
+              style={[
+                styles.dasaReadonlyValue,
+                dense && styles.dasaReadonlyValueDense,
+                segment.emphasize && styles.dasaReadonlyValueEmphasis,
+              ]}
+              numberOfLines={1}
+            >
+              {segment.value}
+            </Text>
+          </View>
+        ))}
       </View>
     );
   }
@@ -2274,6 +2343,121 @@ function BiodataRow({
   );
 }
 
+type HeightUnit = 'ft' | 'cm';
+
+function resolveHeightUnit(storedUnit: string, height: string): HeightUnit {
+  if (storedUnit === 'ft' || storedUnit === 'cm') {
+    return storedUnit;
+  }
+  if (/^\d{3}$/.test(height.trim())) {
+    return 'cm';
+  }
+  return 'ft';
+}
+
+function sanitizeHeightInput(text: string, unit: HeightUnit): string {
+  if (unit === 'cm') {
+    return text.replace(/\D/g, '').slice(0, 3);
+  }
+
+  const cleaned = text.replace(/[^\d.]/g, '');
+  const dotIndex = cleaned.indexOf('.');
+  if (dotIndex < 0) {
+    return cleaned.slice(0, 2);
+  }
+
+  const whole = cleaned.slice(0, dotIndex).replace(/\./g, '').slice(0, 1);
+  const fraction = cleaned.slice(dotIndex + 1).replace(/\./g, '').slice(0, 1);
+  if (cleaned.endsWith('.') && !fraction) {
+    return `${whole}.`;
+  }
+  return fraction ? `${whole}.${fraction}` : whole;
+}
+
+const HEIGHT_UNIT_OPTIONS: { value: HeightUnit; label: string }[] = [
+  { value: 'ft', label: 'ft' },
+  { value: 'cm', label: 'cm' },
+];
+
+function BiodataHeightRow({
+  label,
+  value,
+  unit,
+  onValueChange,
+  onUnitChange,
+  editable,
+  dense,
+}: {
+  label: string;
+  value: string;
+  unit: HeightUnit;
+  onValueChange: (text: string) => void;
+  onUnitChange: (unit: HeightUnit) => void;
+  editable: boolean;
+  dense?: boolean;
+}) {
+  const { translate } = useLanguage();
+  const placeholder =
+    unit === 'cm' ? translate('heightPlaceholderCm') : translate('heightPlaceholderFeet');
+  const readonlyDisplay = [value.trim(), unit].filter(Boolean).join(' ');
+
+  return (
+    <View
+      style={[
+        styles.fieldGroup,
+        dense && styles.fieldGroupDense,
+        editable && styles.selectFieldGroup,
+      ]}
+    >
+      <Text style={[styles.fieldLabel, dense && styles.fieldLabelDense]} numberOfLines={1}>
+        {label}
+      </Text>
+      <View
+        style={[
+          styles.heightFieldShell,
+          dense && styles.heightFieldShellDense,
+          !editable && styles.fieldInputReadonly,
+        ]}
+      >
+        {editable ? (
+          <>
+            <TextInput
+              style={[styles.heightFieldInput, dense && styles.heightFieldInputDense]}
+              value={value}
+              onChangeText={(text) => onValueChange(sanitizeHeightInput(text, unit))}
+              editable={editable}
+              placeholder={placeholder}
+              placeholderTextColor={PLACEHOLDER}
+              keyboardType={unit === 'cm' ? 'number-pad' : 'decimal-pad'}
+            />
+            <View style={styles.heightFieldDivider} />
+            <View style={[styles.heightUnitPicker, dense && styles.heightUnitPickerDense]}>
+              <SelectField
+                label=""
+                value={unit}
+                onValueChange={(next) => onUnitChange(next as HeightUnit)}
+                options={HEIGHT_UNIT_OPTIONS}
+                showLabel={false}
+                compact
+                variant="premium"
+                embedded
+                tight
+              />
+            </View>
+          </>
+        ) : (
+          <Text
+            style={[styles.heightFieldInput, dense && styles.heightFieldInputDense, styles.fieldReadonlyText]}
+            numberOfLines={1}
+          >
+            {readonlyDisplay}
+          </Text>
+        )}
+      </View>
+    </View>
+  );
+}
+
 function SiblingSidebarSection({
   title,
   fieldKeys,
@@ -2903,7 +3087,7 @@ function HoroscopeCellPicker({
       <PickerModal visible={isOpen} onClose={onClose} title="Select planet">
         <ScrollView
           nestedScrollEnabled
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
           style={styles.pickerModalScroll}
           contentContainerStyle={styles.pickerModalScrollContent}
         >
@@ -3126,6 +3310,24 @@ function reviewDisplayOption(
   return getOptionLabel(optionsKey, resolved, language, value) || value.trim();
 }
 
+function reviewDisplayHeight(height: string, heightUnit: string, language: Language): string {
+  const trimmed = height.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  const legacyLabel = reviewDisplayOption('height', trimmed, language);
+  if (legacyLabel && legacyLabel !== trimmed && /^\d{3}$/.test(trimmed)) {
+    return legacyLabel;
+  }
+
+  const unit = resolveHeightUnit(heightUnit, trimmed);
+  if (unit === 'cm') {
+    return language === 'ta' ? `${trimmed} செ.மீ` : `${trimmed} cm`;
+  }
+  return language === 'ta' ? `${trimmed} அடி` : `${trimmed} ft`;
+}
+
 function ReviewDataRow({
   label,
   value,
@@ -3155,6 +3357,7 @@ function ReviewDataRow({
         style={[
           reviewStyles.dataLabelColonGroup,
           sidebar && reviewStyles.dataLabelColonGroupSidebar,
+          IS_NATIVE && reviewStyles.dataLabelColonGroupNative,
           IS_NATIVE && {
             maxWidth: `${labelWidthPercent}%`,
             width: `${labelWidthPercent}%`,
@@ -3166,12 +3369,15 @@ function ReviewDataRow({
             reviewStyles.dataLabel,
             sidebar && reviewStyles.dataLabelSidebar,
             sidebar && IS_NATIVE && reviewStyles.dataLabelSidebarNative,
+            IS_NATIVE && !sidebar && reviewStyles.dataLabelMainNative,
           ]}
-          numberOfLines={sidebar ? 2 : 3}
+          numberOfLines={IS_NATIVE ? 1 : sidebar ? 2 : 3}
+          adjustsFontSizeToFit={IS_NATIVE}
+          minimumFontScale={0.72}
         >
           {label}
+          <Text style={[reviewStyles.dataColon, sidebar && reviewStyles.dataColonSidebar]}>:</Text>
         </Text>
-        <Text style={[reviewStyles.dataColon, sidebar && reviewStyles.dataColonSidebar]}>:</Text>
       </View>
       <View style={[reviewStyles.dataValueColumn, sidebar && reviewStyles.dataValueColumnSidebar]}>
         <Text
@@ -3272,7 +3478,7 @@ function formatLetterheadPhone(value: string): string {
   return `${digits.slice(0, 2)}\u00A0${digits.slice(2, 4)}\u00A0${digits.slice(4, 6)}\u00A0${digits.slice(6, 8)}\u00A0${digits.slice(8)}`;
 }
 
-function PhotoVisibilityToggle({
+export function PhotoVisibilityToggle({
   value,
   onValueChange,
 }: {
@@ -3287,10 +3493,10 @@ function PhotoVisibilityToggle({
       accessibilityState={{ checked: value }}
       accessibilityLabel={value ? 'Photo on' : 'Photo off'}
     >
-      <View style={[styles.photoToggleThumb, value ? styles.photoToggleThumbOn : styles.photoToggleThumbOff]} />
       <Text style={[styles.photoToggleLabel, value ? styles.photoToggleLabelOn : styles.photoToggleLabelOff]}>
         {value ? 'ON' : 'OFF'}
       </Text>
+      <View style={[styles.photoToggleThumb, value ? styles.photoToggleThumbOn : styles.photoToggleThumbOff]} />
     </Pressable>
   );
 }
@@ -3511,7 +3717,7 @@ function ChristianBiodataReviewSheet({
           />
           <ReviewDataRow
             label={translate('biodataReviewHeight')}
-            value={reviewDisplayOption('height', form.height, language)}
+            value={reviewDisplayHeight(form.height, form.heightUnit, language)}
           />
           <ReviewDataRow
             label={translate('biodataReviewComplexion')}
@@ -3738,8 +3944,6 @@ function BiodataExtrasStepView({
   onRasiChartChange,
   onAmsamChartChange,
   onDetailGridChange,
-  photos,
-  onPhotosChange,
   showHoroscope,
   editable,
   dense,
@@ -3752,8 +3956,6 @@ function BiodataExtrasStepView({
   onRasiChartChange: (updater: (current: string[][]) => string[][]) => void;
   onAmsamChartChange: (updater: (current: string[][]) => string[][]) => void;
   onDetailGridChange: (updater: (current: string[]) => string[]) => void;
-  photos: string[];
-  onPhotosChange: (photos: string[]) => void;
   showHoroscope: boolean;
   editable: boolean;
   dense?: boolean;
@@ -3761,45 +3963,26 @@ function BiodataExtrasStepView({
   const { language } = useLanguage();
   const translate = useCallback((key: keyof typeof translations.en) => t(language, key), [language]);
 
+  if (!showHoroscope) {
+    return null;
+  }
+
   return (
     <View style={styles.extrasStepContainer}>
-      {showHoroscope ? (
-        <HoroscopeSection
-          form={form}
-          rasiChart={rasiChart}
-          amsamChart={amsamChart}
-          detailGrid={detailGrid}
-          onFieldChange={onFieldChange}
-          onRasiChartChange={onRasiChartChange}
-          onAmsamChartChange={onAmsamChartChange}
-          onDetailGridChange={onDetailGridChange}
-          editable={editable}
-          dense={dense}
-          translate={translate}
-          language={language}
-        />
-      ) : null}
-      <View
-        style={[
-          styles.photoStepSection,
-          showHoroscope && styles.photoStepSectionAfterHoroscope,
-        ]}
-      >
-        {!showHoroscope ? (
-          <Text style={styles.photoStepSectionHint}>{translate('addPhotosHint')}</Text>
-        ) : null}
-        <ProfilePhotoUploadStep
-          photos={photos}
-          skipped={false}
-          language={language}
-          labels={getPhotoUploadStepLabels(language)}
-          onChange={onPhotosChange}
-          onSkip={() => undefined}
-          showSkip={false}
-          libraryOnly
-          skipNativeEditing
-        />
-      </View>
+      <HoroscopeSection
+        form={form}
+        rasiChart={rasiChart}
+        amsamChart={amsamChart}
+        detailGrid={detailGrid}
+        onFieldChange={onFieldChange}
+        onRasiChartChange={onRasiChartChange}
+        onAmsamChartChange={onAmsamChartChange}
+        onDetailGridChange={onDetailGridChange}
+        editable={editable}
+        dense={dense}
+        translate={translate}
+        language={language}
+      />
     </View>
   );
 }
@@ -4000,7 +4183,7 @@ function BiodataReviewSheet({
           >
             <ReviewSidebarBox
               label={translate('biodataReviewTotalMembers')}
-              value={reviewDisplayOption('siblingCount', form.totalFamilyMembers, language)}
+              value={reviewDisplayValue(form.totalFamilyMembers)}
             />
             <ReviewSidebarBox
               label={translate('biodataReviewBirthOrder')}
@@ -4024,7 +4207,7 @@ function BiodataReviewSheet({
             />
             <ReviewSidebarBox
               label={translate('biodataReviewHeight')}
-              value={reviewDisplayOption('height', form.height, language)}
+              value={reviewDisplayHeight(form.height, form.heightUnit, language)}
             />
             <ReviewSidebarBox
               label={translate('biodataReviewSeervarisai')}
@@ -4271,6 +4454,10 @@ const reviewStyles = StyleSheet.create({
     maxWidth: '52%',
     paddingTop: 1,
   },
+  dataLabelColonGroupNative: {
+    alignItems: 'center',
+    flexWrap: 'nowrap',
+  },
   dataLabelColonGroupSidebar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -4320,6 +4507,10 @@ const reviewStyles = StyleSheet.create({
     textAlign: 'left',
     flexShrink: 1,
     ...reviewTextAndroid,
+  },
+  dataLabelMainNative: {
+    flexShrink: 0,
+    flex: 1,
   },
   dataLabelExpanded: {
     flexShrink: 0,
@@ -4641,27 +4832,63 @@ const christianReviewStyles = StyleSheet.create({
   },
 });
 
+type PhotoToggleSlot = {
+  value: boolean;
+  onValueChange: (next: boolean) => void;
+};
+
 type CreateProfileBiodataFormProps = {
   editable: boolean;
   onSave: (values: Record<string, string>) => void | Promise<void>;
   onStepChange?: (step: number) => void;
+  onPhotoToggleSlotChange?: (slot: PhotoToggleSlot | null) => void;
   viewOnly?: boolean;
   profileValues?: Record<string, string>;
   hideActionBar?: boolean;
   getExportOptions?: () => BiodataExportOptions;
+  /** Live preview + print photo from export panel (admin/user view profile). */
+  exportPhotoOptions?: BiodataExportOptions;
   /** Hint Tamil keyboard on text fields (admin biodata entry). */
   preferTamilKeyboard?: boolean;
+  /** Show contact phone field on step 1 (admin add/edit member only). */
+  showAdminPhoneField?: boolean;
 };
+
+function profileValuesSeedKey(profileValues: Record<string, string>): string {
+  return (
+    profileValues._profileUpdatedAt?.trim() ||
+    `${profileValues.registrationNumber ?? ''}|${profileValues.contactPhone ?? profileValues.phoneNumber ?? ''}|${profileValues.fullName ?? ''}`
+  );
+}
+
+function shouldKeepCurrentPhotos(
+  current: string[],
+  incoming: string[],
+  editable: boolean,
+  viewOnly: boolean,
+  photosDirty: boolean,
+): boolean {
+  if (viewOnly || !editable) {
+    return false;
+  }
+  if (photosDirty) {
+    return true;
+  }
+  return current.some(isLocalPhotoUri) && !incoming.some(isLocalPhotoUri);
+}
 
 export function CreateProfileBiodataForm({
   editable,
   onSave,
   onStepChange,
+  onPhotoToggleSlotChange,
   viewOnly = false,
   profileValues,
   hideActionBar = false,
   getExportOptions,
+  exportPhotoOptions,
   preferTamilKeyboard = false,
+  showAdminPhoneField = false,
 }: CreateProfileBiodataFormProps) {
   const dense = true;
   const { translate, language } = useLanguage();
@@ -4673,13 +4900,31 @@ export function CreateProfileBiodataForm({
   const [detailGrid, setDetailGrid] = useState<string[]>(createDefaultDetailGrid);
   const [photos, setPhotos] = useState<string[]>(() => parseProfilePhotos(''));
   const [showPhotoInBiodata, setShowPhotoInBiodata] = useState(true);
+  const [adminContactPhone, setAdminContactPhone] = useState('');
+  const photosRef = useRef<string[]>(parseProfilePhotos(''));
+  const photosDirtyRef = useRef(false);
+  const syncDraftSeqRef = useRef(0);
   const formHydratedRef = useRef(false);
+  const profileSeedHydratedRef = useRef('');
   const biodataPrintRef = useRef<View>(null);
   const scrollRef = useRef<ScrollView>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [stepState, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
-  const step = viewOnly ? 4 : stepState;
+  const step = viewOnly ? 5 : stepState;
   const reviewPhotoUri = useMemo(() => {
+    const displayPlatform = Platform.OS === 'web' ? 'web' : 'native';
+    const exportOpts = exportPhotoOptions ?? getExportOptions?.();
+
+    if (exportOpts) {
+      if (exportOpts.includePhoto === false) {
+        return '';
+      }
+      const exportUri = resolveDisplayPhotoUri(exportOpts.photoUri ?? '', displayPlatform);
+      if (exportUri) {
+        return exportUri;
+      }
+    }
+
     if (!showPhotoInBiodata) {
       return '';
     }
@@ -4693,7 +4938,15 @@ export function CreateProfileBiodataForm({
       [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(photos) || getValue(PROFILE_PHOTOS_KEY),
       profilePhotoUrls: getValue('profilePhotoUrls'),
     });
-  }, [profileValues, getValue, isReady, photos, showPhotoInBiodata]);
+  }, [
+    exportPhotoOptions,
+    getExportOptions,
+    profileValues,
+    getValue,
+    isReady,
+    photos,
+    showPhotoInBiodata,
+  ]);
   const [form, setForm] = useState<BiodataState>({
     fullName: '',
     gender: '',
@@ -4727,6 +4980,7 @@ export function CreateProfileBiodataForm({
     unmarriedYoungerSister: '',
     complexion: '',
     height: '',
+    heightUnit: 'ft',
     seervarisai: '',
     dasaBalance: '',
     dasaYear: '',
@@ -4747,6 +5001,20 @@ export function CreateProfileBiodataForm({
 
     if (!profileValues && formHydratedRef.current) {
       return;
+    }
+
+    if (profileValues) {
+      const seedKey = profileValuesSeedKey(profileValues);
+      if (editable && !viewOnly) {
+        if (profileSeedHydratedRef.current === seedKey) {
+          return;
+        }
+        profileSeedHydratedRef.current = seedKey;
+      } else if (viewOnly && profileSeedHydratedRef.current === seedKey) {
+        return;
+      } else {
+        profileSeedHydratedRef.current = seedKey;
+      }
     }
 
     const readValue = (key: string) => profileValues?.[key] ?? getValue(key);
@@ -4795,6 +5063,7 @@ export function CreateProfileBiodataForm({
       unmarriedYoungerSister: readValue('unmarriedYoungerSister'),
       complexion: readValue('complexion'),
       height: readValue('height'),
+      heightUnit: resolveHeightUnit(readValue('heightUnit'), readValue('height')),
       seervarisai: readValue('seervarisai'),
       dasaBalance: readValue('dasaBalance'),
       dasaYear: readValue('dasaYear'),
@@ -4807,15 +5076,29 @@ export function CreateProfileBiodataForm({
       eatingHabits: readValue('eatingHabits') || 'veg',
       birthOrderRelation: readValue('birthOrderRelation') || readValue('birthOrder'),
     });
-    setPhotos(
-      mergeDraftProfilePhotos(readValue(PROFILE_PHOTOS_DRAFT_KEY), readValue(PROFILE_PHOTOS_KEY)),
+    const mergedPhotos = mergeDraftProfilePhotos(
+      readValue(PROFILE_PHOTOS_DRAFT_KEY),
+      readValue(PROFILE_PHOTOS_KEY),
     );
+    setPhotos((current) => {
+      if (shouldKeepCurrentPhotos(current, mergedPhotos, editable, viewOnly, photosDirtyRef.current)) {
+        return current;
+      }
+      photosRef.current = mergedPhotos;
+      photosDirtyRef.current = false;
+      return mergedPhotos;
+    });
     setShowPhotoInBiodata(parseBiodataShowPhoto(readValue(BIODATA_SHOW_PHOTO_KEY)));
+    if (showAdminPhoneField) {
+      setAdminContactPhone(
+        normalizePhoneDigits(readValue(CONTACT_PHONE_KEY) || readValue('phoneNumber')),
+      );
+    }
 
     if (!profileValues) {
       formHydratedRef.current = true;
     }
-  }, [getValue, isReady, profileValues, setValue]);
+  }, [editable, getValue, isReady, profileValues, setValue, showAdminPhoneField, viewOnly]);
 
   useEffect(() => {
     if (profileValues || !isReady) {
@@ -4870,6 +5153,7 @@ export function CreateProfileBiodataForm({
       unmarriedYoungerSister: readValue('unmarriedYoungerSister'),
       complexion: readValue('complexion'),
       height: readValue('height'),
+      heightUnit: resolveHeightUnit(readValue('heightUnit'), readValue('height')),
       seervarisai: readValue('seervarisai'),
       dasaBalance: readValue('dasaBalance'),
       dasaYear: readValue('dasaYear'),
@@ -4882,9 +5166,18 @@ export function CreateProfileBiodataForm({
       eatingHabits: readValue('eatingHabits') || 'veg',
       birthOrderRelation: readValue('birthOrderRelation') || readValue('birthOrder'),
     });
-    setPhotos(
-      mergeDraftProfilePhotos(readValue(PROFILE_PHOTOS_DRAFT_KEY), readValue(PROFILE_PHOTOS_KEY)),
+    const mergedPhotos = mergeDraftProfilePhotos(
+      readValue(PROFILE_PHOTOS_DRAFT_KEY),
+      readValue(PROFILE_PHOTOS_KEY),
     );
+    setPhotos((current) => {
+      if (shouldKeepCurrentPhotos(current, mergedPhotos, editable, viewOnly, photosDirtyRef.current)) {
+        return current;
+      }
+      photosRef.current = mergedPhotos;
+      photosDirtyRef.current = false;
+      return mergedPhotos;
+    });
     setShowPhotoInBiodata(parseBiodataShowPhoto(readValue(BIODATA_SHOW_PHOTO_KEY)));
   }, [
     form.fullName,
@@ -4899,14 +5192,16 @@ export function CreateProfileBiodataForm({
 
   const syncDraftToContext = useCallback(
     async (photoOverride?: string[]) => {
-      if (profileValues || viewOnly) {
+      if (viewOnly) {
         return;
       }
 
+      const syncId = ++syncDraftSeqRef.current;
+      const photosToSync = photoOverride ?? photosRef.current;
       const registrationNumber = getValue('registrationNumber').trim() || form.registrationNumber.trim();
       const nextValues = buildBiodataDraftValues({
         form,
-        photos: photoOverride ?? photos,
+        photos: photosToSync,
         rasiChart,
         amsamChart,
         detailGrid,
@@ -4914,19 +5209,25 @@ export function CreateProfileBiodataForm({
         existingValues: values,
         language,
         registrationNumber,
+        adminContactPhone: showAdminPhoneField ? adminContactPhone : '',
       });
+
+      if (syncId !== syncDraftSeqRef.current) {
+        return;
+      }
+
       await replaceValues(nextValues);
     },
     [
+      adminContactPhone,
       amsamChart,
       detailGrid,
       form,
       getValue,
       language,
-      photos,
-      profileValues,
       rasiChart,
       replaceValues,
+      showAdminPhoneField,
       showPhotoInBiodata,
       values,
       viewOnly,
@@ -4937,11 +5238,11 @@ export function CreateProfileBiodataForm({
   syncDraftToContextRef.current = syncDraftToContext;
 
   useEffect(() => {
-    if (profileValues || viewOnly || step !== 4) {
+    if (viewOnly || (step !== 3 && step !== 4)) {
       return;
     }
     void syncDraftToContextRef.current().catch(() => undefined);
-  }, [profileValues, step, viewOnly]);
+  }, [step, viewOnly]);
 
   useEffect(() => {
     if (profileValues) {
@@ -4960,11 +5261,25 @@ export function CreateProfileBiodataForm({
   const updateField = useCallback(
     (key: keyof BiodataState, value: string) => {
       setForm((current) => ({ ...current, [key]: value }));
-      if (!profileValues) {
+      if (!viewOnly) {
         setValue(key, value);
       }
     },
-    [profileValues, setValue],
+    [setValue, viewOnly],
+  );
+
+  const handleHeightUnitChange = useCallback(
+    (nextUnit: HeightUnit) => {
+      setForm((current) => {
+        const sanitized = sanitizeHeightInput(current.height, nextUnit);
+        if (!viewOnly) {
+          setValue('heightUnit', nextUnit);
+          setValue('height', sanitized);
+        }
+        return { ...current, heightUnit: nextUnit, height: sanitized };
+      });
+    },
+    [setValue, viewOnly],
   );
 
   const handleReligionChange = useCallback(
@@ -4976,25 +5291,66 @@ export function CreateProfileBiodataForm({
 
   const handlePhotosChange = useCallback(
     (nextPhotos: string[]) => {
+      photosDirtyRef.current = true;
+      photosRef.current = nextPhotos;
       setPhotos(nextPhotos);
-      if (profileValues) {
-        setValue(PROFILE_PHOTOS_KEY, serializeProfilePhotos(nextPhotos));
+      if (viewOnly) {
         return;
       }
+      setValue(PROFILE_PHOTOS_KEY, serializeProfilePhotos(nextPhotos));
       void syncDraftToContext(nextPhotos).catch(() => undefined);
     },
-    [profileValues, setValue, syncDraftToContext],
+    [setValue, syncDraftToContext, viewOnly],
   );
 
   const handleShowPhotoInBiodataChange = useCallback(
     (next: boolean) => {
       setShowPhotoInBiodata(next);
-      if (!profileValues && !viewOnly) {
+      if (!viewOnly) {
         setValue(BIODATA_SHOW_PHOTO_KEY, next ? 'true' : 'false');
         void syncDraftToContextRef.current().catch(() => undefined);
       }
     },
-    [profileValues, setValue, viewOnly],
+    [setValue, viewOnly],
+  );
+
+  const handleAdminContactPhoneChange = useCallback(
+    (text: string) => {
+      const digits = normalizePhoneDigits(text);
+      setAdminContactPhone(digits);
+      if (!viewOnly) {
+        setValue(CONTACT_PHONE_KEY, digits);
+        setValue('phoneNumber', digits);
+      }
+    },
+    [setValue, viewOnly],
+  );
+
+  useEffect(() => {
+    if (!onPhotoToggleSlotChange) {
+      return;
+    }
+    if (viewOnly || step !== 5) {
+      onPhotoToggleSlotChange(null);
+      return;
+    }
+    onPhotoToggleSlotChange({
+      value: showPhotoInBiodata,
+      onValueChange: handleShowPhotoInBiodataChange,
+    });
+  }, [
+    handleShowPhotoInBiodataChange,
+    onPhotoToggleSlotChange,
+    showPhotoInBiodata,
+    step,
+    viewOnly,
+  ]);
+
+  useEffect(
+    () => () => {
+      onPhotoToggleSlotChange?.(null);
+    },
+    [onPhotoToggleSlotChange],
   );
 
   const persistForm = useCallback(async (): Promise<Record<string, string>> => {
@@ -5009,11 +5365,25 @@ export function CreateProfileBiodataForm({
       existingValues: values,
       language,
       registrationNumber,
+      adminContactPhone: showAdminPhoneField ? adminContactPhone : '',
     });
 
     await replaceValues(nextValues);
     return nextValues;
-  }, [detailGrid, form, language, photos, rasiChart, amsamChart, showPhotoInBiodata, getValue, replaceValues, values]);
+  }, [
+    adminContactPhone,
+    detailGrid,
+    form,
+    language,
+    photos,
+    rasiChart,
+    amsamChart,
+    showAdminPhoneField,
+    showPhotoInBiodata,
+    getValue,
+    replaceValues,
+    values,
+  ]);
 
   const validateOccupationFields = useCallback(() => {
     return true;
@@ -5113,6 +5483,8 @@ export function CreateProfileBiodataForm({
   const currentReligion = form.religion || contextReligion;
   const isInitiallyChristian = isChristianRegistration(registrationCommunity, '');
   const isCurrentChristian = isChristianRegistration(registrationCommunity, currentReligion);
+  const hasReligion = Boolean(form.religion.trim() || currentReligion.trim());
+  const showHoroscopeOnExtrasStep = hasReligion && !isCurrentChristian;
   const totalSteps = 5;
 
   const goToNextStep = useCallback(() => {
@@ -5121,38 +5493,59 @@ export function CreateProfileBiodataForm({
     }
 
     const advance = () => {
-      setStep((current) => (current < totalSteps ? ((current + 1) as 1 | 2 | 3 | 4 | 5) : current));
+      setStep((current) => {
+        if (current >= totalSteps) {
+          return current;
+        }
+        if (current === 3 && !showHoroscopeOnExtrasStep) {
+          return 5;
+        }
+        return (current + 1) as 1 | 2 | 3 | 4 | 5;
+      });
     };
 
-    if (!profileValues) {
-      void syncDraftToContext()
-        .then(advance)
-        .catch(advance);
+    if (viewOnly) {
+      advance();
       return;
     }
 
-    advance();
-  }, [profileValues, step, syncDraftToContext, totalSteps, validateOccupationFields]);
+    void syncDraftToContext()
+      .then(advance)
+      .catch(advance);
+  }, [
+    showHoroscopeOnExtrasStep,
+    step,
+    syncDraftToContext,
+    totalSteps,
+    validateOccupationFields,
+    viewOnly,
+  ]);
 
   const goToPreviousStep = useCallback(() => {
     const retreat = () => {
-      setStep((current) => (current > 1 ? ((current - 1) as 1 | 2 | 3 | 4 | 5) : current));
+      setStep((current) => {
+        if (current <= 1) {
+          return current;
+        }
+        if (current === 5 && !showHoroscopeOnExtrasStep) {
+          return 3;
+        }
+        return (current - 1) as 1 | 2 | 3 | 4 | 5;
+      });
     };
 
-    if (!profileValues) {
-      void syncDraftToContext()
-        .then(retreat)
-        .catch(retreat);
+    if (viewOnly) {
+      retreat();
       return;
     }
 
-    retreat();
-  }, [profileValues, syncDraftToContext]);
+    void syncDraftToContext()
+      .then(retreat)
+      .catch(retreat);
+  }, [showHoroscopeOnExtrasStep, syncDraftToContext, viewOnly]);
 
   const isReviewStep = step === 5;
   const isExtrasStep = step === 4;
-  const hasReligion = Boolean(form.religion.trim() || currentReligion.trim());
-  const showHoroscopeOnExtrasStep = hasReligion && !isCurrentChristian;
   const isChristianReview = isReviewStep && isCurrentChristian;
   const reviewEditable = viewOnly ? false : editable;
 
@@ -5269,16 +5662,103 @@ export function CreateProfileBiodataForm({
                   />
                 </View>
               </View>
-              <BiodataRow
-                label={translate('biodataFieldProperty')}
-                value={form.propertyDetails}
-                onChangeText={(text) => updateField('propertyDetails', text)}
-                editable={editable}
-                dense={dense}
-                multiline
-              />
+              {showAdminPhoneField ? (
+                <BiodataRow
+                  label={translate('phoneNumber')}
+                  value={adminContactPhone}
+                  onChangeText={handleAdminContactPhoneChange}
+                  editable={editable}
+                  dense={dense}
+                  placeholder={translate('enterPhone')}
+                  keyboardType="phone-pad"
+                />
+              ) : null}
             </SectionCard>
     </>
+  );
+
+  const step3Column = (
+    <View style={[styles.leftColumn, styles.leftColumnFull]}>
+      <SectionCard dense={dense}>
+        <View style={styles.fieldStack}>
+          <BiodataPropertyField
+            label={translate('biodataFieldProperty')}
+            propertyDetails={form.propertyDetails}
+            legacyHouseType={form.propertyHouseType}
+            legacyHouseCount={form.propertyHouseCount}
+            onSave={(serialized) => updateField('propertyDetails', serialized)}
+            editable={editable}
+            dense={dense}
+          />
+          <BiodataRow
+            label={translate('biodataFieldResidence')}
+            value={form.irupidam}
+            onChangeText={(text) => updateField('irupidam', text)}
+            editable={editable}
+            dense={dense}
+            placeholder={translate('biodataPlaceholderResidence')}
+          />
+          <BiodataRow
+            label={translate('biodataFieldNativePlace')}
+            value={form.nativePlace}
+            onChangeText={(text) => updateField('nativePlace', text)}
+            editable={editable}
+            dense={dense}
+            placeholder={translate('biodataPlaceholderNativePlace')}
+          />
+        </View>
+      </SectionCard>
+
+      <SectionCard dense={dense}>
+        <RadioOptionGroup
+          label={translate('biodataFieldComplexion')}
+          value={form.complexion}
+          optionsKey="complexionBiodata"
+          onValueChange={(text) => updateField('complexion', text)}
+          editable={editable}
+          dense={dense}
+          threeColumn
+        />
+        <View style={styles.fieldPairRow}>
+          <View style={styles.fieldPairItem}>
+            <BiodataHeightRow
+              label={translate('biodataFieldHeight')}
+              value={form.height}
+              unit={resolveHeightUnit(form.heightUnit, form.height)}
+              onValueChange={(text) => updateField('height', text)}
+              onUnitChange={handleHeightUnitChange}
+              editable={editable}
+              dense={dense}
+            />
+          </View>
+          <View style={styles.fieldPairItem}>
+            <BiodataRow
+              label={translate('biodataFieldSeervarisai')}
+              value={form.seervarisai}
+              onChangeText={(text) => updateField('seervarisai', text)}
+              editable={editable}
+              dense={dense}
+            />
+          </View>
+        </View>
+      </SectionCard>
+
+      <SectionCard dense={dense}>
+        <View style={styles.photoStepSection}>
+          <ProfilePhotoUploadStep
+            photos={photos}
+            skipped={false}
+            language={language}
+            labels={getPhotoUploadStepLabels(language)}
+            onChange={handlePhotosChange}
+            onSkip={() => undefined}
+            showSkip={false}
+            libraryOnly
+            skipNativeEditing
+          />
+        </View>
+      </SectionCard>
+    </View>
   );
 
   const step2Column = (
@@ -5312,37 +5792,13 @@ export function CreateProfileBiodataForm({
               <View style={styles.fieldPairRow}>
                 <View style={styles.fieldPairItem}>
                   <BiodataRow
-                    label={translate('biodataFieldResidence')}
-                    value={form.irupidam}
-                    onChangeText={(text) => updateField('irupidam', text)}
-                    editable={editable}
-                    dense={dense}
-                    placeholder={translate('biodataPlaceholderResidence')}
-                  />
-                </View>
-                <View style={styles.fieldPairItem}>
-                  <BiodataRow
-                    label={translate('biodataFieldNativePlace')}
-                    value={form.nativePlace}
-                    onChangeText={(text) => updateField('nativePlace', text)}
-                    editable={editable}
-                    dense={dense}
-                    placeholder={translate('biodataPlaceholderNativePlace')}
-                  />
-                </View>
-              </View>
-            </SectionCard>
-
-            <SectionCard dense={dense}>
-              <View style={styles.fieldPairRow}>
-                <View style={styles.fieldPairItem}>
-                  <BiodataSelectRow
                     label={translate('biodataFieldTotalMembers')}
                     value={form.totalFamilyMembers}
-                    onValueChange={(text) => updateField('totalFamilyMembers', text)}
-                    optionsKey="siblingCount"
+                    onChangeText={(text) => updateField('totalFamilyMembers', text.replace(/\D/g, ''))}
                     editable={editable}
                     dense={dense}
+                    keyboardType="numeric"
+                    placeholder="1, 2, 3..."
                   />
                 </View>
                 <View style={styles.fieldPairItem}>
@@ -5396,46 +5852,6 @@ export function CreateProfileBiodataForm({
     </>
   );
 
-  const rightColumn = (
-    <View style={[styles.leftColumn, styles.leftColumnFull]}>
-      <SectionCard dense={dense}>
-        <RadioOptionGroup
-          label={translate('biodataFieldComplexion')}
-          value={form.complexion}
-          optionsKey="complexionBiodata"
-          onValueChange={(text) => updateField('complexion', text)}
-          editable={editable}
-          dense={dense}
-          threeColumn
-        />
-      </SectionCard>
-
-      <SectionCard dense={dense}>
-        <View style={styles.fieldPairRow}>
-          <View style={styles.fieldPairItem}>
-            <BiodataRow
-              label={translate('biodataFieldHeight')}
-              value={form.height}
-              onChangeText={(text) => updateField('height', text)}
-              editable={editable}
-              dense={dense}
-              placeholder={translate('selectHeight')}
-            />
-          </View>
-          <View style={styles.fieldPairItem}>
-            <BiodataRow
-              label={translate('biodataFieldSeervarisai')}
-              value={form.seervarisai}
-              onChangeText={(text) => updateField('seervarisai', text)}
-              editable={editable}
-              dense={dense}
-            />
-          </View>
-        </View>
-      </SectionCard>
-    </View>
-  );
-
   const biodataSheet = (
     <View
       style={[
@@ -5451,7 +5867,7 @@ export function CreateProfileBiodataForm({
       {step === 2 ? (
         <View style={[styles.leftColumn, styles.leftColumnFull]}>{step2Column}</View>
       ) : null}
-      {step === 3 ? rightColumn : null}
+      {step === 3 ? step3Column : null}
       {isExtrasStep ? (
         <BiodataExtrasStepView
           form={form}
@@ -5462,8 +5878,6 @@ export function CreateProfileBiodataForm({
           onRasiChartChange={setRasiChart}
           onAmsamChartChange={setAmsamChart}
           onDetailGridChange={setDetailGrid}
-          photos={photos}
-          onPhotosChange={handlePhotosChange}
           showHoroscope={showHoroscopeOnExtrasStep}
           editable={editable}
           dense={dense}
@@ -5499,6 +5913,14 @@ export function CreateProfileBiodataForm({
         isChristianReview && styles.wrapperFullScreen,
       ]}
     >
+      {!viewOnly && step === 5 && !onPhotoToggleSlotChange ? (
+        <View style={styles.photoToggleHeaderOverlay} pointerEvents="box-none">
+          <PhotoVisibilityToggle
+            value={showPhotoInBiodata}
+            onValueChange={handleShowPhotoInBiodataChange}
+          />
+        </View>
+      ) : null}
       {viewOnly ? (
         <View style={styles.embeddedContent}>{biodataSheet}</View>
       ) : isChristianReview ? (
@@ -5508,7 +5930,7 @@ export function CreateProfileBiodataForm({
           contentContainerStyle={styles.christianReviewScrollContent}
           showsVerticalScrollIndicator
           nestedScrollEnabled
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
         >
           {biodataSheet}
         </ScrollView>
@@ -5517,7 +5939,7 @@ export function CreateProfileBiodataForm({
           ref={scrollRef}
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled
-          keyboardShouldPersistTaps="handled"
+          keyboardShouldPersistTaps="always"
           contentContainerStyle={[
             styles.scrollContent,
             dense && styles.scrollContentDense,
@@ -5598,12 +6020,6 @@ export function CreateProfileBiodataForm({
               {translate('back')}
             </Text>
           </Pressable>
-        ) : null}
-        {isExtrasStep ? (
-          <PhotoVisibilityToggle
-            value={showPhotoInBiodata}
-            onValueChange={handleShowPhotoInBiodataChange}
-          />
         ) : null}
         {step < totalSteps ? (
           <Pressable
@@ -5699,6 +6115,12 @@ const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
     backgroundColor: '#F8F6F4',
+  },
+  photoToggleHeaderOverlay: {
+    position: 'absolute',
+    top: 8,
+    right: 10,
+    zIndex: 20,
   },
   wrapperEmbedded: {
     flex: 0,
@@ -5932,6 +6354,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     alignItems: 'flex-start',
+  },
+  fieldStack: {
+    width: '100%',
+    gap: 12,
   },
   fieldPairItem: {
     flex: 1,
@@ -6698,17 +7124,41 @@ const styles = StyleSheet.create({
     fontFamily: fonts.inter,
     minWidth: 0,
     flexShrink: 1,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   dasaReadonlyValueDense: {
     fontSize: 11,
   },
+  dasaReadonlyValueEmphasis: {
+    color: '#C62828',
+    fontFamily: fonts.interSemi,
+  },
+  dasaReadonlySpreadRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    flexWrap: 'nowrap',
+    gap: 4,
+  },
+  dasaReadonlySpreadRowDense: {
+    gap: 2,
+  },
+  dasaReadonlySegment: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    minWidth: 0,
+  },
+  dasaReadonlySegmentDense: {
+    gap: 2,
+  },
   dasaReadonlyLabel: {
     color: colors.onSurface,
     fontSize: 10,
-    fontFamily: fonts.inter,
-    opacity: 0.6,
-    flexShrink: 1,
+    fontFamily: fonts.interSemi,
+    flexShrink: 0,
   },
   dasaReadonlyLabelDense: {
     fontSize: 9,
@@ -7203,11 +7653,9 @@ const styles = StyleSheet.create({
     width: 72,
     height: 32,
     borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 4,
+    justifyContent: 'center',
     borderWidth: 1.5,
-    overflow: 'hidden',
+    position: 'relative',
   },
   photoToggleTrackOn: {
     backgroundColor: '#4CAF50',
@@ -7218,6 +7666,8 @@ const styles = StyleSheet.create({
     borderColor: '#9E9E9E',
   },
   photoToggleThumb: {
+    position: 'absolute',
+    top: 3,
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -7236,10 +7686,10 @@ const styles = StyleSheet.create({
     }),
   },
   photoToggleThumbOn: {
-    marginRight: 'auto',
+    right: 3,
   },
   photoToggleThumbOff: {
-    marginLeft: 'auto',
+    left: 3,
   },
   photoToggleLabel: {
     position: 'absolute',
@@ -7249,11 +7699,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   photoToggleLabelOn: {
-    right: 10,
-    color: '#1B5E20',
+    left: 10,
+    color: '#FFFFFF',
   },
   photoToggleLabelOff: {
-    left: 10,
+    right: 10,
     color: '#424242',
   },
   actionButtonPrint: {
@@ -7536,6 +7986,56 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     fontSize: 13,
     borderRadius: 10,
+  },
+  heightFieldShell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: FIELD_BORDER,
+    borderRadius: 12,
+    backgroundColor: FIELD_BG,
+    minHeight: 40,
+    overflow: 'visible',
+    ...fieldShadow,
+  },
+  heightFieldShellDense: {
+    minHeight: 40,
+    borderRadius: 10,
+  },
+  heightFieldInput: {
+    flex: 1,
+    minWidth: 0,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    fontSize: 13,
+    fontFamily: fonts.interMedium,
+    color: colors.onSurface,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    ...Platform.select({
+      web: { outlineStyle: 'none' },
+      default: {},
+    }),
+  },
+  heightFieldInputDense: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    fontSize: 13,
+  },
+  heightFieldDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: FIELD_BORDER,
+    marginVertical: 6,
+  },
+  heightUnitPicker: {
+    width: 76,
+    flexShrink: 0,
+    justifyContent: 'center',
+    overflow: 'visible',
+  },
+  heightUnitPickerDense: {
+    width: 72,
   },
   fieldInputMultilineDense: {
     minHeight: 36,

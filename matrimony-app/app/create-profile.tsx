@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ActivityIndicator, Alert, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -10,7 +10,7 @@ import { useRouter, Redirect, useLocalSearchParams } from 'expo-router';
 
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CreateProfileBiodataForm, RegistrationNumberBar } from '@/components/CreateProfileBiodataForm';
+import { CreateProfileBiodataForm, PhotoVisibilityToggle, RegistrationNumberBar } from '@/components/CreateProfileBiodataForm';
 
 import { LanguageLogoToggle } from '@/components/LanguageLogoToggle';
 
@@ -24,7 +24,7 @@ import { images } from '@/constants/images';
 
 import { colors, fonts, spacing } from '@/constants/theme';
 
-import { hasCompletedProfile } from '@/constants/profileCompletion';
+import { hasCompletedProfile, hasSavedBiodata, BIODATA_WIZARD_COMPLETE_KEY } from '@/constants/profileCompletion';
 
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -63,6 +63,13 @@ export default function CreateProfileScreen() {
   const communityApplied = useRef(false);
 
   const isSaving = useRef(false);
+
+  const [photoToggleSlot, setPhotoToggleSlot] = useState<{
+    value: boolean;
+    onValueChange: (next: boolean) => void;
+  } | null>(null);
+
+  const [step, setStep] = useState(1);
 
 
 
@@ -104,7 +111,7 @@ export default function CreateProfileScreen() {
 
         try {
 
-          if (!hasCompletedProfile(profileValues)) {
+          if (!hasSavedBiodata(profileValues)) {
 
             Alert.alert(translate('saveChanges'), translate('profileIncompleteSave'));
 
@@ -118,12 +125,12 @@ export default function CreateProfileScreen() {
 
           const published = await publishProfileFromValues(profileValues, 'current-user');
 
-          const syncedValues = published?.biodata ?? {
-
-            ...profileValues,
-
-            approvalStatus: 'pending',
-
+          const syncedValues = {
+            ...(published?.biodata ?? {
+              ...profileValues,
+              approvalStatus: 'pending',
+            }),
+            [BIODATA_WIZARD_COMPLETE_KEY]: 'true',
           };
 
 
@@ -268,7 +275,18 @@ export default function CreateProfileScreen() {
 
             <RegistrationNumberBar editable inline />
 
-            <LanguageLogoToggle variant="maroon" compact dense />
+            {step === 5 ? (
+              photoToggleSlot ? (
+                <PhotoVisibilityToggle
+                  value={photoToggleSlot.value}
+                  onValueChange={photoToggleSlot.onValueChange}
+                />
+              ) : (
+                <View style={styles.headerTogglePlaceholder} />
+              )
+            ) : (
+              <LanguageLogoToggle variant="maroon" compact dense />
+            )}
 
           </View>
 
@@ -288,7 +306,12 @@ export default function CreateProfileScreen() {
 
       </View>
 
-      <CreateProfileBiodataForm editable onSave={handleSave} />
+      <CreateProfileBiodataForm
+        editable
+        onSave={handleSave}
+        onStepChange={setStep}
+        onPhotoToggleSlotChange={setPhotoToggleSlot}
+      />
 
     </SafeAreaView>
 
@@ -481,6 +504,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.playfairSemi,
 
     letterSpacing: 0.4,
+
+  },
+
+  headerTogglePlaceholder: {
+
+    width: 52,
+
+    flexShrink: 0,
 
   },
 

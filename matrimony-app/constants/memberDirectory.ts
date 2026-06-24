@@ -1,14 +1,16 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { MemberProfile, getMemberProfileById } from '@/constants/images';
 import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import { getMockMemberBiodata } from '@/constants/memberBiodata';
 import { filterByRecommendedGender, resolveUserGender, type MatchGender } from '@/constants/matchFilters';
-import { parseProfilePhotos, PROFILE_PHOTOS_KEY, isRemotePhotoUri, serializeProfilePhotos } from '@/constants/profilePhotos';
-import { hasCompletedProfile } from '@/constants/profileCompletion';
+import { parseProfilePhotos, PROFILE_PHOTOS_KEY, isRemotePhotoUri, resolveDisplayPhotoUri, resolvePortableListingPhotoUri, serializeProfilePhotos } from '@/constants/profilePhotos';
+import { hasCompletedProfile, applyDefaultRegistrationCommunity } from '@/constants/profileCompletion';
 import { matchesRegistrationCommunity } from '@/constants/registrationCommunities';
 import {
   listPublishedProfiles,
   publishedMemberFromProfileDoc,
+  resolveProfilePhoneForStorage,
   upsertProfileFromValues,
 } from '@/lib/firestore/profileService';
 import { upsertSubscription } from '@/lib/firestore/subscriptionService';
@@ -26,6 +28,74 @@ type StoredDirectory = {
   biodata: Record<string, string>;
 };
 
+function publishedMemberKey(entry: PublishedMember): string {
+  const phone =
+    entry.biodata?.[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ||
+    entry.biodata?.phoneNumber?.replace(/\D/g, '') ||
+    entry.phoneNumber?.replace(/\D/g, '') ||
+    '';
+  return phone || entry.id;
+}
+
+function mergePublishedMemberLists(
+  local: PublishedMember[],
+  remote: PublishedMember[],
+): PublishedMember[] {
+  const byKey = new Map<string, PublishedMember>();
+  for (const entry of local) {
+    byKey.set(publishedMemberKey(entry), entry);
+  }
+  for (const entry of remote) {
+    byKey.set(publishedMemberKey(entry), entry);
+  }
+  return Array.from(byKey.values());
+}
+
+function toStoredDirectory(entry: PublishedMember): StoredDirectory {
+  return {
+    ownerKey: entry.ownerKey,
+    member: {
+      id: entry.id,
+      name: entry.name,
+      age: entry.age,
+      community: entry.community,
+      location: entry.location,
+      image: entry.image,
+      gender: entry.gender,
+      badge: entry.badge,
+      verified: entry.verified,
+      phoneNumber: entry.phoneNumber,
+      whatsappNumber: entry.whatsappNumber,
+      facebookProfile: entry.facebookProfile,
+      instagramProfile: entry.instagramProfile,
+      interestStatus: entry.interestStatus,
+    },
+    biodata: entry.biodata,
+  };
+}
+
+async function readLocalPublishedMembers(): Promise<PublishedMember[]> {
+  const raw = await AsyncStorage.getItem(MEMBER_DIRECTORY_KEY);
+  if (!raw) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(raw) as StoredDirectory[];
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed.map((entry) => ({
+      ...entry.member,
+      biodata: entry.biodata,
+      ownerKey: entry.ownerKey,
+    }));
+  } catch {
+    return [];
+  }
+}
+
 function listingIdFromValues(values: Record<string, string>): string {
   const registration = values.registrationNumber?.trim();
   if (registration) {
@@ -37,11 +107,15 @@ function listingIdFromValues(values: Record<string, string>): string {
 function memberFromValues(values: Record<string, string>, id: string): MemberProfile {
   const remotePhotos = values.profilePhotoUrls?.split('|').filter(isRemotePhotoUri) ?? [];
   const localPhotos = parseProfilePhotos(values[PROFILE_PHOTOS_KEY] ?? values.profilePhotos ?? '');
-  const image =
-    remotePhotos[0] ??
-    localPhotos.find((photo) => isRemotePhotoUri(photo)) ??
-    localPhotos.find(Boolean) ??
-    '';
+  const portableImage = resolvePortableListingPhotoUri([
+    ...remotePhotos,
+    ...localPhotos,
+  ]);
+  const image = resolveDisplayPhotoUri(
+    portableImage ||
+      (Platform.OS === 'web' ? '' : localPhotos.find(Boolean) ?? ''),
+    Platform.OS === 'web' ? 'web' : 'native',
+  );
   const heightLabel = values.height ? values.height.replace('ft', "'") : '';
   const ageYear = values.dateOfBirth?.match(/(\d{4})/)?.[1];
   const age = ageYear
@@ -65,55 +139,24 @@ function memberFromValues(values: Record<string, string>, id: string): MemberPro
 }
 
 export async function readPublishedMembers(): Promise<PublishedMember[]> {
+  const local = await readLocalPublishedMembers();
+
   try {
     const remoteProfiles = await listPublishedProfiles();
-    if (remoteProfiles.length > 0) {
-      const published = remoteProfiles.map(publishedMemberFromProfileDoc);
-      const stored: StoredDirectory[] = published.map((entry) => ({
-        ownerKey: entry.ownerKey,
-        member: {
-          id: entry.id,
-          name: entry.name,
-          age: entry.age,
-          community: entry.community,
-          location: entry.location,
-          image: entry.image,
-          gender: entry.gender,
-          badge: entry.badge,
-          verified: entry.verified,
-          phoneNumber: entry.phoneNumber,
-          whatsappNumber: entry.whatsappNumber,
-          facebookProfile: entry.facebookProfile,
-          instagramProfile: entry.instagramProfile,
-          interestStatus: entry.interestStatus,
-        },
-        biodata: entry.biodata,
-      }));
-      await AsyncStorage.setItem(MEMBER_DIRECTORY_KEY, JSON.stringify(stored));
-      return published;
-    }
-  } catch {
-    // Fall back to local cache when Firestore is unavailable.
-  }
+    const remote = remoteProfiles.map(publishedMemberFromProfileDoc);
 
-  const raw = await AsyncStorage.getItem(MEMBER_DIRECTORY_KEY);
-  if (!raw) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(raw) as StoredDirectory[];
-    if (!Array.isArray(parsed)) {
-      return [];
+    if (remote.length === 0) {
+      return local;
     }
 
-    return parsed.map((entry) => ({
-      ...entry.member,
-      biodata: entry.biodata,
-      ownerKey: entry.ownerKey,
-    }));
+    const merged = local.length > 0 ? mergePublishedMemberLists(local, remote) : remote;
+    await AsyncStorage.setItem(
+      MEMBER_DIRECTORY_KEY,
+      JSON.stringify(merged.map(toStoredDirectory)),
+    );
+    return merged;
   } catch {
-    return [];
+    return local;
   }
 }
 
@@ -134,22 +177,38 @@ export async function publishCurrentUserFromStorage(ownerKey = 'current-user'): 
 export async function publishProfileFromValues(
   values: Record<string, string>,
   ownerKey = 'current-user',
+  options: { autoApprovePhotos?: boolean } = {},
 ): Promise<PublishedMember | null> {
-  if (!hasCompletedProfile(values)) {
+  const preparedValues = resolveProfilePhoneForStorage(values, ownerKey);
+  if (!hasCompletedProfile(preparedValues)) {
     return null;
   }
 
-  const id = listingIdFromValues(values);
-  const member = memberFromValues(values, id);
-  const biodata = { ...values, memberListingId: id };
+  const resolvedOwnerKey = ownerKey.startsWith('admin-')
+    ? `admin-${preparedValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') || ownerKey.replace(/^admin-/, '')}`
+    : ownerKey;
+
+  const id = listingIdFromValues(preparedValues);
+  const member = memberFromValues(preparedValues, id);
+  const biodata = { ...preparedValues, memberListingId: id };
   const nextEntry: StoredDirectory = {
-    ownerKey,
+    ownerKey: resolvedOwnerKey,
     member,
     biodata,
   };
 
   const existing = await readPublishedMembers();
-  const withoutOwner = existing.filter((entry) => entry.ownerKey !== ownerKey);
+  const publishedPhone = preparedValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+  const withoutOwner = existing.filter((entry) => {
+    if (entry.ownerKey === resolvedOwnerKey) {
+      return false;
+    }
+    const entryPhone =
+      entry.biodata?.[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ||
+      entry.phoneNumber?.replace(/\D/g, '') ||
+      '';
+    return !publishedPhone || entryPhone !== publishedPhone;
+  });
   const stored: StoredDirectory[] = [
     ...withoutOwner.map((entry) => ({
       ownerKey: entry.ownerKey,
@@ -178,12 +237,13 @@ export async function publishProfileFromValues(
 
   const biodataWithApproval = {
     ...biodata,
-    approvalStatus: ownerKey.startsWith('admin-') ? 'approved' : 'pending',
+    approvalStatus: resolvedOwnerKey.startsWith('admin-') ? 'approved' : 'pending',
   };
 
-  const remoteProfile = await upsertProfileFromValues(biodataWithApproval, ownerKey, {
+  const remoteProfile = await upsertProfileFromValues(biodataWithApproval, resolvedOwnerKey, {
     published: true,
     uploadPhotos: true,
+    autoApprovePhotos: options.autoApprovePhotos ?? resolvedOwnerKey.startsWith('admin-'),
   });
 
   const syncedBiodata = remoteProfile
@@ -192,17 +252,21 @@ export async function publishProfileFromValues(
         approvalStatus: remoteProfile.approvalStatus ?? biodataWithApproval.approvalStatus,
         profilePhotoUrls: (remoteProfile.photoUrls ?? []).join('|'),
         [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(remoteProfile.photoUrls ?? []),
+        _profileUpdatedAt: String(remoteProfile.updatedAt ?? Date.now()),
       }
-    : biodataWithApproval;
+    : {
+        ...biodataWithApproval,
+        _profileUpdatedAt: String(Date.now()),
+      };
 
   await AsyncStorage.setItem('user_profile', JSON.stringify(syncedBiodata));
 
   const phone = biodata[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
-  if (phone && !ownerKey.startsWith('admin-')) {
+  if (phone && !resolvedOwnerKey.startsWith('admin-')) {
     await upsertSubscription(phone, { accessMode: 'unpaid', batchesPaid: 0 }).catch(() => undefined);
   }
 
-  return { ...member, biodata: syncedBiodata, ownerKey };
+  return { ...member, biodata: syncedBiodata, ownerKey: resolvedOwnerKey };
 }
 
 export function getStaticMemberListing(id: string): MemberProfile | undefined {
@@ -248,13 +312,15 @@ export function getMemberRegistrationCommunity(
   published: PublishedMember[] = [],
 ): string {
   const publishedEntry = published.find((entry) => entry.id === memberId);
-  const biodataCommunity = publishedEntry?.biodata?.registrationCommunity?.trim() ?? '';
-  if (biodataCommunity) {
-    return biodataCommunity;
+  if (publishedEntry?.biodata) {
+    const community = applyDefaultRegistrationCommunity(publishedEntry.biodata).registrationCommunity?.trim() ?? '';
+    if (community) {
+      return community;
+    }
   }
 
   const biodata = getMemberBiodataValues(memberId, published);
-  return biodata?.registrationCommunity?.trim() ?? '';
+  return applyDefaultRegistrationCommunity(biodata ?? {}).registrationCommunity?.trim() ?? '';
 }
 
 export function getBrowsableMembersForUser(

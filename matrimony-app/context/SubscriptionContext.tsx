@@ -49,6 +49,10 @@ type SubscriptionContextValue = {
   viewedProfileIds: string[];
   hiddenProfileIds: string[];
   needsPaymentAccess: boolean;
+  /** False until Firestore subscription state is resolved for the logged-in user. */
+  isSubscriptionGateReady: boolean;
+  canBrowseMemberProfiles: boolean;
+  isSubscriptionExhausted: boolean;
   canViewFullProfile: (profileId: string) => boolean;
   canOpenNewFullProfile: (profileId: string) => boolean;
   recordProfileView: (profileId: string) => Promise<boolean>;
@@ -92,11 +96,14 @@ function parseStoredSubscription(raw: string | null): SubscriptionState {
 
   try {
     const parsed = JSON.parse(raw) as Partial<SubscriptionState>;
+    const accessMode = parsed.accessMode === 'paid' ? 'paid' : 'unpaid';
+    const batchesPaid = typeof parsed.batchesPaid === 'number' ? Math.max(0, parsed.batchesPaid) : 0;
     return {
       isLoggedIn: Boolean(parsed.isLoggedIn),
-      hasChosenAccessMode: Boolean(parsed.hasChosenAccessMode),
-      accessMode: parsed.accessMode === 'paid' ? 'paid' : 'unpaid',
-      batchesPaid: typeof parsed.batchesPaid === 'number' ? Math.max(0, parsed.batchesPaid) : 0,
+      hasChosenAccessMode:
+        Boolean(parsed.hasChosenAccessMode) || (accessMode === 'paid' && batchesPaid > 0),
+      accessMode,
+      batchesPaid,
       viewedProfileIds: Array.isArray(parsed.viewedProfileIds)
         ? parsed.viewedProfileIds.filter((id): id is string => typeof id === 'string')
         : [],
@@ -112,6 +119,7 @@ function parseStoredSubscription(raw: string | null): SubscriptionState {
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<SubscriptionState>(defaultState);
   const [isReady, setIsReady] = useState(false);
+  const [isSubscriptionGateReady, setIsSubscriptionGateReady] = useState(false);
   const [membershipViewMode, setMembershipViewMode] = useState<MembershipViewMode>('regular');
   const [pendingPayment, setPendingPayment] = useState(false);
 
@@ -122,6 +130,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       .then(([stored]) => {
         const parsed = parseStoredSubscription(stored);
         setState(parsed);
+        setIsSubscriptionGateReady(!parsed.isLoggedIn);
       })
       .finally(() => {
         setIsReady(true);
@@ -191,21 +200,33 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    let cancelled = false;
+
     void (async () => {
-      const profileRaw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
-      if (!profileRaw) {
-        return;
-      }
       try {
-        const profileValues = JSON.parse(profileRaw) as Record<string, string>;
-        const phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
-        if (phone) {
-          await syncFromFirestore(phone);
+        const profileRaw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
+        if (!profileRaw) {
+          return;
         }
-      } catch {
-        // ignore malformed profile cache
+        try {
+          const profileValues = JSON.parse(profileRaw) as Record<string, string>;
+          const phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+          if (phone) {
+            await syncFromFirestore(phone);
+          }
+        } catch {
+          // ignore malformed profile cache
+        }
+      } finally {
+        if (!cancelled) {
+          setIsSubscriptionGateReady(true);
+        }
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isReady, state.isLoggedIn, syncFromFirestore]);
 
   const profilesAllowed = getProfilesAllowed(state.batchesPaid);
@@ -217,6 +238,8 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     state.batchesPaid,
     profilesViewedCount,
   );
+  const isSubscriptionExhausted = isPaidMember && profilesRemaining <= 0;
+  const canBrowseMemberProfiles = !isSubscriptionExhausted;
   const isPrimeViewActive = membershipViewMode === 'prime' && isPaidMember;
 
   useEffect(() => {
@@ -322,14 +345,21 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       }
     }
     const profileComplete = hasCompletedProfile(profileValues);
+    const phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
     const next: SubscriptionState = {
       ...current,
       isLoggedIn: true,
+      hasChosenAccessMode:
+        current.hasChosenAccessMode || (current.accessMode === 'paid' && current.batchesPaid > 0),
     };
     setState(next);
     await persistState(next);
+    if (phone) {
+      await syncFromFirestore(phone);
+    }
+    setIsSubscriptionGateReady(true);
     return profileComplete ? 'home' : 'register';
-  }, [persistState]);
+  }, [persistState, syncFromFirestore]);
 
   const chooseUnpaidAccess = useCallback(async () => {
     updateState((current) => {
@@ -434,6 +464,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       return next;
     });
     setMembershipViewMode('regular');
+    setIsSubscriptionGateReady(true);
   }, [persistState]);
 
   const needsPaymentAccess = userNeedsPaymentAccess(state);
@@ -453,6 +484,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       viewedProfileIds: state.viewedProfileIds,
       hiddenProfileIds: state.hiddenProfileIds,
       needsPaymentAccess,
+      isSubscriptionGateReady,
+      canBrowseMemberProfiles,
+      isSubscriptionExhausted,
       canViewFullProfile,
       canOpenNewFullProfile,
       recordProfileView,
@@ -477,6 +511,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       resetPaymentGate,
       hasPaidProfileQuota,
       isPaidMember,
+      isSubscriptionExhausted,
+      canBrowseMemberProfiles,
+      isSubscriptionGateReady,
       isPrimeViewActive,
       isReady,
       login,

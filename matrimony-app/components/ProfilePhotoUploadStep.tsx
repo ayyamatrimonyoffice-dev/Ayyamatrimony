@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import { MAX_PROFILE_PHOTOS } from '@/constants/profilePhotos';
 import { Language } from '@/constants/i18n';
@@ -101,6 +102,33 @@ function cropToAspectRatio(
   );
 
   return outputCanvas.toDataURL('image/jpeg', 0.85);
+}
+
+async function normalizeNativeImageUri(uri: string): Promise<string> {
+  if (Platform.OS === 'web' || !uri.trim()) {
+    return uri;
+  }
+
+  if (uri.startsWith('file://')) {
+    return uri;
+  }
+
+  if (!uri.startsWith('content://')) {
+    return uri;
+  }
+
+  const cacheDir = FileSystem.cacheDirectory;
+  if (!cacheDir) {
+    return uri;
+  }
+
+  const destination = `${cacheDir}profile_pick_${Date.now()}.jpg`;
+  try {
+    await FileSystem.copyAsync({ from: uri, to: destination });
+    return destination;
+  } catch {
+    return uri;
+  }
 }
 
 async function normalizeWebImageUri(uri: string, maxWidth = 1200): Promise<string> {
@@ -293,14 +321,19 @@ export function ProfilePhotoUploadStep({
   const [sourcePickerSlot, setSourcePickerSlot] = useState<number | null>(null);
   const [webCameraSlot, setWebCameraSlot] = useState<number | null>(null);
   const openedLibraryOnMountRef = useRef(false);
+  const photosRef = useRef(photos);
+  photosRef.current = photos;
 
   const applyPhotoToSlot = useCallback(
     (slotIndex: number, uri: string) => {
-      const nextPhotos = Array.from({ length: MAX_PROFILE_PHOTOS }, (_, index) => photos[index] ?? '');
+      const nextPhotos = Array.from(
+        { length: MAX_PROFILE_PHOTOS },
+        (_, index) => photosRef.current[index] ?? '',
+      );
       nextPhotos[slotIndex] = uri;
       onChange(nextPhotos);
     },
-    [onChange, photos],
+    [onChange],
   );
 
   const pickPhoto = useCallback(
@@ -320,6 +353,7 @@ export function ProfilePhotoUploadStep({
         allowsEditing: Platform.OS === 'web' ? false : !skipNativeEditing,
         aspect: [3, 4],
         quality: 0.85,
+        copyToCacheDirectory: true,
       };
 
       try {
@@ -332,10 +366,11 @@ export function ProfilePhotoUploadStep({
           return;
         }
 
+        const rawUri = result.assets[0].uri;
         const uri =
           Platform.OS === 'web'
-            ? await normalizeWebImageUri(result.assets[0].uri)
-            : result.assets[0].uri;
+            ? await normalizeWebImageUri(rawUri)
+            : await normalizeNativeImageUri(rawUri);
         applyPhotoToSlot(slotIndex, uri);
       } catch {
         if (Platform.OS === 'web') {
@@ -413,11 +448,14 @@ export function ProfilePhotoUploadStep({
 
   const removePhoto = useCallback(
     (slotIndex: number) => {
-      const nextPhotos = Array.from({ length: MAX_PROFILE_PHOTOS }, (_, index) => photos[index] ?? '');
+      const nextPhotos = Array.from(
+        { length: MAX_PROFILE_PHOTOS },
+        (_, index) => photosRef.current[index] ?? '',
+      );
       nextPhotos[slotIndex] = '';
       onChange(nextPhotos);
     },
-    [onChange, photos],
+    [onChange],
   );
 
   const slots = Array.from({ length: MAX_PROFILE_PHOTOS }, (_, index) => photos[index] ?? '');

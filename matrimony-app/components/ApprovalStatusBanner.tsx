@@ -6,7 +6,7 @@ import { colors, spacing, typography } from '@/constants/theme';
 import { premiumCard } from '@/constants/premiumUi';
 
 export function ApprovalStatusBanner() {
-  const { translate } = useLanguage();
+  const { translate, language } = useLanguage();
   const { approvalStatus, canBrowseProfiles } = useUserApproval();
 
   if (canBrowseProfiles) {
@@ -23,10 +23,10 @@ export function ApprovalStatusBanner() {
         color={isRejected ? colors.error : colors.primary}
       />
       <View style={styles.textWrap}>
-        <Text style={styles.title}>
+        <Text style={[styles.title, language === 'ta' && styles.titleTamil]} numberOfLines={2}>
           {translate(isRejected ? 'approvalRejectedTitle' : 'approvalPendingTitle')}
         </Text>
-        <Text style={styles.message}>
+        <Text style={[styles.message, language === 'ta' && styles.messageTamil]}>
           {translate(isRejected ? 'approvalRejectedMessage' : 'approvalPendingMessage')}
         </Text>
       </View>
@@ -60,9 +60,17 @@ const styles = StyleSheet.create({
     ...typography.titleLg,
     color: colors.onSurface,
   },
+  titleTamil: {
+    fontSize: 15,
+    lineHeight: 20,
+  },
   message: {
     ...typography.bodyMd,
     color: colors.onSurfaceVariant,
     lineHeight: 18,
+  },
+  messageTamil: {
+    fontSize: 13,
+    lineHeight: 19,
   },
 });

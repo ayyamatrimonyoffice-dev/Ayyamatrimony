@@ -91,11 +91,17 @@ export default function HomeScreen() {
 
             <View style={styles.headerRight}>
               <Pressable
-                style={[styles.primeBadge, isPrimeViewActive && styles.primeBadgeActive]}
+                style={[
+                  styles.primeBadge,
+                  isPrimeViewActive && styles.primeBadgeActive,
+                  language === 'ta' && styles.primeBadgeTamil,
+                ]}
                 onPress={handlePrimePress}
               >
-                <MaterialIcons name="star" size={14} color={colors.gold} />
-                <Text style={styles.primeBadgeText}>{translate('prime')}</Text>
+                <MaterialIcons name="star" size={language === 'ta' ? 16 : 14} color={colors.gold} />
+                {language === 'ta' ? null : (
+                  <Text style={styles.primeBadgeText}>{translate('prime')}</Text>
+                )}
               </Pressable>
 
               <Pressable style={styles.headerIconBtn} onPress={toggleLanguage} hitSlop={8}>
@@ -133,13 +139,25 @@ export default function HomeScreen() {
 
         </View>
 
-        <View style={styles.sectionBlock}>
+        <View style={styles.matchesSection}>
           <View style={styles.sectionHeaderRow}>
-            <View style={styles.dailyHeaderText}>
-              <Text style={styles.sectionHeadingDark}>{translate('dailyRecommendations')}</Text>
-            </View>
-            <Pressable onPress={() => router.push('/(tabs)/matches')}>
-              <Text style={styles.viewAll}>{translate('viewAll')}</Text>
+            <Text
+              style={[
+                styles.sectionHeadingDark,
+                language === 'ta' && styles.sectionHeadingTamil,
+              ]}
+              numberOfLines={2}
+            >
+              {translate('dailyRecommendations')}
+            </Text>
+            <Pressable
+              onPress={() => router.push('/(tabs)/matches')}
+              hitSlop={8}
+              style={styles.viewAllWrap}
+            >
+              <Text style={[styles.viewAll, language === 'ta' && styles.viewAllTamil]}>
+                {translate('viewAll')}
+              </Text>
             </Pressable>
           </View>
 
@@ -156,17 +174,34 @@ export default function HomeScreen() {
               />
             ))}
           </ScrollView>
-        </View>
 
-        <View style={styles.homePromoSection}>
+          <View style={styles.matchesSubsectionDivider} />
+
           <View style={styles.homePromoHeaderRow}>
-            <Text style={styles.homePromoAllMatchesTitle}>
+            <Text
+              style={[
+                styles.homePromoAllMatchesTitle,
+                language === 'ta' && styles.homePromoAllMatchesTitleTamil,
+              ]}
+              numberOfLines={2}
+            >
               {translateFormat('allMatchesSectionTitle', {
                 count: homeMatches.length.toLocaleString(),
               })}
             </Text>
-            <Pressable onPress={() => router.push('/(tabs)/matches')} hitSlop={8}>
-              <Text style={styles.homePromoViewAllText}>{translate('viewAllChevron')}</Text>
+            <Pressable
+              onPress={() => router.push('/(tabs)/matches')}
+              hitSlop={8}
+              style={styles.viewAllWrap}
+            >
+              <Text
+                style={[
+                  styles.homePromoViewAllText,
+                  language === 'ta' && styles.viewAllTamil,
+                ]}
+              >
+                {translate('viewAllChevron')}
+              </Text>
             </Pressable>
           </View>
 
@@ -218,7 +253,7 @@ function HomeRecommendationCard({ match, locked }: { match: HomeMatch; locked: b
   const router = useRouter();
   const openProfile = useOpenMemberProfile();
   const requirePaidContact = useRequirePaidContact();
-  const { translate, translateFormat } = useLanguage();
+  const { translate, translateFormat, language } = useLanguage();
   const { isShortlisted, hasSentInterest, toggleShortlist, sendInterest } = useMatchActions();
 
   const shortlisted = isShortlisted(match.id);
@@ -305,8 +340,16 @@ function HomeRecommendationCard({ match, locked }: { match: HomeMatch; locked: b
         </Pressable>
         <Pressable style={styles.recommendPrimaryBtn} onPress={handleInterest}>
           <MaterialIcons name="favorite" size={14} color={colors.onPrimary} />
-          <Text style={styles.recommendPrimaryText}>
-            {interestSent ? translate('interestSent') : translate('interest')}
+          <Text
+            style={[
+              styles.recommendPrimaryText,
+              language === 'ta' && styles.recommendPrimaryTextTamil,
+            ]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+          >
+            {interestSent ? translate('interestSentBtn') : translate('interest')}
           </Text>
         </Pressable>
       </View>
@@ -320,15 +363,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   scroll: {
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   heroSection: {
     paddingHorizontal: spacing.containerMargin,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
     borderBottomLeftRadius: borderRadius.xl,
     borderBottomRightRadius: borderRadius.xl,
-    gap: spacing.md,
+    gap: spacing.sm,
     backgroundColor: '#ffffff',
   },
   bannerWrap: {
@@ -339,7 +382,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
   },
   headerLeft: {
     flexDirection: 'row',
@@ -392,6 +435,10 @@ const styles = StyleSheet.create({
   },
   primeBadgeActive: {
     backgroundColor: '#FFF8E7',
+  },
+  primeBadgeTamil: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
   },
   primeBadgeText: {
     ...typography.labelSm,
@@ -448,18 +495,27 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#fff',
   },
-  sectionBlock: {
+  matchesSection: {
     backgroundColor: '#fff',
-    marginTop: spacing.sm,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
+    marginTop: spacing.xs,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  matchesSubsectionDivider: {
+    height: 1,
+    backgroundColor: colors.outlineVariant,
+    marginHorizontal: spacing.containerMargin,
+    marginTop: spacing.xs,
+    opacity: 0.45,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.containerMargin,
-    marginBottom: spacing.md,
+    marginBottom: spacing.xs,
+    gap: spacing.sm,
   },
   sectionTitleWrap: {
     flexDirection: 'row',
@@ -473,23 +529,41 @@ const styles = StyleSheet.create({
   viewAll: {
     ...typography.labelLg,
     color: colors.surfaceTint,
+    flexShrink: 0,
+  },
+  viewAllTamil: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  viewAllWrap: {
+    flexShrink: 0,
+    paddingTop: 2,
   },
   horizontalList: {
     paddingHorizontal: spacing.containerMargin,
+    gap: spacing.sm,
+    alignItems: 'flex-start',
   },
   dailyHeaderText: {
     flex: 1,
     gap: 2,
+    minWidth: 0,
   },
   sectionHeadingDark: {
     ...typography.titleLg,
     color: colors.onSurface,
+    flex: 1,
+    minWidth: 0,
+  },
+  sectionHeadingTamil: {
+    fontSize: 17,
+    lineHeight: 24,
+    fontFamily: fonts.interSemi,
   },
   recommendCard: {
     width: 148,
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
-    marginRight: spacing.sm,
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ECEFF1',
@@ -550,32 +624,35 @@ const styles = StyleSheet.create({
   },
   recommendPrimaryBtn: {
     flex: 1,
+    minWidth: 0,
     height: 34,
     borderRadius: 17,
     backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 3,
+    paddingHorizontal: 6,
   },
   recommendPrimaryText: {
     ...typography.labelSm,
     color: colors.onPrimary,
     fontSize: 11,
+    flexShrink: 1,
+    minWidth: 0,
+    textAlign: 'center',
   },
-  homePromoSection: {
-    backgroundColor: '#fff',
-    marginTop: spacing.sm,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    paddingHorizontal: spacing.containerMargin,
-    gap: spacing.sm,
+  recommendPrimaryTextTamil: {
+    fontSize: 8,
+    lineHeight: 11,
   },
   homePromoHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: spacing.sm,
+    paddingHorizontal: spacing.containerMargin,
+    marginBottom: spacing.xs,
   },
   homePromoAllMatchesTitle: {
     ...typography.titleLg,
@@ -583,10 +660,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.interSemi,
     fontSize: 20,
     flex: 1,
+    minWidth: 0,
+  },
+  homePromoAllMatchesTitleTamil: {
+    fontSize: 16,
+    lineHeight: 22,
   },
   homePromoMatchList: {
     gap: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.containerMargin,
   },
   homePromoMatchCard: {
     width: 108,

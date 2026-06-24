@@ -36,7 +36,8 @@ export function MatchCard({
   const openProfile = useOpenMemberProfile();
   const requirePaidContact = useRequirePaidContact();
   const { canViewFullProfile } = useSubscription();
-  const { translate, translateFormat } = useLanguage();
+  const { translate, translateFormat, language } = useLanguage();
+  const isTamil = language === 'ta';
   const { hasSentInterest, sendInterest } = useMatchActions();
 
   const interestSent = hasSentInterest(id);
@@ -122,17 +123,29 @@ export function MatchCard({
           <InfoRow icon="groups" text={display.community} />
 
           <View style={styles.actions}>
-            <Pressable style={styles.outlineBtn} onPress={handleViewProfile}>
-              <MaterialIcons name="visibility" size={16} color={colors.primary} />
-              <Text style={styles.outlineText}>{translate('viewProfile')}</Text>
+            <Pressable style={[styles.outlineBtn, isTamil && styles.actionBtnTamil]} onPress={handleViewProfile}>
+              <MaterialIcons name="visibility" size={isTamil ? 14 : 16} color={colors.primary} style={styles.actionIcon} />
+              <Text
+                style={[styles.outlineText, isTamil && styles.actionTextTamil]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.72}
+              >
+                {translate('viewProfileBtn')}
+              </Text>
             </Pressable>
             <Pressable
-              style={[styles.primaryBtn, interestSent && styles.primaryBtnSent]}
+              style={[styles.primaryBtn, interestSent && styles.primaryBtnSent, isTamil && styles.actionBtnTamil]}
               onPress={handleInterest}
             >
-              <MaterialIcons name="favorite" size={16} color={colors.onPrimary} />
-              <Text style={styles.primaryText}>
-                {interestSent ? translate('interestSent') : translate('interest')}
+              <MaterialIcons name="favorite" size={isTamil ? 14 : 16} color={colors.onPrimary} style={styles.actionIcon} />
+              <Text
+                style={[styles.primaryText, isTamil && styles.actionTextTamil]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.72}
+              >
+                {interestSent ? translate('interestSentBtn') : translate('interest')}
               </Text>
             </Pressable>
           </View>
@@ -283,29 +296,43 @@ const styles = StyleSheet.create({
   },
   outlineBtn: {
     flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
     paddingVertical: 8,
+    paddingHorizontal: 8,
     borderWidth: 1,
     borderColor: colors.primary,
     borderRadius: borderRadius.md,
     backgroundColor: colors.surfaceContainerLowest,
+  },
+  actionBtnTamil: {
+    paddingHorizontal: 6,
+    paddingVertical: 9,
+  },
+  actionIcon: {
+    flexShrink: 0,
   },
   outlineText: {
     ...typography.labelSm,
     color: colors.primary,
     fontSize: 11,
     letterSpacing: 0,
+    flexShrink: 1,
+    minWidth: 0,
+    textAlign: 'center',
   },
   primaryBtn: {
     flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
     paddingVertical: 8,
+    paddingHorizontal: 8,
     backgroundColor: colors.primary,
     borderRadius: borderRadius.md,
   },
@@ -317,5 +344,12 @@ const styles = StyleSheet.create({
     color: colors.onPrimary,
     fontSize: 11,
     letterSpacing: 0,
+    flexShrink: 1,
+    minWidth: 0,
+    textAlign: 'center',
+  },
+  actionTextTamil: {
+    fontSize: 10,
+    lineHeight: 13,
   },
 });

@@ -16,8 +16,9 @@ import { colors, typography } from '@/constants/theme';
 
 export default function TabLayout() {
   const router = useRouter();
-  const { translate } = useLanguage();
-  const { isReady, isLoggedIn, needsPaymentAccess, syncFromFirestore } = useSubscription();
+  const { translate, language } = useLanguage();
+  const { isReady, isLoggedIn, needsPaymentAccess, isSubscriptionGateReady, syncFromFirestore } =
+    useSubscription();
   const { values, isReady: profileReady } = useProfileForm();
   const { refresh: refreshApproval } = useUserApproval();
   const { refresh: refreshDirectory } = useMemberDirectory();
@@ -77,6 +78,14 @@ export default function TabLayout() {
     );
   }
 
+  if (!isSubscriptionGateReady) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   if (needsPaymentAccess) {
     return <Redirect href="/payment-access" />;
   }
@@ -90,8 +99,8 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: 'rgba(255, 251, 249, 0.98)',
           borderTopColor: 'rgba(87, 0, 0, 0.08)',
-          height: 84,
-          paddingBottom: 10,
+          height: language === 'ta' ? 90 : 84,
+          paddingBottom: language === 'ta' ? 12 : 10,
           paddingTop: 8,
           ...Platform.select({
             web: { boxShadow: '0 -4px 16px rgba(87, 0, 0, 0.06)' },

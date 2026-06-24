@@ -10,7 +10,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MembershipToggle } from '@/components/MembershipToggle';
 import { ProtectedProfileImage } from '@/components/ProtectedProfileImage';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSubscription } from '@/context/SubscriptionContext';
@@ -186,10 +185,6 @@ export default function InterestsScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
-        <View style={styles.topUtilityRow}>
-          <MembershipToggle variant="outlined" />
-        </View>
-
         <View style={styles.tabsRow}>
           {directionTabs.map((tab) => {
             const isActive = directionTab === tab.key;
@@ -285,50 +280,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceContainerLowest,
     paddingHorizontal: spacing.containerMargin,
     paddingBottom: spacing.sm,
-  },
-  topUtilityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 36,
-    marginBottom: spacing.md,
-  },
-  membershipToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceContainerLowest,
-    borderRadius: borderRadius.full,
-    padding: 3,
-    borderWidth: 1,
-    borderColor: colorsLocal.chipBorder,
-  },
-  togglePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: borderRadius.full,
-    gap: 4,
-  },
-  togglePillActive: {
-    borderWidth: 1,
-    borderColor: colorsLocal.ctaOrange,
-    backgroundColor: colors.surfaceContainerLowest,
-  },
-  toggleText: {
-    ...typography.labelSm,
-    color: colors.onSurface,
-    fontSize: 12,
-  },
-  toggleTextActive: {
-    color: colorsLocal.ctaOrange,
-    fontFamily: fonts.interSemi,
-  },
-  primeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.error,
   },
   tabsRow: {
     flexDirection: 'row',

@@ -1,110 +1,253 @@
-import { useEffect, useState } from 'react';
-import { ScrollView } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
 import {
-  FormDateField,
-  FormField,
-  FormFixedCasteField,
-  FormScreen,
-  FormSelectField,
-} from '@/components/FormScreen';
-import { FIXED_CASTE_VALUE } from '@/constants/formOptions';
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
+import { Redirect, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  CreateProfileBiodataForm,
+  PhotoVisibilityToggle,
+  RegistrationNumberBar,
+} from '@/components/CreateProfileBiodataForm';
+import { LanguageLogoToggle } from '@/components/LanguageLogoToggle';
+import { publishProfileFromValues } from '@/constants/memberDirectory';
+import { images } from '@/constants/images';
+import {
+  BIODATA_WIZARD_COMPLETE_KEY,
+  hasSavedBiodata,
+} from '@/constants/profileCompletion';
+import { colors, fonts, spacing } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
+import { useSubscription } from '@/context/SubscriptionContext';
 
 export default function EditProfileScreen() {
+  const router = useRouter();
   const { translate } = useLanguage();
-  const { getValue, setValue, isReady } = useProfileForm();
-  const [fullName, setFullName] = useState('');
-  const [gender, setGender] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('');
-  const [religion, setReligion] = useState('');
-  const [subCaste, setSubCaste] = useState('');
-  const [city, setCity] = useState('');
-  const [occupation, setOccupation] = useState('');
-  const [workType, setWorkType] = useState('');
-  const [education, setEducation] = useState('');
+  const { isReady: profileReady, replaceValues } = useProfileForm();
+  const { isReady: subscriptionReady, isLoggedIn } = useSubscription();
+  const isSaving = useRef(false);
 
-  useEffect(() => {
-    if (!isReady) {
-      return;
-    }
+  const [photoToggleSlot, setPhotoToggleSlot] = useState<{
+    value: boolean;
+    onValueChange: (next: boolean) => void;
+  } | null>(null);
+  const [step, setStep] = useState(1);
 
-    setFullName(getValue('fullName'));
-    setGender(getValue('gender'));
-    setDateOfBirth(getValue('dateOfBirth'));
-    setReligion(getValue('religion'));
-    setSubCaste(getValue('subCaste'));
-    setCity(getValue('nativePlace'));
-    setOccupation(getValue('occupation'));
-    setWorkType(getValue('workType'));
-    setEducation(getValue('education'));
-  }, [getValue, isReady]);
+  const handleSave = useCallback(
+    (profileValues: Record<string, string>) => {
+      if (isSaving.current) {
+        return;
+      }
+      isSaving.current = true;
 
-  const handleSave = () => {
-    setValue('fullName', fullName.trim());
-    setValue('gender', gender);
-    setValue('dateOfBirth', dateOfBirth);
-    setValue('religion', religion);
-    setValue('caste', FIXED_CASTE_VALUE);
-    setValue('subCaste', subCaste);
-    setValue('nativePlace', city.trim());
-    setValue('occupation', occupation);
-    setValue('workType', workType);
-    setValue('education', education);
-  };
+      void (async () => {
+        try {
+          if (!hasSavedBiodata(profileValues)) {
+            Alert.alert(translate('saveChanges'), translate('profileIncompleteSave'));
+            return;
+          }
+
+          const published = await publishProfileFromValues(profileValues, 'current-user');
+          const syncedValues = {
+            ...(published?.biodata ?? profileValues),
+            [BIODATA_WIZARD_COMPLETE_KEY]: 'true',
+          };
+
+          await replaceValues(syncedValues);
+          Alert.alert(translate('saveChanges'), translate('profileUpdated'), [
+            { text: translate('ok'), onPress: () => router.back() },
+          ]);
+        } catch {
+          Alert.alert(translate('saveChanges'), translate('profileSaveFailed'));
+        } finally {
+          isSaving.current = false;
+        }
+      })();
+    },
+    [replaceValues, router, translate],
+  );
+
+  if (!profileReady || !subscriptionReady) {
+    return (
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return <Redirect href="/" />;
+  }
 
   return (
-    <FormScreen titleKey="editProfileTitle" successKey="profileUpdated" onSave={handleSave}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 16, paddingBottom: 24 }}>
-        <FormField label={translate('fullName')} value={fullName} onChangeText={setFullName} />
-        <FormSelectField
-          label={translate('gender')}
-          value={gender}
-          onValueChange={setGender}
-          optionsKey="gender"
-          placeholder={translate('selectGender')}
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+      <View style={styles.pageHeaderWrap}>
+        <LinearGradient
+          colors={['#FFFFFF', '#FFF9F8', '#F6FAFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.pageHeader}
+        >
+          <View style={styles.pageHeaderRow}>
+            <Pressable
+              onPress={() => router.back()}
+              hitSlop={10}
+              style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={translate('back')}
+            >
+              <MaterialIcons name="arrow-back" size={20} color={colors.primary} />
+            </Pressable>
+
+            <View style={styles.brandBlock}>
+              <View style={styles.brandLogoWrap}>
+                <Image source={images.logo} style={styles.brandLogo} resizeMode="contain" />
+              </View>
+              <Text style={styles.brandName} numberOfLines={1} ellipsizeMode="tail">
+                {translate('editProfile')}
+              </Text>
+            </View>
+
+            <RegistrationNumberBar editable inline />
+
+            {step === 5 ? (
+              photoToggleSlot ? (
+                <PhotoVisibilityToggle
+                  value={photoToggleSlot.value}
+                  onValueChange={photoToggleSlot.onValueChange}
+                />
+              ) : (
+                <View style={styles.headerTogglePlaceholder} />
+              )
+            ) : (
+              <LanguageLogoToggle variant="maroon" compact dense />
+            )}
+          </View>
+        </LinearGradient>
+
+        <LinearGradient
+          colors={['rgba(212, 175, 55, 0.55)', 'rgba(87, 0, 0, 0.35)', 'rgba(212, 175, 55, 0.55)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={styles.headerAccent}
         />
-        <FormDateField
-          label={translate('dateOfBirth')}
-          value={dateOfBirth}
-          onValueChange={setDateOfBirth}
-        />
-        <FormSelectField
-          label={translate('religion')}
-          value={religion}
-          onValueChange={setReligion}
-          optionsKey="religion"
-          placeholder={translate('selectReligion')}
-        />
-        <FormFixedCasteField label={translate('caste')} />
-        <FormSelectField
-          label={translate('subCaste')}
-          value={subCaste}
-          onValueChange={setSubCaste}
-          optionsKey="subCaste"
-          placeholder={translate('selectSubCaste')}
-        />
-        <FormField label={translate('city')} value={city} onChangeText={setCity} />
-        <FormSelectField
-          label={translate('occupation')}
-          value={occupation}
-          onValueChange={setOccupation}
-          optionsKey="occupation"
-        />
-        <FormSelectField
-          label={translate('workType')}
-          value={workType}
-          onValueChange={setWorkType}
-          optionsKey="workType"
-          placeholder={translate('selectWorkType')}
-        />
-        <FormSelectField
-          label={translate('education')}
-          value={education}
-          onValueChange={setEducation}
-          optionsKey="education"
-        />
-      </ScrollView>
-    </FormScreen>
+      </View>
+
+      <CreateProfileBiodataForm
+        editable
+        onSave={handleSave}
+        onStepChange={setStep}
+        onPhotoToggleSlotChange={setPhotoToggleSlot}
+      />
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3F7FC',
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#F3F7FC',
+  },
+  pageHeaderWrap: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(87, 0, 0, 0.06)',
+    ...Platform.select({
+      web: { boxShadow: '0 4px 16px rgba(87, 0, 0, 0.06)' },
+      default: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.06,
+        shadowRadius: 10,
+        elevation: 3,
+      },
+    }),
+  },
+  pageHeader: {
+    paddingHorizontal: spacing.sm,
+    paddingTop: 6,
+    paddingBottom: 6,
+  },
+  headerAccent: {
+    height: 2,
+  },
+  pageHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  backButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(87, 0, 0, 0.1)',
+    flexShrink: 0,
+  },
+  backButtonPressed: {
+    opacity: 0.8,
+  },
+  brandBlock: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  brandLogoWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.45)',
+    backgroundColor: '#FFFFFF',
+    padding: 2,
+    flexShrink: 0,
+    ...Platform.select({
+      web: { boxShadow: '0 2px 8px rgba(87, 0, 0, 0.08)' },
+      default: {
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 4,
+        elevation: 2,
+      },
+    }),
+  },
+  brandLogo: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  brandName: {
+    flex: 1,
+    minWidth: 0,
+    color: colors.primary,
+    fontSize: 13,
+    lineHeight: 17,
+    fontFamily: fonts.playfairSemi,
+    letterSpacing: 0.4,
+  },
+  headerTogglePlaceholder: {
+    width: 52,
+    flexShrink: 0,
+  },
+});

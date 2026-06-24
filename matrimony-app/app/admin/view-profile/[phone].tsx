@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AdminMatrimonyProfileLoader, AdminMatrimonyProfileView } from '@/components/admin/AdminMatrimonyProfileView';
 import { adminColors } from '@/constants/admin';
@@ -42,9 +42,11 @@ export default function AdminViewProfileScreen() {
     }
   }, [phone]);
 
-  useEffect(() => {
-    void loadProfile();
-  }, [loadProfile]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadProfile();
+    }, [loadProfile]),
+  );
 
   const handleBrowseHiddenChange = useCallback(
     (hidden: boolean) => {

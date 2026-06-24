@@ -83,7 +83,12 @@ export default function ProfileScreen() {
               onPress={() => router.push(item.route)}
             >
               <MaterialIcons name={item.icon} size={22} color={colors.primary} />
-              <Text style={styles.menuLabel}>{translate(item.labelKey)}</Text>
+              <Text
+                style={[styles.menuLabel, language === 'ta' && styles.menuLabelTamil]}
+                numberOfLines={2}
+              >
+                {translate(item.labelKey)}
+              </Text>
               <MaterialIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
             </Pressable>
           ))}
@@ -92,7 +97,12 @@ export default function ProfileScreen() {
             onPress={handleLogout}
           >
             <MaterialIcons name="logout" size={22} color={colors.primary} />
-            <Text style={styles.menuLabel}>{translate('logout')}</Text>
+            <Text
+              style={[styles.menuLabel, language === 'ta' && styles.menuLabelTamil]}
+              numberOfLines={2}
+            >
+              {translate('logout')}
+            </Text>
             <MaterialIcons name="chevron-right" size={22} color={colors.onSurfaceVariant} />
           </Pressable>
         </View>
@@ -186,5 +196,10 @@ const styles = StyleSheet.create({
     ...typography.labelLg,
     color: colors.onSurface,
     flex: 1,
+    minWidth: 0,
+  },
+  menuLabelTamil: {
+    fontSize: 14,
+    lineHeight: 18,
   },
 });

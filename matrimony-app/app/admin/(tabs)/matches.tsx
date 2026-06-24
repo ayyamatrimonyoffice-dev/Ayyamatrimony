@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useFocusEffect, useRouter } from 'expo-router';
 
@@ -15,6 +15,8 @@ import { adminColors } from '@/constants/admin';
 import { adminFilterLabelKeys } from '@/constants/adminLabels';
 
 import { images } from '@/constants/images';
+
+import { firstDisplayablePhotoUri } from '@/constants/profilePhotos';
 
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -33,19 +35,15 @@ const filters: ProfileFilter[] = ['all', 'male', 'female'];
 
 
 function profilePhoto(profile: FirestoreProfileDoc): string {
-
-  return (
-
-    profile.primaryPhotoUrl ||
-
-    profile.listing?.image ||
-
-    profile.photoUrls?.find(Boolean) ||
-
-    ''
-
+  return firstDisplayablePhotoUri(
+    [
+      profile.primaryPhotoUrl ?? '',
+      profile.listing?.image ?? '',
+      ...(profile.photoUrls ?? []),
+      ...(profile.approvedPhotoUrls ?? []),
+    ],
+    Platform.OS === 'web' ? 'web' : 'native',
   );
-
 }
 
 
@@ -140,13 +138,9 @@ export default function AdminMatchesScreen() {
 
       title={translate('adminMatches')}
 
-      subtitle={translate('adminMatchesSubtitle')}
-
       showLanguageToggle
 
     >
-
-      <Text style={styles.help}>{translate('adminMatchesHelp')}</Text>
 
 
 
@@ -289,16 +283,6 @@ export default function AdminMatchesScreen() {
 
 
 const styles = StyleSheet.create({
-
-  help: {
-
-    color: adminColors.textMuted,
-
-    fontSize: 13,
-
-    lineHeight: 18,
-
-  },
 
   filters: {
 

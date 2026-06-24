@@ -229,20 +229,6 @@ export default function AdminPaymentsScreen() {
                   onPress={() => openProfile(item.phone)}
                 />
 
-                {item.profileApprovalStatus ? (
-                  <Text style={styles.profileStatus}>
-                    {translateFormat('adminPaymentProfileStatus', {
-                      status: translate(adminStatusLabelKey(item.profileApprovalStatus)),
-                    })}
-                  </Text>
-                ) : null}
-
-                {item.status === 'verified' && (item.paidBatches ?? 0) > 0 ? (
-                  <Text style={styles.paidAccess}>
-                    {translateFormat('adminPaymentPaidAccess', { count: item.paidBatches ?? 0 })}
-                  </Text>
-                ) : null}
-
                 <Text style={styles.amount}>₹{item.amount.toLocaleString('en-IN')}</Text>
 
                 <View style={styles.actions}>
@@ -283,10 +269,6 @@ export default function AdminPaymentsScreen() {
                     </Pressable>
                   ) : null}
                 </View>
-
-                {profilePending ? (
-                  <Text style={styles.hint}>{translate('adminPaymentProfileApprovalHint')}</Text>
-                ) : null}
               </View>
             );
           })}
@@ -322,25 +304,7 @@ const styles = StyleSheet.create({
   },
   list: { gap: 12 },
   card: { gap: 8 },
-  profileStatus: {
-    color: adminColors.textMuted,
-    fontSize: 12,
-    marginLeft: 4,
-  },
-  paidAccess: {
-    color: adminColors.success,
-    fontSize: 12,
-    fontWeight: '600',
-    marginLeft: 4,
-  },
   amount: { color: adminColors.primary, fontSize: 18, fontWeight: '700', marginLeft: 4 },
-  hint: {
-    color: adminColors.textMuted,
-    fontSize: 12,
-    lineHeight: 18,
-    marginLeft: 4,
-    marginTop: 2,
-  },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   btn: {
     flexGrow: 1,

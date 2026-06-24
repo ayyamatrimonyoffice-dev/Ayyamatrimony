@@ -23,6 +23,7 @@ import { colors, spacing, typography } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
 import {
+  markCloudPhotoUploadUnavailable,
   shouldAttemptCloudPhotoUpload,
   uploadProfilePhotos,
 } from '@/lib/firestore/storageService';
@@ -93,7 +94,7 @@ export default function AddPhotosScreen() {
       }
 
       if (!shouldAttemptCloudPhotoUpload()) {
-        setUploadNotice(translate('photoSavedLocally'));
+        setUploadNotice(translate('photoAdded'));
         return;
       }
 
@@ -131,6 +132,8 @@ export default function AddPhotosScreen() {
           if (uploadVersionRef.current !== uploadVersion) {
             return;
           }
+
+          markCloudPhotoUploadUnavailable();
 
           if (hasSavedLocalPhotos(nextPhotos)) {
             setUploadNotice(translate('photoSavedLocally'));

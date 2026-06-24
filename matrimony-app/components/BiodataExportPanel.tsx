@@ -8,7 +8,6 @@ type BiodataExportPanelProps = {
   includePhoto: boolean;
   onIncludePhotoChange: (value: boolean) => void;
   onPickPhoto: () => void;
-  onClearPhoto?: () => void;
   hasExportPhoto: boolean;
   hasProfilePhoto: boolean;
   variant?: 'default' | 'admin';
@@ -18,7 +17,6 @@ export function BiodataExportPanel({
   includePhoto,
   onIncludePhotoChange,
   onPickPhoto,
-  onClearPhoto,
   hasExportPhoto,
   hasProfilePhoto,
   variant = 'default',
@@ -62,15 +60,8 @@ export function BiodataExportPanel({
                 : translate('addPhotoForExport')}
             </Text>
           </Pressable>
-          {hasExportPhoto && onClearPhoto ? (
-            <Pressable style={styles.clearButton} onPress={onClearPhoto}>
-              <Text style={[styles.clearText, { color: palette.textMuted }]}>{translate('useProfilePhoto')}</Text>
-            </Pressable>
-          ) : null}
         </View>
       ) : null}
-
-      <Text style={[styles.hint, { color: palette.textMuted }]}>{translate('exportBiodataHint')}</Text>
     </View>
   );
 }
@@ -113,17 +104,5 @@ const styles = StyleSheet.create({
   photoButtonText: {
     fontSize: 13,
     fontWeight: '600',
-  },
-  clearButton: {
-    alignSelf: 'center',
-    paddingVertical: 4,
-  },
-  clearText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  hint: {
-    fontSize: 12,
-    lineHeight: 18,
   },
 });

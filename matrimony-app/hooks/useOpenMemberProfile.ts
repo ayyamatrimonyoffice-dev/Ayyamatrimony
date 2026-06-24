@@ -8,6 +8,7 @@ export function useOpenMemberProfile() {
   const {
     canOpenNewFullProfile,
     canViewFullProfile,
+    canBrowseMemberProfiles,
     isPaidMember,
     isReady,
     recordProfileView,
@@ -26,7 +27,10 @@ export function useOpenMemberProfile() {
 
   return useCallback(
     (profileId: string) => {
-      if (!isReady || !canBrowseProfiles) {
+      if (!isReady || !canBrowseProfiles || !canBrowseMemberProfiles) {
+        if (isReady && canBrowseProfiles && !canBrowseMemberProfiles) {
+          openPayment('batch');
+        }
         return;
       }
 
@@ -42,6 +46,7 @@ export function useOpenMemberProfile() {
       router.push({ pathname: '/member/[id]', params: { id: profileId } });
     },
     [
+      canBrowseMemberProfiles,
       canBrowseProfiles,
       canOpenNewFullProfile,
       canViewFullProfile,

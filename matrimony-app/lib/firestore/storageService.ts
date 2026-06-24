@@ -9,8 +9,16 @@ const READ_URI_TIMEOUT_MS = 15000;
 
 let cloudPhotoUploadEnabled: boolean | null = null;
 
+/** Firebase Storage uploads need bucket CORS rules; web/local dev saves photos locally instead. */
 export function shouldAttemptCloudPhotoUpload(): boolean {
+  if (Platform.OS === 'web') {
+    return false;
+  }
   return cloudPhotoUploadEnabled !== false;
+}
+
+export function markCloudPhotoUploadUnavailable(): void {
+  cloudPhotoUploadEnabled = false;
 }
 
 export function isCloudPhotoUploadError(error: unknown): boolean {
@@ -20,7 +28,15 @@ export function isCloudPhotoUploadError(error: unknown): boolean {
 
   const firebaseError = error as { code?: string; status_?: number };
   if (firebaseError.status_ === 404) {
-    cloudPhotoUploadEnabled = false;
+    markCloudPhotoUploadUnavailable();
+    return true;
+  }
+
+  if (
+    firebaseError.code?.startsWith('storage/') ||
+    firebaseError.code === 'storage/unauthorized'
+  ) {
+    markCloudPhotoUploadUnavailable();
     return true;
   }
 
@@ -136,9 +152,13 @@ export async function uploadProfilePhoto(
     return localUri;
   }
 
+  if (!shouldAttemptCloudPhotoUpload()) {
+    return '';
+  }
+
   const storage = await getFirebaseStorage();
   if (!storage) {
-    cloudPhotoUploadEnabled = false;
+    markCloudPhotoUploadUnavailable();
     throw new Error('Photo storage is unavailable.');
   }
 
@@ -177,5 +197,14 @@ export async function uploadProfilePhotos(
   phone: string,
   localUris: string[],
 ): Promise<string[]> {
-  return Promise.all(localUris.map((uri, index) => uploadProfilePhoto(phone, index, uri)));
+  if (!shouldAttemptCloudPhotoUpload()) {
+    return localUris.map((uri) => (isRemotePhotoUri(uri) ? uri : ''));
+  }
+
+  try {
+    return await Promise.all(localUris.map((uri, index) => uploadProfilePhoto(phone, index, uri)));
+  } catch (error) {
+    markCloudPhotoUploadUnavailable();
+    throw error;
+  }
 }

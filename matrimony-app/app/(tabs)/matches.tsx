@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MatchCard } from '@/components/MatchCard';
 import { ApprovalStatusBanner } from '@/components/ApprovalStatusBanner';
@@ -34,13 +35,19 @@ function formatMatchCommunity(
 }
 
 export default function MatchesScreen() {
-  const { translate } = useLanguage();
+  const { translate, translateFormat, language } = useLanguage();
   const { values } = useProfileForm();
-  const { isPaidMember, profilesAllowed } = useSubscription();
-  const { published, isReady } = useMemberDirectory();
+  const { isPaidMember, profilesAllowed, isSubscriptionExhausted, batchSize } = useSubscription();
+  const { published, isReady, refresh } = useMemberDirectory();
   const { canBrowseProfiles, approvalStatus } = useUserApproval();
   const browsableMembers = useBrowsableMembers();
   const userGender = resolveUserGender(values);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
   const matches = useMemo(() => {
     if (!isPaidMember) {
@@ -56,7 +63,12 @@ export default function MatchesScreen() {
         contentContainerStyle={styles.scroll}
       >
         <View style={styles.heroSection}>
-          <Text style={styles.headerTitle}>{translate('matches')}</Text>
+          <Text
+            style={[styles.headerTitle, language === 'ta' && styles.headerTitleTamil]}
+            numberOfLines={2}
+          >
+            {translate('matches')}
+          </Text>
 
           <ApprovalStatusBanner />
 
@@ -67,7 +79,9 @@ export default function MatchesScreen() {
           {!isReady ? null : matches.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>
-                {!canBrowseProfiles
+                {isSubscriptionExhausted
+                  ? translateFormat('profileLimitReachedBody', { count: batchSize })
+                  : !canBrowseProfiles
                   ? translate(
                       approvalStatus === 'rejected'
                         ? 'approvalRejectedMessage'
@@ -119,6 +133,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     ...typography.headlineMd,
     color: colors.primary,
+  },
+  headerTitleTamil: {
+    fontSize: 20,
+    lineHeight: 26,
   },
   listContent: {
     paddingHorizontal: spacing.containerMargin,

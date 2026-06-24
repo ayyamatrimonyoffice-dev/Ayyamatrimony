@@ -1,4 +1,4 @@
-import { ImageSourcePropType } from 'react-native';
+import { ImageSourcePropType, Platform } from 'react-native';
 import { getOptionLabel } from '@/constants/formOptions';
 import { Language } from '@/constants/i18n';
 import { images } from '@/constants/images';
@@ -7,7 +7,10 @@ import {
   mergeDraftProfilePhotos,
   PROFILE_PHOTOS_DRAFT_KEY,
   PROFILE_PHOTOS_KEY,
+  resolveDisplayPhotoUri,
 } from '@/constants/profilePhotos';
+
+const displayPlatform = Platform.OS === 'web' ? 'web' : 'native';
 
 export function getProfileFirstName(fullName: string): string {
   const trimmed = fullName.trim();
@@ -21,14 +24,14 @@ export function getProfileFirstName(fullName: string): string {
 export function getProfileAvatarUri(values: Record<string, string>): string {
   const remote = values.profilePhotoUrls?.split('|').find((photo) => isRemotePhotoUri(photo)) ?? '';
   if (remote) {
-    return remote;
+    return resolveDisplayPhotoUri(remote, displayPlatform);
   }
 
   const photos = mergeDraftProfilePhotos(
     values[PROFILE_PHOTOS_DRAFT_KEY] ?? '',
     values[PROFILE_PHOTOS_KEY] ?? '',
   );
-  return photos.find((photo) => photo.length > 0) ?? '';
+  return resolveDisplayPhotoUri(photos.find((photo) => photo.length > 0) ?? '', displayPlatform);
 }
 
 export function getProfileAvatarSource(values: Record<string, string>): ImageSourcePropType {

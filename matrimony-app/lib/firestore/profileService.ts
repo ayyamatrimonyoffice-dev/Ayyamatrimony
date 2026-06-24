@@ -7,18 +7,19 @@ import {
   setDoc,
   where,
 } from 'firebase/firestore';
-import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
+import { Platform } from 'react-native';
+import { CONTACT_PHONE_KEY, PHONE_DIGIT_LENGTH } from '@/constants/contactDetails';
 import { hasCompletedProfile } from '@/constants/profileCompletion';
 import type { PublishedMember } from '@/constants/memberDirectory';
 import type { MatchGender } from '@/constants/matchFilters';
 import { getFirebaseFirestore } from '@/lib/firebase';
-import { fetchUserApprovalStatus } from '@/lib/firestore/approvalService';
+import { fetchUserApprovalStatus, submitLoginApproval } from '@/lib/firestore/approvalService';
 import {
   FIRESTORE_COLLECTIONS,
   type FirestoreProfileDoc,
   profileDocIdFromPhone,
 } from '@/lib/firestore/collections';
-import { uploadProfilePhotos } from '@/lib/firestore/storageService';
+import { uploadProfilePhotos, shouldAttemptCloudPhotoUpload } from '@/lib/firestore/storageService';
 import { submitPhotoForApproval } from '@/lib/firestore/photoApprovalService';
 import {
   biodataForFirestore,
@@ -30,9 +31,40 @@ import {
   parseProfilePhotos,
   PROFILE_PHOTOS_DRAFT_KEY,
   PROFILE_PHOTOS_KEY,
+  resolveDisplayPhotoUri,
+  resolvePortableListingPhotoUri,
   serializeProfilePhotos,
   serializeRemotePhotoUrls,
 } from '@/constants/profilePhotos';
+
+export function resolveProfilePhoneForStorage(
+  values: Record<string, string>,
+  ownerKey = '',
+): Record<string, string> {
+  const existing =
+    values[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ||
+    values.phoneNumber?.replace(/\D/g, '') ||
+    '';
+  if (existing.length === PHONE_DIGIT_LENGTH) {
+    return values;
+  }
+
+  if (!ownerKey.startsWith('admin-')) {
+    return values;
+  }
+
+  const registrationDigits = values.registrationNumber?.replace(/\D/g, '') ?? '';
+  const synthetic =
+    registrationDigits.length > 0
+      ? `7${registrationDigits.padStart(9, '0').slice(-9)}`
+      : `7${Date.now().toString().slice(-9)}`;
+
+  return {
+    ...values,
+    [CONTACT_PHONE_KEY]: synthetic,
+    phoneNumber: synthetic,
+  };
+}
 
 function listingIdFromValues(values: Record<string, string>): string {
   const registration = values.registrationNumber?.trim();
@@ -62,7 +94,7 @@ function resolveListingPhotos(values: Record<string, string>): string[] {
 
 function buildListingFromValues(values: Record<string, string>, id: string) {
   const mergedPhotos = resolveListingPhotos(values);
-  const image = mergedPhotos.find((photo) => isRemotePhotoUri(photo)) ?? mergedPhotos.find(Boolean) ?? '';
+  const image = resolvePortableListingPhotoUri(mergedPhotos);
   const heightLabel = values.height ? values.height.replace('ft', "'") : '';
   const ageYear = values.dateOfBirth?.match(/(\d{4})/)?.[1];
   const age = ageYear
@@ -131,11 +163,15 @@ function profileDocFromValues(
 export function publishedMemberFromProfileDoc(docData: FirestoreProfileDoc): PublishedMember {
   const approvedImage = docData.approvedPhotoUrls?.find((url) => Boolean(url?.trim())) ?? '';
   const listing = docData.listing;
-  const image =
+  const rawImage =
     approvedImage ||
     (docData.registrationSource === 'admin'
       ? docData.primaryPhotoUrl || listing?.image || ''
       : '');
+  const image = resolveDisplayPhotoUri(
+    rawImage || (docData.photoUrls ?? []).find(Boolean) || '',
+    Platform.OS === 'web' ? 'web' : 'native',
+  );
 
   return {
     id: listing?.id ?? docData.profileId,
@@ -158,7 +194,8 @@ export async function upsertProfileFromValues(
   ownerKey = 'current-user',
   options: { published?: boolean; uploadPhotos?: boolean; autoApprovePhotos?: boolean } = {},
 ): Promise<FirestoreProfileDoc | null> {
-  if (!hasCompletedProfile(values)) {
+  const preparedValues = resolveProfilePhoneForStorage(values, ownerKey);
+  if (!hasCompletedProfile(preparedValues)) {
     return null;
   }
 
@@ -167,18 +204,22 @@ export async function upsertProfileFromValues(
     return null;
   }
 
-  const phone = values[CONTACT_PHONE_KEY]?.replace(/\D/g, '') || values.phoneNumber?.replace(/\D/g, '') || '';
+  const phone =
+    preparedValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ||
+    preparedValues.phoneNumber?.replace(/\D/g, '') ||
+    '';
   if (!phone) {
     return null;
   }
 
-  let nextValues = { ...values };
+  let nextValues = { ...preparedValues };
   if (options.uploadPhotos !== false) {
     const localPhotos = mergeDraftProfilePhotos(
-      values[PROFILE_PHOTOS_DRAFT_KEY] ?? '',
-      values[PROFILE_PHOTOS_KEY] ?? '',
+      preparedValues[PROFILE_PHOTOS_DRAFT_KEY] ?? '',
+      preparedValues[PROFILE_PHOTOS_KEY] ?? '',
     );
-    const needsUpload = localPhotos.some((uri) => isLocalPhotoUri(uri));
+    const needsUpload =
+      shouldAttemptCloudPhotoUpload() && localPhotos.some((uri) => isLocalPhotoUri(uri));
     if (needsUpload) {
       try {
         const uploaded = await uploadProfilePhotos(phone, localPhotos);
@@ -196,7 +237,7 @@ export async function upsertProfileFromValues(
               return Promise.resolve();
             }
             return submitPhotoForApproval(phone, {
-              memberName: values.fullName,
+              memberName: preparedValues.fullName,
               photoUrl,
               slot,
               autoApprove: options.autoApprovePhotos ?? ownerKey.startsWith('admin-'),
@@ -237,6 +278,16 @@ export async function upsertProfileFromValues(
   };
 
   await setDoc(docRef, merged, { merge: true });
+
+  if (!ownerKey.startsWith('admin-')) {
+    await submitLoginApproval(phone, {
+      name: merged.fullName || preparedValues.fullName?.trim(),
+      profileId: merged.profileId,
+      registrationCommunity: merged.registrationCommunity,
+      source: 'profile',
+    }).catch(() => undefined);
+  }
+
   return merged;
 }
 
@@ -269,10 +320,11 @@ export async function listPublishedProfiles(): Promise<FirestoreProfileDoc[]> {
     .map((entry) => entry.data() as FirestoreProfileDoc)
     .filter(
       (profile) =>
+        profile.published === true &&
         profile.browseHidden !== true &&
         profile.accountStatus !== 'blocked' &&
         profile.accountStatus !== 'deleted' &&
-        profile.approvalStatus === 'approved',
+        (profile.approvalStatus === 'approved' || profile.registrationSource === 'admin'),
     );
 }
 
@@ -354,6 +406,12 @@ export async function hydrateLocalProfileFromFirestore(phone: string): Promise<R
   if (!biodata.gender) {
     biodata.gender = remote.gender || remote.listing?.gender || '';
   }
+
+  if (!biodata.registrationCommunity?.trim() && remote.registrationCommunity?.trim()) {
+    biodata.registrationCommunity = remote.registrationCommunity;
+  }
+
+  biodata._profileUpdatedAt = String(remote.updatedAt ?? Date.now());
 
   return biodata;
 }

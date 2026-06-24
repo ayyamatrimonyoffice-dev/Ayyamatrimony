@@ -187,7 +187,8 @@ export function SelectField({
   const isPremium = variant === 'premium';
   const isEmbeddedCompact = embedded && compact;
   const isTightEmbedded = isEmbeddedCompact && tight;
-  const useModalDropdown = embedded;
+  // Native embedded fields use inline dropdowns — measureInWindow modals need multiple taps on APK.
+  const useModalDropdown = embedded && Platform.OS === 'web';
   const triggerRef = useRef<View>(null);
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<{ top: number; left: number; width: number } | null>(null);

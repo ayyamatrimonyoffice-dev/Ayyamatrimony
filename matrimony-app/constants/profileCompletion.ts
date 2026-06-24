@@ -1,3 +1,5 @@
+export const BIODATA_WIZARD_COMPLETE_KEY = 'biodataWizardComplete';
+
 export function hasSavedBiodata(values: Record<string, string>): boolean {
   return Boolean(
     values.dateOfBirth?.trim() &&
@@ -13,12 +15,16 @@ export function hasCompletedProfile(values: Record<string, string>): boolean {
     return false;
   }
 
-  if (values.gender === 'male' || values.gender === 'female') {
+  if (values.gender !== 'male' && values.gender !== 'female') {
+    return false;
+  }
+
+  if (values[BIODATA_WIZARD_COMPLETE_KEY]?.trim().toLowerCase() === 'true') {
     return true;
   }
 
-  // Returning users who completed biodata before gender was added.
-  return hasSavedBiodata(values);
+  // Published profiles and returning users who already finished registration.
+  return Boolean(values.memberListingId?.trim());
 }
 
 export const DEFAULT_REGISTRATION_COMMUNITY = 'rc-christian';

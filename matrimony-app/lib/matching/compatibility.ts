@@ -1,5 +1,7 @@
 import type { FirestoreProfileDoc } from '@/lib/firestore/collections';
 import { isChristianRegistration } from '@/constants/registrationCommunities';
+import { firstDisplayablePhotoUri } from '@/constants/profilePhotos';
+import { Platform } from 'react-native';
 
 export type MatchSuggestion = {
   profileId: string;
@@ -180,7 +182,10 @@ export function computeMatchScore(
     community: candidate.registrationCommunity || candidate.listing.community,
     score: result.score,
     reasons: result.reasons,
-    image: candidate.primaryPhotoUrl || candidate.listing.image,
+    image: firstDisplayablePhotoUri(
+      [candidate.primaryPhotoUrl ?? '', candidate.listing.image ?? ''],
+      Platform.OS === 'web' ? 'web' : 'native',
+    ),
   };
 }
 

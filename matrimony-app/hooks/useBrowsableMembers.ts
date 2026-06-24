@@ -10,12 +10,15 @@ export function useBrowsableMembers() {
   const { published } = useMemberDirectory();
   const { values } = useProfileForm();
   const { canBrowseProfiles } = useUserApproval();
-  const { hiddenProfileIds } = useSubscription();
+  const { hiddenProfileIds, canBrowseMemberProfiles } = useSubscription();
   const userGender = resolveUserGender(values);
 
   return useMemo(
-    () =>
-      getBrowsableMembersForUser(
+    () => {
+      if (!canBrowseMemberProfiles) {
+        return [];
+      }
+      return getBrowsableMembersForUser(
         published,
         {
           registrationCommunity: values.registrationCommunity,
@@ -24,7 +27,8 @@ export function useBrowsableMembers() {
         'current-user',
         canBrowseProfiles,
         hiddenProfileIds,
-      ),
-    [canBrowseProfiles, hiddenProfileIds, published, userGender, values.registrationCommunity],
+      );
+    },
+    [canBrowseMemberProfiles, canBrowseProfiles, hiddenProfileIds, published, userGender, values.registrationCommunity],
   );
 }
