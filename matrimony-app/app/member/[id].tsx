@@ -13,6 +13,7 @@ import { colors, spacing, typography } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useMemberDirectory } from '@/context/MemberDirectoryContext';
+import { useMemberAccess } from '@/hooks/useMemberAccess';
 
 export default function MemberProfileScreen() {
   const router = useRouter();
@@ -22,12 +23,11 @@ export default function MemberProfileScreen() {
   const browsableMembers = useBrowsableMembers();
   const {
     isReady,
-    isPaidMember,
     profilesRemaining,
-    canViewFullProfile,
     recordProfileView,
     pendingPayment,
   } = useSubscription();
+  const { canViewFullProfile, isProfileApproved, hasVerifiedPayment } = useMemberAccess();
 
   const profileId = id ?? '';
   const member = resolveMemberListing(profileId, published);
@@ -108,24 +108,28 @@ export default function MemberProfileScreen() {
               <Text style={styles.previewText}>{member.community}</Text>
             </View>
             <Text style={styles.lockedBody}>
-              {pendingPayment
-                ? translate('paymentPendingReviewMessage')
-                : isPaidMember && profilesRemaining <= 0
-                  ? translate('profileLimitReached')
-                  : translate('unpaidAccessNote')}
+              {!isProfileApproved
+                ? translate('approvalPendingMessage')
+                : pendingPayment
+                  ? translate('paymentPendingReviewMessage')
+                  : !hasVerifiedPayment
+                    ? translate('unpaidAccessNote')
+                    : profilesRemaining <= 0
+                      ? translate('profileLimitReached')
+                      : translate('detailsLocked')}
             </Text>
-            {!pendingPayment ? (
+            {!pendingPayment && !hasVerifiedPayment ? (
               <PrimaryButton
                 label={translate('payRupee2000')}
                 onPress={() =>
                   router.push({
                     pathname: '/payment-access',
-                    params: { reason: isPaidMember && profilesRemaining <= 0 ? 'batch' : 'initial' },
+                    params: { reason: profilesRemaining <= 0 && hasVerifiedPayment ? 'batch' : 'initial' },
                   })
                 }
               />
             ) : null}
-            {!isPaidMember && !pendingPayment ? (
+            {!hasVerifiedPayment && !pendingPayment ? (
               <Pressable style={styles.backHint} onPress={() => router.back()}>
                 <Text style={styles.backHintText}>{translate('cancel')}</Text>
               </Pressable>

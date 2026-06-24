@@ -4,14 +4,14 @@
     "slug": "matrimony-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/lotus-logo.png",
     "scheme": "matrimony",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/lotus-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#570000"
+      "backgroundColor": "#FDF6EC"
     },
     "ios": {
       "supportsTablet": true,
@@ -19,7 +19,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/lotus-logo.png",
         "backgroundColor": "#570000"
       },
       "package": "com.matrimony.app"

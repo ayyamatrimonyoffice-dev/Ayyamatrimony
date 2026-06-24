@@ -27,6 +27,20 @@ export function hasCompletedProfile(values: Record<string, string>): boolean {
   return Boolean(values.memberListingId?.trim());
 }
 
+/** Normalize biodata before the first Firestore publish (wizard flag is set at save time). */
+export function prepareProfileForPublish(values: Record<string, string>): Record<string, string> {
+  let next = applyDefaultRegistrationCommunity(values);
+
+  if (!next.registrationCommunity?.trim()) {
+    next = { ...next, registrationCommunity: DEFAULT_REGISTRATION_COMMUNITY };
+  }
+
+  return {
+    ...next,
+    [BIODATA_WIZARD_COMPLETE_KEY]: 'true',
+  };
+}
+
 export const DEFAULT_REGISTRATION_COMMUNITY = 'rc-christian';
 
 const REGISTRATION_RELIGION_VALUES = new Set(['hindu', 'rc-christian', 'csi-christian']);

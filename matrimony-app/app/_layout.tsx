@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import { AppSplashGate } from '@/components/AppSplashGate';
 import {
   NotoSansTamil_400Regular,
   NotoSansTamil_500Medium,
@@ -25,6 +25,9 @@ import { colors } from '@/constants/theme';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  useEffect(() => {
+    void import('@/lib/firebase').then(({ getFirebaseFirestore }) => getFirebaseFirestore());
+  }, []);
   const [loaded, error] = useFonts({
     NotoSansTamil_400Regular,
     NotoSansTamil_500Medium,
@@ -34,26 +37,7 @@ export default function RootLayout() {
     PlayfairDisplay_700Bold,
   });
 
-  useEffect(() => {
-    if (loaded || error) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded, error]);
-
-  if (!loaded && !error) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.primary,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <ActivityIndicator size="large" color={colors.secondaryFixed} />
-      </View>
-    );
-  }
+  const fontsReady = Boolean(loaded || error);
 
   return (
     <LanguageProvider>
@@ -63,6 +47,7 @@ export default function RootLayout() {
         <MemberDirectoryProvider>
         <ChatProvider>
         <MatchActionsProvider>
+        <AppSplashGate fontsReady={fontsReady}>
         <Stack
           screenOptions={{
             headerShown: false,
@@ -94,6 +79,7 @@ export default function RootLayout() {
           <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
           <Stack.Screen name="admin" options={{ headerShown: false }} />
         </Stack>
+        </AppSplashGate>
         </MatchActionsProvider>
         </ChatProvider>
         </MemberDirectoryProvider>

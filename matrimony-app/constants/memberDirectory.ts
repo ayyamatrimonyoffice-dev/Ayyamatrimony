@@ -5,7 +5,7 @@ import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import { getMockMemberBiodata } from '@/constants/memberBiodata';
 import { filterByRecommendedGender, resolveUserGender, type MatchGender } from '@/constants/matchFilters';
 import { parseProfilePhotos, PROFILE_PHOTOS_KEY, isRemotePhotoUri, resolveDisplayPhotoUri, resolvePortableListingPhotoUri, serializeProfilePhotos } from '@/constants/profilePhotos';
-import { hasCompletedProfile, applyDefaultRegistrationCommunity } from '@/constants/profileCompletion';
+import { hasCompletedProfile, applyDefaultRegistrationCommunity, prepareProfileForPublish } from '@/constants/profileCompletion';
 import { matchesRegistrationCommunity } from '@/constants/registrationCommunities';
 import {
   listPublishedProfiles,
@@ -179,7 +179,10 @@ export async function publishProfileFromValues(
   ownerKey = 'current-user',
   options: { autoApprovePhotos?: boolean } = {},
 ): Promise<PublishedMember | null> {
-  const preparedValues = resolveProfilePhoneForStorage(values, ownerKey);
+  const preparedValues = resolveProfilePhoneForStorage(
+    prepareProfileForPublish(values),
+    ownerKey,
+  );
   if (!hasCompletedProfile(preparedValues)) {
     return null;
   }

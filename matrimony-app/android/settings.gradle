@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'Matrimony'
+rootProject.name = 'Ayya Matrimony'
 
 dependencyResolutionManagement {
   versionCatalogs {

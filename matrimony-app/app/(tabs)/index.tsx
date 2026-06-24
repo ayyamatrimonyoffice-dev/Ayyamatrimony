@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import {
   Alert,
   Image,
@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { ProfileQuickActionsRow } from '@/components/ProfileQuickActionsRow';
 import { useLanguage } from '@/context/LanguageContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { useUserApproval } from '@/context/UserApprovalContext';
 import { useMatchActions } from '@/context/MatchActionsContext';
 import { useOpenMemberProfile, useRequirePaidContact } from '@/hooks/useOpenMemberProfile';
 import {
@@ -27,6 +28,7 @@ import {
   getProfileFirstName,
 } from '@/constants/profileDisplay';
 import { useBrowsableMembers } from '@/hooks/useBrowsableMembers';
+import { useMemberAccess } from '@/hooks/useMemberAccess';
 import { borderRadius, colors, fonts, spacing, typography } from '@/constants/theme';
 
 type HomeMatch = ReturnType<typeof useBrowsableMembers>[number];
@@ -35,8 +37,10 @@ export default function HomeScreen() {
   const router = useRouter();
   const { translate, translateFormat, toggleLanguage, language } = useLanguage();
   const { values } = useProfileForm();
-  const { isPaidMember, isPrimeViewActive, membershipViewMode, setMembershipViewMode, profilesAllowed, canViewFullProfile } =
+  const { isPaidMember, isPrimeViewActive, membershipViewMode, setMembershipViewMode, profilesAllowed } =
     useSubscription();
+  const { canSeeMemberProfiles, canViewFullProfile } = useMemberAccess();
+  const { refresh: refreshApproval } = useUserApproval();
   const recommendedMatches = useBrowsableMembers();
   const profileName = getProfileFirstName(values.fullName ?? '') || translate('profile');
   const avatarSource = getProfileAvatarSource(values);
@@ -48,6 +52,12 @@ export default function HomeScreen() {
   }, [isPaidMember, profilesAllowed, recommendedMatches]);
 
   const notificationCount = 0;
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshApproval();
+    }, [refreshApproval]),
+  );
 
   const handlePrimePress = () => {
     if (!isPaidMember) {
@@ -139,6 +149,7 @@ export default function HomeScreen() {
 
         </View>
 
+        {canSeeMemberProfiles ? (
         <View style={styles.matchesSection}>
           <View style={styles.sectionHeaderRow}>
             <Text
@@ -219,6 +230,7 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
         </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

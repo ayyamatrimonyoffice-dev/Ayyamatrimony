@@ -5,7 +5,7 @@ import { ProtectedProfileImage } from '@/components/ProtectedProfileImage';
 import { getLimitedMemberPreview } from '@/constants/memberAccess';
 import { useLanguage } from '@/context/LanguageContext';
 import { useMatchActions } from '@/context/MatchActionsContext';
-import { useSubscription } from '@/context/SubscriptionContext';
+import { useMemberAccess } from '@/hooks/useMemberAccess';
 import { useOpenMemberProfile, useRequirePaidContact } from '@/hooks/useOpenMemberProfile';
 import { borderRadius, colors, fonts, spacing, typography } from '@/constants/theme';
 
@@ -35,7 +35,7 @@ export function MatchCard({
   const router = useRouter();
   const openProfile = useOpenMemberProfile();
   const requirePaidContact = useRequirePaidContact();
-  const { canViewFullProfile } = useSubscription();
+  const { canViewFullProfile } = useMemberAccess();
   const { translate, translateFormat, language } = useLanguage();
   const isTamil = language === 'ta';
   const { hasSentInterest, sendInterest } = useMatchActions();

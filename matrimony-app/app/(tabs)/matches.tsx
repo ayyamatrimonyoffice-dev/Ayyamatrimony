@@ -12,6 +12,7 @@ import { useProfileForm } from '@/context/ProfileFormContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useUserApproval } from '@/context/UserApprovalContext';
 import { useBrowsableMembers } from '@/hooks/useBrowsableMembers';
+import { useMemberAccess } from '@/hooks/useMemberAccess';
 import { useMemberDirectory } from '@/context/MemberDirectoryContext';
 import { borderRadius, colors, spacing, typography } from '@/constants/theme';
 
@@ -39,14 +40,16 @@ export default function MatchesScreen() {
   const { values } = useProfileForm();
   const { isPaidMember, profilesAllowed, isSubscriptionExhausted, batchSize } = useSubscription();
   const { published, isReady, refresh } = useMemberDirectory();
-  const { canBrowseProfiles, approvalStatus } = useUserApproval();
+  const { isProfileApproved, approvalStatus, canSeeMemberProfiles } = useMemberAccess();
+  const { refresh: refreshApproval } = useUserApproval();
   const browsableMembers = useBrowsableMembers();
   const userGender = resolveUserGender(values);
 
   useFocusEffect(
     useCallback(() => {
       void refresh();
-    }, [refresh]),
+      void refreshApproval();
+    }, [refresh, refreshApproval]),
   );
 
   const matches = useMemo(() => {
@@ -81,12 +84,14 @@ export default function MatchesScreen() {
               <Text style={styles.emptyText}>
                 {isSubscriptionExhausted
                   ? translateFormat('profileLimitReachedBody', { count: batchSize })
-                  : !canBrowseProfiles
+                  : !isProfileApproved
                   ? translate(
                       approvalStatus === 'rejected'
                         ? 'approvalRejectedMessage'
                         : 'approvalPendingMessage',
                     )
+                  : !canSeeMemberProfiles
+                    ? translate('paymentAccessInitial')
                   : !userGender
                     ? translate('setGenderToSeeMatches')
                     : translate('noMatchesYet')}

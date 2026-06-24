@@ -11,6 +11,7 @@ import {
   type RefObject,
 } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   AppState,
   Image,
@@ -5400,7 +5401,12 @@ export function CreateProfileBiodataForm({
     }
 
     if (form.gender !== 'male' && form.gender !== 'female') {
-      Alert.alert(translate('gender'), translate('selectGender'));
+      const message = translate('selectGender');
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.alert(message);
+      } else {
+        Alert.alert(translate('gender'), message);
+      }
       return;
     }
 
@@ -5414,7 +5420,12 @@ export function CreateProfileBiodataForm({
         const profileValues = await persistForm();
         await onSave(profileValues);
       } catch {
-        Alert.alert(translate('saveChanges'), translate('profileSaveFailed'));
+        const message = translate('profileSaveFailed');
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.alert(message);
+        } else {
+          Alert.alert(translate('saveChanges'), message);
+        }
       } finally {
         setIsSaving(false);
       }
@@ -5547,6 +5558,7 @@ export function CreateProfileBiodataForm({
   const isReviewStep = step === 5;
   const isExtrasStep = step === 4;
   const isChristianReview = isReviewStep && isCurrentChristian;
+  const isWebReviewActions = !IS_NATIVE && isReviewStep && !viewOnly;
   const reviewEditable = viewOnly ? false : editable;
 
   const step1Column = (
@@ -5937,6 +5949,7 @@ export function CreateProfileBiodataForm({
       ) : (
         <ScrollView
           ref={scrollRef}
+          style={styles.scrollView}
           showsVerticalScrollIndicator={false}
           nestedScrollEnabled
           keyboardShouldPersistTaps="always"
@@ -5945,6 +5958,7 @@ export function CreateProfileBiodataForm({
             dense && styles.scrollContentDense,
             isReviewStep && IS_NATIVE && styles.scrollContentReviewNative,
             isReviewStep && IS_NATIVE && { paddingHorizontal: horizontalInset },
+            isWebReviewActions && styles.scrollContentWebReview,
           ]}
         >
           {biodataSheet}
@@ -5957,6 +5971,7 @@ export function CreateProfileBiodataForm({
         style={[
           styles.actionBar,
           IS_NATIVE && styles.actionBarNative,
+          isWebReviewActions && styles.actionBarWebReview,
           viewOnly && styles.actionBarEmbedded,
           isChristianReview && styles.actionBarFullScreen,
         ]}
@@ -6002,7 +6017,7 @@ export function CreateProfileBiodataForm({
           </>
         ) : (
           <>
-        {step > 1 ? (
+        {step > 1 && !(isWebReviewActions && step === totalSteps) ? (
           <Pressable
             style={({ pressed }) => [
               styles.actionButtonOutline,
@@ -6040,6 +6055,95 @@ export function CreateProfileBiodataForm({
             </Text>
             <MaterialIcons name="arrow-forward" size={IS_NATIVE ? 16 : 14} color={colors.onPrimary} />
           </Pressable>
+        ) : isWebReviewActions ? (
+          <>
+            {step > 1 ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.actionButtonOutline,
+                  styles.actionButtonWebInline,
+                  pressed && styles.actionButtonPressed,
+                ]}
+                onPress={goToPreviousStep}
+                accessibilityRole="button"
+              >
+                <MaterialIcons name="arrow-back" size={13} color={SHEET_BORDER} />
+                <Text
+                  style={styles.actionButtonWebInlineText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}
+                >
+                  {translate('back')}
+                </Text>
+              </Pressable>
+            ) : null}
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionButtonPrint,
+                styles.actionButtonWebInline,
+                pressed && styles.actionButtonPressed,
+              ]}
+              onPress={handlePrintPress}
+              accessibilityRole="button"
+            >
+              <MaterialIcons name="print" size={13} color={SHEET_BORDER} />
+              <Text
+                style={styles.actionButtonWebInlineText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+              >
+                {translate('print')}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionButtonPrint,
+                styles.actionButtonWebInline,
+                (pressed || isSharing) && styles.actionButtonPressed,
+                isSharing && styles.actionButtonDisabled,
+              ]}
+              onPress={handleSharePress}
+              disabled={isSharing}
+              accessibilityRole="button"
+            >
+              <MaterialCommunityIcons name="whatsapp" size={13} color="#25D366" />
+              <Text
+                style={styles.actionButtonWebInlineText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.75}
+              >
+                {translate('share')}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.actionButtonPrimary,
+                styles.actionButtonWebSave,
+                (pressed || isSaving) && styles.actionButtonPressed,
+                isSaving && styles.actionButtonDisabled,
+              ]}
+              onPress={handleSavePress}
+              disabled={isSaving}
+              accessibilityRole="button"
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color={colors.onPrimary} />
+              ) : (
+                <MaterialIcons name="check-circle" size={13} color={colors.onPrimary} />
+              )}
+              <Text
+                style={styles.actionButtonWebSaveText}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.65}
+              >
+                {translate('saveAndContinue')}
+              </Text>
+            </Pressable>
+          </>
         ) : (
           <>
             <Pressable
@@ -6083,11 +6187,17 @@ export function CreateProfileBiodataForm({
                 styles.actionButtonPrimary,
                 styles.actionButtonCompact,
                 IS_NATIVE && styles.actionButtonNavEqual,
-                pressed && styles.actionButtonPressed,
+                (pressed || isSaving) && styles.actionButtonPressed,
+                isSaving && styles.actionButtonDisabled,
               ]}
               onPress={handleSavePress}
+              disabled={isSaving}
             >
-              <MaterialIcons name="check-circle" size={IS_NATIVE ? 16 : 14} color={colors.onPrimary} />
+              {isSaving ? (
+                <ActivityIndicator size="small" color={colors.onPrimary} />
+              ) : (
+                <MaterialIcons name="check-circle" size={IS_NATIVE ? 16 : 14} color={colors.onPrimary} />
+              )}
               <Text
                 style={[
                   styles.actionButtonPrimaryText,
@@ -6114,7 +6224,14 @@ export function CreateProfileBiodataForm({
 const styles = StyleSheet.create({
   wrapper: {
     flex: 1,
+    position: 'relative',
     backgroundColor: '#F8F6F4',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContentWebReview: {
+    paddingBottom: 72,
   },
   photoToggleHeaderOverlay: {
     position: 'absolute',
@@ -7574,6 +7691,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex: 100,
     flexDirection: 'row',
     flexWrap: 'nowrap',
     alignItems: 'center',
@@ -7585,6 +7703,68 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(87, 0, 0, 0.08)',
     ...actionBarShadow,
+    ...Platform.select({
+      web: {
+        cursor: 'default',
+      },
+      default: {
+        elevation: 24,
+      },
+    }),
+  },
+  actionBarWebReview: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  actionButtonWebInline: {
+    flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 3,
+    paddingHorizontal: 6,
+    ...Platform.select({
+      web: { cursor: 'pointer' },
+      default: {},
+    }),
+  },
+  actionButtonWebInlineText: {
+    color: SHEET_BORDER,
+    fontFamily: fonts.interSemi,
+    fontSize: 11,
+    lineHeight: 14,
+    flexShrink: 1,
+    textAlign: 'center',
+  },
+  actionButtonWebSave: {
+    flex: 1.35,
+    flexShrink: 1,
+    minWidth: 0,
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    ...Platform.select({
+      web: { cursor: 'pointer' },
+      default: {},
+    }),
+  },
+  actionButtonWebSaveText: {
+    color: colors.onPrimary,
+    fontFamily: fonts.interSemi,
+    fontSize: 11,
+    lineHeight: 14,
+    flexShrink: 1,
+    textAlign: 'center',
   },
   actionBarNative: {
     gap: 8,

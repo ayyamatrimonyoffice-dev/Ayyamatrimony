@@ -12,7 +12,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ProtectedProfileImage } from '@/components/ProtectedProfileImage';
 import { useLanguage } from '@/context/LanguageContext';
-import { useSubscription } from '@/context/SubscriptionContext';
+import { useMemberAccess } from '@/hooks/useMemberAccess';
 import { useMatchActions } from '@/context/MatchActionsContext';
 import { useOpenMemberProfile, useRequirePaidContact } from '@/hooks/useOpenMemberProfile';
 import { borderRadius, colors, fonts, spacing, typography } from '@/constants/theme';
@@ -117,7 +117,7 @@ function InterestCard({ item, locked }: { item: InterestItem; locked: boolean })
 export default function InterestsScreen() {
   const { direction } = useLocalSearchParams<{ direction?: string | string[] }>();
   const { translate } = useLanguage();
-  const { canViewFullProfile } = useSubscription();
+  const { canViewFullProfile } = useMemberAccess();
   const { sentInterests } = useMatchActions();
   const [directionTab, setDirectionTab] = useState<DirectionTab>('received');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('pending');

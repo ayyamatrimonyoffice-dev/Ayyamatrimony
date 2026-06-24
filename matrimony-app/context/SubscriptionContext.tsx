@@ -16,9 +16,11 @@ import {
   PROFILE_BATCH_SIZE,
   SUBSCRIPTION_STORAGE_KEY,
 } from '@/constants/subscription';
-import { hasCompletedProfile } from '@/constants/profileCompletion';
+import { hasCompletedProfile, prepareProfileForPublish } from '@/constants/profileCompletion';
 import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
+import { submitLoginApproval } from '@/lib/firestore/approvalService';
 import { fetchLatestPaymentStatus, submitPaymentRequest } from '@/lib/firestore/paymentService';
+import { upsertProfileFromValues } from '@/lib/firestore/profileService';
 import { fetchSubscription, syncSubscriptionViewedProfiles, upsertSubscription } from '@/lib/firestore/subscriptionService';
 
 const PROFILE_STORAGE_KEY = 'user_profile';
@@ -260,7 +262,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
   const canViewFullProfile = useCallback(
     (profileId: string) => {
-      if (!isPaidMember) {
+      if (!isPaidMember || pendingPayment) {
         return false;
       }
       if (state.viewedProfileIds.includes(profileId)) {
@@ -268,7 +270,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       }
       return profilesViewedCount < profilesAllowed;
     },
-    [isPaidMember, profilesAllowed, profilesViewedCount, state.viewedProfileIds],
+    [isPaidMember, pendingPayment, profilesAllowed, profilesViewedCount, state.viewedProfileIds],
   );
 
   const canOpenNewFullProfile = useCallback(
@@ -389,6 +391,17 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
       if (phone) {
         await upsertSubscription(phone, { accessMode: 'unpaid' }).catch(() => undefined);
+        const preparedProfile = prepareProfileForPublish(profileValues);
+        await upsertProfileFromValues(preparedProfile, 'current-user', {
+          published: true,
+          uploadPhotos: true,
+        }).catch(() => undefined);
+        await submitLoginApproval(phone, {
+          name: preparedProfile.fullName,
+          profileId: preparedProfile.memberListingId,
+          registrationCommunity: preparedProfile.registrationCommunity,
+          source: 'profile',
+        }).catch(() => undefined);
       }
     } catch {
       // ignore malformed profile cache
@@ -411,9 +424,10 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const profileRaw = await AsyncStorage.getItem(PROFILE_STORAGE_KEY);
       let phone = '';
       let memberName = '';
+      let profileValues: Record<string, string> = {};
       if (profileRaw) {
         try {
-          const profileValues = JSON.parse(profileRaw) as Record<string, string>;
+          profileValues = JSON.parse(profileRaw) as Record<string, string>;
           phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
           memberName = profileValues.fullName ?? '';
         } catch {
@@ -430,6 +444,19 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         method,
         referenceNumber: referenceNumber ?? `${method}-${Date.now()}`,
       });
+
+      const preparedProfile = prepareProfileForPublish(profileValues);
+      await upsertProfileFromValues(preparedProfile, 'current-user', {
+        published: true,
+        uploadPhotos: true,
+      }).catch(() => undefined);
+      await submitLoginApproval(phone, {
+        name: preparedProfile.fullName || memberName,
+        profileId: preparedProfile.memberListingId,
+        registrationCommunity: preparedProfile.registrationCommunity,
+        source: 'profile',
+      }).catch(() => undefined);
+
       updateState((current) => ({
         ...current,
         hasChosenAccessMode: true,

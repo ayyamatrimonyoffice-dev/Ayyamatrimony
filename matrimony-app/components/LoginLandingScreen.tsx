@@ -253,7 +253,7 @@ export function LoginLandingScreen() {
       {/* Community badges sit below the illustration */}
       <View style={styles.badgeBar}>
         <View style={[styles.communityChip, { borderColor: 'rgba(212,175,55,0.85)' }]}>
-          <MaterialCommunityIcons name="temple-hindu" size={13} color="#D4AF37" style={{ marginRight: 5 }} />
+          <Image source={images.logo} style={styles.communityChipIcon} resizeMode="contain" />
           <Text style={[styles.communityChipText, { color: '#D4AF37' }]}>HINDU NADAR</Text>
         </View>
         <View style={[styles.communityChip, { borderColor: 'rgba(91,194,168,0.85)' }]}>
@@ -386,6 +386,11 @@ const styles = StyleSheet.create({
   communityChip: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 5,
     borderRadius: 999, borderWidth: 1.2, backgroundColor: 'rgba(15,61,40,0.06)',
+  },
+  communityChipIcon: {
+    width: 13,
+    height: 13,
+    marginRight: 5,
   },
   communityChipText: { fontFamily: fonts.interSemi, letterSpacing: 0.2, textTransform: 'uppercase', fontSize: 8.5 },
   // Image takes remaining space

@@ -1,19 +1,17 @@
 import { useCallback } from 'react';
 import { useRouter } from 'expo-router';
 import { useSubscription } from '@/context/SubscriptionContext';
-import { useUserApproval } from '@/context/UserApprovalContext';
+import { useMemberAccess } from '@/hooks/useMemberAccess';
 
 export function useOpenMemberProfile() {
   const router = useRouter();
   const {
     canOpenNewFullProfile,
-    canViewFullProfile,
-    canBrowseMemberProfiles,
     isPaidMember,
     isReady,
     recordProfileView,
   } = useSubscription();
-  const { canBrowseProfiles } = useUserApproval();
+  const { canSeeMemberProfiles, canViewFullProfile } = useMemberAccess();
 
   const openPayment = useCallback(
     (reason: 'initial' | 'batch') => {
@@ -27,10 +25,7 @@ export function useOpenMemberProfile() {
 
   return useCallback(
     (profileId: string) => {
-      if (!isReady || !canBrowseProfiles || !canBrowseMemberProfiles) {
-        if (isReady && canBrowseProfiles && !canBrowseMemberProfiles) {
-          openPayment('batch');
-        }
+      if (!isReady || !canSeeMemberProfiles) {
         return;
       }
 
@@ -46,9 +41,8 @@ export function useOpenMemberProfile() {
       router.push({ pathname: '/member/[id]', params: { id: profileId } });
     },
     [
-      canBrowseMemberProfiles,
-      canBrowseProfiles,
       canOpenNewFullProfile,
+      canSeeMemberProfiles,
       canViewFullProfile,
       isPaidMember,
       isReady,
@@ -61,14 +55,19 @@ export function useOpenMemberProfile() {
 
 export function useRequirePaidContact() {
   const router = useRouter();
-  const { isPaidMember, isReady } = useSubscription();
+  const { isPaidMember, isReady, pendingPayment } = useSubscription();
+  const { isProfileApproved, hasVerifiedPayment } = useMemberAccess();
 
   return useCallback(() => {
     if (!isReady) {
       return false;
     }
 
-    if (!isPaidMember) {
+    if (!isProfileApproved) {
+      return false;
+    }
+
+    if (!hasVerifiedPayment || pendingPayment || !isPaidMember) {
       router.push({
         pathname: '/payment-access',
         params: { reason: 'initial' },
@@ -77,5 +76,5 @@ export function useRequirePaidContact() {
     }
 
     return true;
-  }, [isPaidMember, isReady, router]);
+  }, [hasVerifiedPayment, isPaidMember, isProfileApproved, isReady, pendingPayment, router]);
 }

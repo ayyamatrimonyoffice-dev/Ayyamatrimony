@@ -24,7 +24,7 @@ import { images } from '@/constants/images';
 
 import { colors, fonts, spacing } from '@/constants/theme';
 
-import { hasCompletedProfile, hasSavedBiodata, BIODATA_WIZARD_COMPLETE_KEY } from '@/constants/profileCompletion';
+import { hasCompletedProfile, BIODATA_WIZARD_COMPLETE_KEY, prepareProfileForPublish } from '@/constants/profileCompletion';
 
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -98,85 +98,68 @@ export default function CreateProfileScreen() {
 
 
   const handleSave = useCallback(
-
     (profileValues: Record<string, string>) => {
-
-      if (isSaving.current) return;
+      if (isSaving.current) {
+        return Promise.resolve();
+      }
 
       isSaving.current = true;
 
-
-
-      void (async () => {
-
+      return (async () => {
         try {
-
-          if (!hasSavedBiodata(profileValues)) {
-
-            Alert.alert(translate('saveChanges'), translate('profileIncompleteSave'));
-
+          const readyValues = prepareProfileForPublish(profileValues);
+          if (!hasCompletedProfile(readyValues)) {
+            const message = translate('profileIncompleteSave');
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
+              window.alert(message);
+            } else {
+              Alert.alert(translate('saveChanges'), message);
+            }
             return;
-
           }
 
-
-
-          const phone = profileValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
-
-          const published = await publishProfileFromValues(profileValues, 'current-user');
+          const phone = readyValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+          let published = null;
+          try {
+            published = await publishProfileFromValues(readyValues, 'current-user');
+          } catch {
+            published = null;
+          }
 
           const syncedValues = {
             ...(published?.biodata ?? {
-              ...profileValues,
+              ...readyValues,
               approvalStatus: 'pending',
             }),
             [BIODATA_WIZARD_COMPLETE_KEY]: 'true',
           };
 
-
-
           await replaceValues(syncedValues);
 
-
-
           if (phone) {
-
-            await submitLoginApproval(phone, {
-
+            void submitLoginApproval(phone, {
               name: syncedValues.fullName,
-
               profileId: syncedValues.memberListingId,
-
               registrationCommunity: syncedValues.registrationCommunity,
-
               source: 'profile',
-
-            });
-
+            }).catch(() => undefined);
           }
 
-
-
-          await refreshApproval();
-
+          void refreshApproval().catch(() => undefined);
           router.replace('/payment-access');
-
         } catch {
-
-          Alert.alert(translate('saveChanges'), translate('profileSaveFailed'));
-
+          const message = translate('profileSaveFailed');
+          if (Platform.OS === 'web' && typeof window !== 'undefined') {
+            window.alert(message);
+          } else {
+            Alert.alert(translate('saveChanges'), message);
+          }
         } finally {
-
           isSaving.current = false;
-
         }
-
       })();
-
     },
-
     [refreshApproval, replaceValues, router, translate],
-
   );
 
 

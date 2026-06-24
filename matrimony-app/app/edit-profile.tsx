@@ -24,7 +24,10 @@ import { images } from '@/constants/images';
 import {
   BIODATA_WIZARD_COMPLETE_KEY,
   hasSavedBiodata,
+  prepareProfileForPublish,
 } from '@/constants/profileCompletion';
+import { submitLoginApproval } from '@/lib/firestore/approvalService';
+import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import { colors, fonts, spacing } from '@/constants/theme';
 import { useLanguage } from '@/context/LanguageContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
@@ -57,13 +60,24 @@ export default function EditProfileScreen() {
             return;
           }
 
-          const published = await publishProfileFromValues(profileValues, 'current-user');
+          const readyValues = prepareProfileForPublish(profileValues);
+          const published = await publishProfileFromValues(readyValues, 'current-user');
           const syncedValues = {
-            ...(published?.biodata ?? profileValues),
+            ...(published?.biodata ?? { ...readyValues, approvalStatus: 'pending' }),
             [BIODATA_WIZARD_COMPLETE_KEY]: 'true',
           };
 
+          const phone = syncedValues[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
           await replaceValues(syncedValues);
+
+          if (phone) {
+            await submitLoginApproval(phone, {
+              name: syncedValues.fullName,
+              profileId: syncedValues.memberListingId,
+              registrationCommunity: syncedValues.registrationCommunity,
+              source: 'profile',
+            }).catch(() => undefined);
+          }
           Alert.alert(translate('saveChanges'), translate('profileUpdated'), [
             { text: translate('ok'), onPress: () => router.back() },
           ]);

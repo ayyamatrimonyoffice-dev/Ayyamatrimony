@@ -3,19 +3,19 @@ import { getBrowsableMembersForUser } from '@/constants/memberDirectory';
 import { resolveUserGender } from '@/constants/matchFilters';
 import { useProfileForm } from '@/context/ProfileFormContext';
 import { useSubscription } from '@/context/SubscriptionContext';
-import { useUserApproval } from '@/context/UserApprovalContext';
+import { useMemberAccess } from '@/hooks/useMemberAccess';
 import { useMemberDirectory } from '@/context/MemberDirectoryContext';
 
 export function useBrowsableMembers() {
   const { published } = useMemberDirectory();
   const { values } = useProfileForm();
-  const { canBrowseProfiles } = useUserApproval();
-  const { hiddenProfileIds, canBrowseMemberProfiles } = useSubscription();
+  const { hiddenProfileIds } = useSubscription();
+  const { canSeeMemberProfiles } = useMemberAccess();
   const userGender = resolveUserGender(values);
 
   return useMemo(
     () => {
-      if (!canBrowseMemberProfiles) {
+      if (!canSeeMemberProfiles) {
         return [];
       }
       return getBrowsableMembersForUser(
@@ -25,10 +25,10 @@ export function useBrowsableMembers() {
           gender: userGender,
         },
         'current-user',
-        canBrowseProfiles,
+        true,
         hiddenProfileIds,
       );
     },
-    [canBrowseMemberProfiles, canBrowseProfiles, hiddenProfileIds, published, userGender, values.registrationCommunity],
+    [canSeeMemberProfiles, hiddenProfileIds, published, userGender, values.registrationCommunity],
   );
 }

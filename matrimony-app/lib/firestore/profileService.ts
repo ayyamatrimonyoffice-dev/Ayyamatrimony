@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { CONTACT_PHONE_KEY, PHONE_DIGIT_LENGTH } from '@/constants/contactDetails';
-import { hasCompletedProfile } from '@/constants/profileCompletion';
+import { hasCompletedProfile, prepareProfileForPublish } from '@/constants/profileCompletion';
 import type { PublishedMember } from '@/constants/memberDirectory';
 import type { MatchGender } from '@/constants/matchFilters';
 import { getFirebaseFirestore } from '@/lib/firebase';
@@ -194,7 +194,10 @@ export async function upsertProfileFromValues(
   ownerKey = 'current-user',
   options: { published?: boolean; uploadPhotos?: boolean; autoApprovePhotos?: boolean } = {},
 ): Promise<FirestoreProfileDoc | null> {
-  const preparedValues = resolveProfilePhoneForStorage(values, ownerKey);
+  const preparedValues = resolveProfilePhoneForStorage(
+    prepareProfileForPublish(values),
+    ownerKey,
+  );
   if (!hasCompletedProfile(preparedValues)) {
     return null;
   }
