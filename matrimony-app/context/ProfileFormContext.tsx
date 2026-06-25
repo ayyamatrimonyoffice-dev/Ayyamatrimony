@@ -21,6 +21,7 @@ type ProfileFormContextValue = {
   getValue: (key: string) => string;
   replaceValues: (nextValues: Record<string, string>) => Promise<void>;
   syncProfileToFirestore: (ownerKey?: string, published?: boolean) => Promise<void>;
+  refreshFromFirestore: () => Promise<void>;
   clearProfile: () => Promise<void>;
 };
 
@@ -114,6 +115,29 @@ export function ProfileFormProvider({ children }: { children: ReactNode }) {
     [values],
   );
 
+  const refreshFromFirestore = useCallback(async () => {
+    const phone = values[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
+    if (!phone) {
+      return;
+    }
+
+    const remoteProfile = await hydrateLocalProfileFromFirestore(phone).catch(() => null);
+    if (!remoteProfile) {
+      return;
+    }
+
+    setValues((current) => {
+      const next = {
+        ...current,
+        ...remoteProfile,
+        [CONTACT_PHONE_KEY]: phone,
+        whatsappNumber: remoteProfile.whatsappNumber || current.whatsappNumber || phone,
+      };
+      void persistValues(next).catch(() => undefined);
+      return next;
+    });
+  }, [persistValues, values]);
+
   const clearProfile = useCallback(async () => {
     setValues({});
     await AsyncStorage.removeItem(PROFILE_STORAGE_KEY);
@@ -136,9 +160,10 @@ export function ProfileFormProvider({ children }: { children: ReactNode }) {
       },
       replaceValues,
       syncProfileToFirestore,
+      refreshFromFirestore,
       clearProfile,
     }),
-    [clearProfile, isReady, replaceValues, setValue, syncProfileToFirestore, values],
+    [clearProfile, isReady, refreshFromFirestore, replaceValues, setValue, syncProfileToFirestore, values],
   );
 
   return <ProfileFormContext.Provider value={value}>{children}</ProfileFormContext.Provider>;

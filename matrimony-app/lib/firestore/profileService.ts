@@ -1,7 +1,6 @@
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   query,
   setDoc,
@@ -14,6 +13,8 @@ import type { PublishedMember } from '@/constants/memberDirectory';
 import type { MatchGender } from '@/constants/matchFilters';
 import { getFirebaseFirestore } from '@/lib/firebase';
 import { fetchUserApprovalStatus, submitLoginApproval } from '@/lib/firestore/approvalService';
+import { resolveRegistrationNumber } from '@/lib/firestore/registrationNumberService';
+import { getDocResilient } from '@/lib/firestore/readHelpers';
 import {
   FIRESTORE_COLLECTIONS,
   type FirestoreProfileDoc,
@@ -29,7 +30,9 @@ import {
   mergeDraftProfilePhotos,
   mergeUploadedPhotos,
   mergeProfilePhotosIntoBiodata,
+  parseApprovedProfilePhotoUrls,
   parseProfilePhotos,
+  parseRemotePhotoUrls,
   PROFILE_PHOTOS_DRAFT_KEY,
   PROFILE_PHOTOS_KEY,
   resolveDisplayPhotoUri,
@@ -78,7 +81,7 @@ function listingIdFromValues(values: Record<string, string>): string {
 }
 
 function resolveListingPhotos(values: Record<string, string>): string[] {
-  const remotePhotos = values.profilePhotoUrls?.split('|').filter(Boolean) ?? [];
+  const remotePhotos = parseRemotePhotoUrls(values.profilePhotoUrls);
   const localPhotos = parseProfilePhotos(values[PROFILE_PHOTOS_KEY] ?? '');
 
   return Array.from({ length: MAX_PROFILE_PHOTOS }, (_, index) => {
@@ -94,8 +97,18 @@ function resolveListingPhotos(values: Record<string, string>): string[] {
   });
 }
 
-function buildListingFromValues(values: Record<string, string>, id: string) {
-  const mergedPhotos = resolveListingPhotos(values);
+function resolveApprovedListingPhotos(values: Record<string, string>): string[] {
+  return parseApprovedProfilePhotoUrls(values[APPROVED_PROFILE_PHOTO_URLS_KEY]);
+}
+
+function buildListingFromValues(
+  values: Record<string, string>,
+  id: string,
+  options: { adminRegistration?: boolean } = {},
+) {
+  const mergedPhotos = options.adminRegistration
+    ? resolveListingPhotos(values)
+    : resolveApprovedListingPhotos(values);
   const image = resolvePortableListingPhotoUri(mergedPhotos);
   const heightLabel = values.height ? values.height.replace('ft', "'") : '';
   const ageYear = values.dateOfBirth?.match(/(\d{4})/)?.[1];
@@ -128,6 +141,7 @@ function profileDocFromValues(
 
   const profileId = profileDocIdFromPhone(phone) || listingIdFromValues(values);
   const mergedPhotos = resolveListingPhotos(values);
+  const isAdminRegistration = ownerKey.startsWith('admin-');
   const slotPhotoUrls = resolveProfilePhotoSlots(
     {
       photoUrls: mergedPhotos,
@@ -145,6 +159,7 @@ function profileDocFromValues(
       [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(slotPhotoUrls),
     },
     listingIdFromValues(values),
+    { adminRegistration: isAdminRegistration },
   );
   const resolvedGender =
     values.gender === 'male' || values.gender === 'female' ? values.gender : listing.gender;
@@ -178,10 +193,7 @@ export function publishedMemberFromProfileDoc(docData: FirestoreProfileDoc): Pub
     (docData.registrationSource === 'admin'
       ? docData.primaryPhotoUrl || listing?.image || ''
       : '');
-  const image = resolveDisplayPhotoUri(
-    rawImage || (docData.photoUrls ?? []).find(Boolean) || '',
-    Platform.OS === 'web' ? 'web' : 'native',
-  );
+  const image = resolveDisplayPhotoUri(rawImage, Platform.OS === 'web' ? 'web' : 'native');
 
   return {
     id: listing?.id ?? docData.profileId,
@@ -226,6 +238,15 @@ export async function upsertProfileFromValues(
   }
 
   let nextValues = { ...preparedValues };
+  const registrationNumber = await resolveRegistrationNumber({
+    religion: preparedValues.religion ?? preparedValues.registrationCommunity ?? '',
+    rasi: preparedValues.rasi,
+    natchathiram: preparedValues.natchathiram,
+    existingNumber: preparedValues.registrationNumber,
+  }).catch(() => preparedValues.registrationNumber ?? '');
+  if (registrationNumber) {
+    nextValues = { ...nextValues, registrationNumber };
+  }
   let uploadedSlots: string[] = [];
   if (options.uploadPhotos !== false) {
     const localPhotos = mergeDraftProfilePhotos(
@@ -322,12 +343,16 @@ export async function fetchProfileByPhone(phone: string): Promise<FirestoreProfi
     return null;
   }
 
-  const snapshot = await getDoc(doc(db, FIRESTORE_COLLECTIONS.profiles, profileId));
-  if (!snapshot.exists()) {
+  try {
+    const snapshot = await getDocResilient(doc(db, FIRESTORE_COLLECTIONS.profiles, profileId));
+    if (!snapshot?.exists()) {
+      return null;
+    }
+
+    return snapshot.data() as FirestoreProfileDoc;
+  } catch {
     return null;
   }
-
-  return snapshot.data() as FirestoreProfileDoc;
 }
 
 export async function listPublishedProfiles(): Promise<FirestoreProfileDoc[]> {
@@ -414,7 +439,13 @@ export async function hydrateLocalProfileFromFirestore(phone: string): Promise<R
   }
 
   const approvalPhotoSlots = await fetchPhotoSlotsFromApprovals(phone);
-  let biodata = mergeProfilePhotosIntoBiodata({ ...(remote.biodata ?? {}) }, remote, approvalPhotoSlots);
+  const approvedPhotoSlots = await fetchApprovedPhotoSlotsFromApprovals(phone);
+  let biodata = mergeProfilePhotosIntoBiodata(
+    { ...(remote.biodata ?? {}) },
+    remote,
+    approvalPhotoSlots,
+    approvedPhotoSlots,
+  );
 
   const approvalStatus = await fetchUserApprovalStatus(phone).catch(() => remote.approvalStatus ?? null);
   if (approvalStatus) {
@@ -434,6 +465,29 @@ export async function hydrateLocalProfileFromFirestore(phone: string): Promise<R
   biodata._profileUpdatedAt = String(remote.updatedAt ?? Date.now());
 
   return biodata;
+}
+
+async function fetchApprovedPhotoSlotsFromApprovals(phone: string): Promise<string[]> {
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) {
+    return [];
+  }
+
+  try {
+    const approvals = await listPhotoApprovals();
+    const slots = Array.from({ length: MAX_PROFILE_PHOTOS }, () => '');
+    for (const entry of approvals) {
+      if (entry.phone !== digits || entry.status !== 'approved' || !entry.photoUrl.trim()) {
+        continue;
+      }
+      if (entry.slot >= 0 && entry.slot < MAX_PROFILE_PHOTOS) {
+        slots[entry.slot] = entry.photoUrl.trim();
+      }
+    }
+    return slots;
+  } catch {
+    return [];
+  }
 }
 
 async function fetchPhotoSlotsFromApprovals(phone: string): Promise<string[]> {

@@ -35,6 +35,18 @@ import { FormOptionsKey, getFormOptions, getOptionLabel } from '@/constants/form
 import { getLogoUri, images } from '@/constants/images';
 import { Language, t, translations } from '@/constants/i18n';
 import { isChristianRegistration, type RegistrationCommunityId } from '@/constants/registrationCommunities';
+import {
+  findHinduRegistrationStar,
+  getRegistrationNatchathiramLabel,
+  getRegistrationNatchathiramOptions,
+  normalizeRegistrationNumber,
+  normalizeRegistrationReligionValue,
+  sanitizeRegistrationInput,
+} from '@/constants/registrationNumbers';
+import {
+  resolveRegistrationNumber,
+  shouldKeepRegistrationNumber,
+} from '@/lib/firestore/registrationNumberService';
 import { TamilInputProvider } from '@/context/TamilInputContext';
 import { useTamilTextInputProps } from '@/context/TamilInputContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
@@ -909,22 +921,6 @@ type BiodataState = {
   biodataFilledDate: string;
 };
 
-function generateRegistrationNumber(): string {
-  return String(Math.floor(1000 + Math.random() * 9000));
-}
-
-function normalizeRegistrationNumber(value: string): string {
-  const digits = value.replace(/\D/g, '');
-  if (!digits) {
-    return '';
-  }
-  return digits.slice(-4);
-}
-
-function sanitizeRegistrationInput(text: string): string {
-  return text.replace(/\D/g, '').slice(0, 4);
-}
-
 function formatBiodataFilledDate(date = new Date()): string {
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -1035,22 +1031,84 @@ export function RegistrationNumberBar({
   inline?: boolean;
 }) {
   const { translate } = useLanguage();
-  const { getValue, setValue, isReady } = useProfileForm();
-  const [registrationNumber, setRegistrationNumber] = useState('');
+  const { getValue, setValue, isReady, values } = useProfileForm();
+  const [registrationNumber, setRegistrationNumber] = useState(
+    () => values.registrationNumber?.trim() ?? '',
+  );
+
+  useEffect(() => {
+    const stored = (values.registrationNumber ?? getValue('registrationNumber')).trim();
+    if (stored) {
+      setRegistrationNumber(stored);
+    }
+  }, [getValue, values.registrationNumber]);
 
   useEffect(() => {
     if (!isReady) {
       return;
     }
 
-    const storedRegistration = getValue('registrationNumber').trim();
-    const normalizedRegistration = normalizeRegistrationNumber(storedRegistration);
-    const nextRegistration = normalizedRegistration || generateRegistrationNumber();
-    if (!normalizedRegistration || normalizedRegistration !== storedRegistration) {
-      setValue('registrationNumber', nextRegistration);
-    }
-    setRegistrationNumber(nextRegistration);
-  }, [getValue, isReady, setValue]);
+    let cancelled = false;
+
+    void (async () => {
+      const religion = normalizeRegistrationReligion(values.religion ?? getValue('religion'));
+      const rasi = (values.rasi ?? getValue('rasi')).trim();
+      const natchathiram = (values.natchathiram ?? getValue('natchathiram')).trim();
+      const storedRegistration = (values.registrationNumber ?? getValue('registrationNumber')).trim();
+
+      if (!religion) {
+        if (!cancelled) {
+          setRegistrationNumber('');
+        }
+        return;
+      }
+
+      if (
+        storedRegistration &&
+        shouldKeepRegistrationNumber(storedRegistration, religion, rasi, natchathiram)
+      ) {
+        if (!cancelled) {
+          setRegistrationNumber(storedRegistration);
+        }
+        return;
+      }
+
+      try {
+        const nextRegistration = await resolveRegistrationNumber(
+          {
+            religion,
+            rasi,
+            natchathiram,
+            existingNumber: storedRegistration,
+          },
+          { localOnly: true },
+        );
+
+        if (cancelled || !nextRegistration) {
+          return;
+        }
+
+        setRegistrationNumber(nextRegistration);
+        if (nextRegistration !== storedRegistration) {
+          setValue('registrationNumber', nextRegistration);
+        }
+      } catch {
+        // Keep the last shown value if allocation fails.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    getValue,
+    isReady,
+    setValue,
+    values.natchathiram,
+    values.rasi,
+    values.registrationNumber,
+    values.religion,
+  ]);
 
   const handleChange = useCallback(
     (text: string) => {
@@ -1067,7 +1125,7 @@ export function RegistrationNumberBar({
     editable,
     placeholderTextColor: PLACEHOLDER,
     keyboardType: 'number-pad' as const,
-    maxLength: 4,
+    maxLength: 7,
   };
 
   return (
@@ -1266,11 +1324,7 @@ const actionBarShadow = Platform.select({
 });
 
 function normalizeRegistrationReligion(stored: string): string {
-  const trimmed = stored.trim();
-  if (trimmed === 'hindu' || trimmed === 'rc-christian' || trimmed === 'csi-christian') {
-    return trimmed;
-  }
-  return '';
+  return normalizeRegistrationReligionValue(stored);
 }
 
 function resolveStoredOptionValue(
@@ -1341,6 +1395,7 @@ function BiodataSelectRow({
   value,
   onValueChange,
   optionsKey,
+  optionsOverride,
   editable,
   dense,
   placeholder,
@@ -1352,6 +1407,7 @@ function BiodataSelectRow({
   value: string;
   onValueChange: (value: string) => void;
   optionsKey: FormOptionsKey;
+  optionsOverride?: Array<{ value: string; label: string }>;
   editable: boolean;
   dense?: boolean;
   placeholder?: string;
@@ -1360,14 +1416,21 @@ function BiodataSelectRow({
   hideLabel?: boolean;
 }) {
   const { language } = useLanguage();
-  const options = useMemo(() => getFormOptions(optionsKey, language), [optionsKey, language]);
-  const resolvedValue = useMemo(
-    () => resolveStoredOptionValue(optionsKey, value, language),
-    [language, optionsKey, value],
+  const options = useMemo(
+    () => optionsOverride ?? getFormOptions(optionsKey, language),
+    [language, optionsKey, optionsOverride],
   );
+  const resolvedValue = useMemo(() => {
+    if (optionsOverride) {
+      return options.some((option) => option.value === value.trim()) ? value.trim() : value.trim();
+    }
+    return resolveStoredOptionValue(optionsKey, value, language);
+  }, [language, options, optionsKey, optionsOverride, value]);
 
   if (!editable) {
-    const display = getOptionLabel(optionsKey, resolvedValue, language, value);
+    const display = optionsOverride
+      ? options.find((option) => option.value === resolvedValue)?.label ?? resolvedValue
+      : getOptionLabel(optionsKey, resolvedValue, language, value);
     return (
       <View style={[styles.fieldGroup, dense && styles.fieldGroupDense, narrow && styles.fieldGroupNarrow]}>
         {hideLabel ? null : (
@@ -3467,6 +3530,14 @@ function hasReviewFilledValue(value: string): boolean {
   return value.trim().length > 0;
 }
 
+function buildFilledSiblingReviewRows(
+  entries: Array<{ label: string; rawValue: string; displayValue: string }>,
+): Array<{ label: string; value: string }> {
+  return entries
+    .filter((entry) => entry.rawValue.trim().length > 0)
+    .map((entry) => ({ label: entry.label, value: entry.displayValue }));
+}
+
 function reviewUniqueJoin(parts: string[], separator = ' ÔÇö '): string {
   const seen = new Set<string>();
 
@@ -3830,19 +3901,54 @@ function ChristianBiodataReviewSheet({
     form.propertyHouseCount,
   );
 
-  const marriedRows = [
-    { label: translate('biodataRelationElderBrother'), value: reviewDisplayOption('siblingCount', form.marriedBrother, language) },
-    { label: translate('biodataRelationYoungerBrother'), value: reviewDisplayOption('siblingCount', form.marriedYoungerBrother, language) },
-    { label: translate('biodataRelationElderSister'), value: reviewDisplayOption('siblingCount', form.marriedSister, language) },
-    { label: translate('biodataRelationYoungerSister'), value: reviewDisplayOption('siblingCount', form.marriedYoungerSister, language) },
-  ];
+  const marriedRows = buildFilledSiblingReviewRows([
+    {
+      label: translate('biodataRelationElderBrother'),
+      rawValue: form.marriedBrother,
+      displayValue: reviewDisplayOption('siblingCount', form.marriedBrother, language),
+    },
+    {
+      label: translate('biodataRelationYoungerBrother'),
+      rawValue: form.marriedYoungerBrother,
+      displayValue: reviewDisplayOption('siblingCount', form.marriedYoungerBrother, language),
+    },
+    {
+      label: translate('biodataRelationElderSister'),
+      rawValue: form.marriedSister,
+      displayValue: reviewDisplayOption('siblingCount', form.marriedSister, language),
+    },
+    {
+      label: translate('biodataRelationYoungerSister'),
+      rawValue: form.marriedYoungerSister,
+      displayValue: reviewDisplayOption('siblingCount', form.marriedYoungerSister, language),
+    },
+  ]);
 
-  const unmarriedRows = [
-    { label: translate('biodataRelationElderBrother'), value: reviewDisplayOption('siblingCount', form.unmarriedBrother, language) },
-    { label: translate('biodataRelationYoungerBrother'), value: reviewDisplayOption('siblingCount', form.unmarriedYoungerBrother, language) },
-    { label: translate('biodataRelationElderSister'), value: reviewDisplayOption('siblingCount', form.unmarriedSister, language) },
-    { label: translate('biodataRelationYoungerSister'), value: reviewDisplayOption('siblingCount', form.unmarriedYoungerSister, language) },
-  ];
+  const unmarriedRows = buildFilledSiblingReviewRows([
+    {
+      label: translate('biodataRelationElderBrother'),
+      rawValue: form.unmarriedBrother,
+      displayValue: reviewDisplayOption('siblingCount', form.unmarriedBrother, language),
+    },
+    {
+      label: translate('biodataRelationYoungerBrother'),
+      rawValue: form.unmarriedYoungerBrother,
+      displayValue: reviewDisplayOption('siblingCount', form.unmarriedYoungerBrother, language),
+    },
+    {
+      label: translate('biodataRelationElderSister'),
+      rawValue: form.unmarriedSister,
+      displayValue: reviewDisplayOption('siblingCount', form.unmarriedSister, language),
+    },
+    {
+      label: translate('biodataRelationYoungerSister'),
+      rawValue: form.unmarriedYoungerSister,
+      displayValue: reviewDisplayOption('siblingCount', form.unmarriedYoungerSister, language),
+    },
+  ]);
+
+  const showMarriedSection = marriedRows.length > 0;
+  const showUnmarriedSection = unmarriedRows.length > 0;
 
   return (
     <View
@@ -3928,22 +4034,26 @@ function ChristianBiodataReviewSheet({
               {reviewDisplayValue(form.irupidam)}
             </Text>
           </View>
-          <View style={christianReviewStyles.siblingSectionExpanded}>
-            <ReviewSiblingBox
-              wide
-              wideBoxStyle={christianReviewStyles.siblingBoxWide}
-              title={translate('biodataReviewMarried')}
-              rows={marriedRows}
-            />
-          </View>
-          <View style={christianReviewStyles.siblingSectionExpanded}>
-            <ReviewSiblingBox
-              wide
-              wideBoxStyle={christianReviewStyles.siblingBoxWide}
-              title={translate('biodataReviewUnmarried')}
-              rows={unmarriedRows}
-            />
-          </View>
+          {showMarriedSection ? (
+            <View style={christianReviewStyles.siblingSectionExpanded}>
+              <ReviewSiblingBox
+                wide
+                wideBoxStyle={christianReviewStyles.siblingBoxWide}
+                title={translate('biodataReviewMarried')}
+                rows={marriedRows}
+              />
+            </View>
+          ) : null}
+          {showUnmarriedSection ? (
+            <View style={christianReviewStyles.siblingSectionExpanded}>
+              <ReviewSiblingBox
+                wide
+                wideBoxStyle={christianReviewStyles.siblingBoxWide}
+                title={translate('biodataReviewUnmarried')}
+                rows={unmarriedRows}
+              />
+            </View>
+          ) : null}
         </View>
       </View>
       </View>
@@ -3984,6 +4094,21 @@ export function HoroscopeSection({
   showSummaryMeta?: boolean;
   summaryMetaEditable?: boolean;
 }) {
+  const natchathiramOptions = useMemo(
+    () => getRegistrationNatchathiramOptions(language, form.rasi),
+    [form.rasi, language],
+  );
+
+  const handleRasiChange = useCallback(
+    (text: string) => {
+      onFieldChange('rasi', text);
+      if (form.natchathiram && !findHinduRegistrationStar(form.natchathiram, text)) {
+        onFieldChange('natchathiram', '');
+      }
+    },
+    [form.natchathiram, onFieldChange],
+  );
+
   return (
     <>
       {!hideBasicInputs && (
@@ -4016,25 +4141,26 @@ export function HoroscopeSection({
         <View style={styles.fieldPairRow}>
           <View style={styles.fieldPairItem}>
             <BiodataSelectRow
-              label={translate('biodataFieldNatchathiramShort')}
-              value={form.natchathiram}
-              onValueChange={(text) => onFieldChange('natchathiram', text)}
-              optionsKey="nakshatra"
+              label={translate('biodataFieldRasi')}
+              value={form.rasi}
+              onValueChange={handleRasiChange}
+              optionsKey="rasi"
               editable={editable}
               dense={dense}
-              placeholder={translate('selectNatchathiram')}
+              placeholder={translate('selectRasi')}
               narrow
             />
           </View>
           <View style={styles.fieldPairItem}>
             <BiodataSelectRow
-              label={translate('biodataFieldRasi')}
-              value={form.rasi}
-              onValueChange={(text) => onFieldChange('rasi', text)}
-              optionsKey="rasi"
+              label={translate('biodataFieldNatchathiramShort')}
+              value={form.natchathiram}
+              onValueChange={(text) => onFieldChange('natchathiram', text)}
+              optionsKey="nakshatra"
+              optionsOverride={natchathiramOptions}
               editable={editable}
               dense={dense}
-              placeholder={translate('selectRasi')}
+              placeholder={translate('selectNatchathiram')}
               narrow
             />
           </View>
@@ -4368,19 +4494,54 @@ function BiodataReviewSheet({
     form.propertyHouseCount,
   );
 
-  const marriedRows = [
-    { label: translate('biodataRelationElderBrother'), value: reviewDisplayOption('siblingCount', form.marriedBrother, language) },
-    { label: translate('biodataRelationYoungerBrother'), value: reviewDisplayOption('siblingCount', form.marriedYoungerBrother, language) },
-    { label: translate('biodataRelationElderSister'), value: reviewDisplayOption('siblingCount', form.marriedSister, language) },
-    { label: translate('biodataRelationYoungerSister'), value: reviewDisplayOption('siblingCount', form.marriedYoungerSister, language) },
-  ];
+  const marriedRows = buildFilledSiblingReviewRows([
+    {
+      label: translate('biodataRelationElderBrother'),
+      rawValue: form.marriedBrother,
+      displayValue: reviewDisplayOption('siblingCount', form.marriedBrother, language),
+    },
+    {
+      label: translate('biodataRelationYoungerBrother'),
+      rawValue: form.marriedYoungerBrother,
+      displayValue: reviewDisplayOption('siblingCount', form.marriedYoungerBrother, language),
+    },
+    {
+      label: translate('biodataRelationElderSister'),
+      rawValue: form.marriedSister,
+      displayValue: reviewDisplayOption('siblingCount', form.marriedSister, language),
+    },
+    {
+      label: translate('biodataRelationYoungerSister'),
+      rawValue: form.marriedYoungerSister,
+      displayValue: reviewDisplayOption('siblingCount', form.marriedYoungerSister, language),
+    },
+  ]);
 
-  const unmarriedRows = [
-    { label: translate('biodataRelationElderBrother'), value: reviewDisplayOption('siblingCount', form.unmarriedBrother, language) },
-    { label: translate('biodataRelationYoungerBrother'), value: reviewDisplayOption('siblingCount', form.unmarriedYoungerBrother, language) },
-    { label: translate('biodataRelationElderSister'), value: reviewDisplayOption('siblingCount', form.unmarriedSister, language) },
-    { label: translate('biodataRelationYoungerSister'), value: reviewDisplayOption('siblingCount', form.unmarriedYoungerSister, language) },
-  ];
+  const unmarriedRows = buildFilledSiblingReviewRows([
+    {
+      label: translate('biodataRelationElderBrother'),
+      rawValue: form.unmarriedBrother,
+      displayValue: reviewDisplayOption('siblingCount', form.unmarriedBrother, language),
+    },
+    {
+      label: translate('biodataRelationYoungerBrother'),
+      rawValue: form.unmarriedYoungerBrother,
+      displayValue: reviewDisplayOption('siblingCount', form.unmarriedYoungerBrother, language),
+    },
+    {
+      label: translate('biodataRelationElderSister'),
+      rawValue: form.unmarriedSister,
+      displayValue: reviewDisplayOption('siblingCount', form.unmarriedSister, language),
+    },
+    {
+      label: translate('biodataRelationYoungerSister'),
+      rawValue: form.unmarriedYoungerSister,
+      displayValue: reviewDisplayOption('siblingCount', form.unmarriedYoungerSister, language),
+    },
+  ]);
+
+  const showMarriedSection = marriedRows.length > 0;
+  const showUnmarriedSection = unmarriedRows.length > 0;
 
   const nameAndEducation = degreeLabel ? `${nameDisplay} ${degreeLabel}` : nameDisplay;
   const { width: screenWidth } = useWindowDimensions();
@@ -4433,7 +4594,7 @@ function BiodataReviewSheet({
             {showHoroscopeFields ? (
               <ReviewDataRow
                 label={translate('biodataReviewStar')}
-                value={reviewDisplayOption('nakshatra', form.natchathiram, language)}
+                value={getRegistrationNatchathiramLabel(form.natchathiram, language, form.rasi)}
               />
             ) : null}
             {showHoroscopeFields ? (
@@ -4468,18 +4629,22 @@ function BiodataReviewSheet({
               label={translate('biodataReviewBirthOrder')}
               value={reviewDisplayOption('birthOrder', form.birthOrder, language)}
             />
-            <ReviewSiblingBox
-              nativeID="biodata-print-sibling-married"
-              wide
-              title={translate('biodataReviewMarried')}
-              rows={marriedRows}
-            />
-            <ReviewSiblingBox
-              nativeID="biodata-print-sibling-unmarried"
-              wide
-              title={translate('biodataReviewUnmarried')}
-              rows={unmarriedRows}
-            />
+            {showMarriedSection ? (
+              <ReviewSiblingBox
+                nativeID="biodata-print-sibling-married"
+                wide
+                title={translate('biodataReviewMarried')}
+                rows={marriedRows}
+              />
+            ) : null}
+            {showUnmarriedSection ? (
+              <ReviewSiblingBox
+                nativeID="biodata-print-sibling-unmarried"
+                wide
+                title={translate('biodataReviewUnmarried')}
+                rows={unmarriedRows}
+              />
+            ) : null}
             <ReviewSidebarBox
               label={translate('biodataReviewComplexion')}
               value={reviewDisplayOption('complexionBiodata', form.complexion, language)}
@@ -5350,11 +5515,6 @@ export function CreateProfileBiodataForm({
     setDetailGrid(parseDetailGrid(readValue('biodataDetailGrid')));
 
     const storedRegistration = readValue('registrationNumber').trim();
-    const normalizedRegistration = normalizeRegistrationNumber(storedRegistration);
-    const registrationNumber = normalizedRegistration || generateRegistrationNumber();
-    if (!profileValues && (!normalizedRegistration || normalizedRegistration !== storedRegistration)) {
-      setValue('registrationNumber', registrationNumber);
-    }
 
     setForm({
       fullName: readValue('fullName'),
@@ -5404,7 +5564,7 @@ export function CreateProfileBiodataForm({
       dasaYear: readValue('dasaYear'),
       dasaMonth: readValue('dasaMonth'),
       dasaDay: readValue('dasaDay'),
-      registrationNumber: profileValues ? storedRegistration || registrationNumber : registrationNumber,
+      registrationNumber: storedRegistration,
       numSiblings: readValue('numSiblings'),
       maritalStatus: readValue('maritalStatus') || 'unmarried',
       livingStatus: readValue('livingStatus') || 'with-family',
@@ -5527,6 +5687,23 @@ export function CreateProfileBiodataForm({
       return mergedPhotos;
     });
     setShowPhotoInBiodata(parseBiodataShowPhoto(readValue(BIODATA_SHOW_PHOTO_KEY)));
+
+    if (!profileValues) {
+      void resolveRegistrationNumber({
+        religion: normalizeRegistrationReligion(readValue('religion')),
+        rasi: readValue('rasi'),
+        natchathiram: readValue('natchathiram'),
+        existingNumber: storedRegistration,
+      })
+        .then((registrationNumber) => {
+          if (!registrationNumber || registrationNumber === storedRegistration) {
+            return;
+          }
+          setValue('registrationNumber', registrationNumber);
+          setForm((current) => ({ ...current, registrationNumber }));
+        })
+        .catch(() => undefined);
+    }
   }, [
     form.fullName,
     form.registrationNumber,
@@ -5632,10 +5809,20 @@ export function CreateProfileBiodataForm({
 
   const handleReligionChange = useCallback(
     (value: string) => {
-      updateField('religion', value);
+      setForm((current) => ({ ...current, religion: value }));
+      if (!viewOnly) {
+        setValue('religion', value);
+      }
     },
-    [updateField],
+    [setValue, viewOnly],
   );
+
+  useEffect(() => {
+    const stored = getValue('registrationNumber').trim();
+    if (stored && stored !== form.registrationNumber) {
+      setForm((current) => ({ ...current, registrationNumber: stored }));
+    }
+  }, [form.registrationNumber, getValue, values.registrationNumber]);
 
   const handlePhotosChange = useCallback(
     (nextPhotos: string[]) => {

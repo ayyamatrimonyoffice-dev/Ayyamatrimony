@@ -39,12 +39,29 @@ async function ensureFirebase(): Promise<void> {
     initPromise = (async () => {
       const { initializeApp, getApps, getApp } = await import('firebase/app');
       const { getAuth } = await import('firebase/auth');
-      const { getFirestore } = await import('firebase/firestore');
+      const {
+        getFirestore,
+        initializeFirestore,
+        memoryLocalCache,
+        persistentLocalCache,
+        setLogLevel,
+      } = await import('firebase/firestore');
       const { getStorage } = await import('firebase/storage');
 
       app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
       auth = getAuth(app);
-      firestore = getFirestore(app);
+
+      setLogLevel(__DEV__ ? 'warn' : 'error');
+
+      try {
+        firestore =
+          Platform.OS === 'web'
+            ? initializeFirestore(app, { localCache: persistentLocalCache() })
+            : initializeFirestore(app, { localCache: memoryLocalCache() });
+      } catch {
+        firestore = getFirestore(app);
+      }
+
       storage = getStorage(app);
     })();
   }

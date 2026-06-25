@@ -1,5 +1,6 @@
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useRouter, type Href } from 'expo-router';
+import { useCallback } from 'react';
+import { useFocusEffect, useRouter, type Href } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ApprovalStatusBanner } from '@/components/ApprovalStatusBanner';
@@ -31,12 +32,18 @@ const menuItems: MenuItem[] = [
 export default function ProfileScreen() {
   const router = useRouter();
   const { language, translate, translateFormat } = useLanguage();
-  const { values } = useProfileForm();
+  const { values, refreshFromFirestore } = useProfileForm();
   const logout = useLogout();
   const { isPaidMember, profilesAllowed, profilesRemaining } = useSubscription();
   const profileName = values.fullName?.trim() || translate('profile');
   const profileMeta = getProfileMetaLine(values, language);
   const avatarSource = getProfileAvatarSource(values);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshFromFirestore();
+    }, [refreshFromFirestore]),
+  );
 
   const handleLogout = () => {
     void logout();

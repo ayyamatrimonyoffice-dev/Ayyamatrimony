@@ -18,9 +18,9 @@ export default function AddProfileScreen() {
   const { translate } = useLanguage();
   const { setValue } = useProfileForm();
 
-  const handleSelect = (id: RegistrationCommunityId, religion: 'hindu' | 'christian') => {
+  const handleSelect = (id: RegistrationCommunityId) => {
     setValue('registrationCommunity', id);
-    setValue('religion', religion);
+    setValue('religion', id);
     router.push('/create-profile');
   };
 
@@ -56,7 +56,7 @@ export default function AddProfileScreen() {
             {REGISTRATION_COMMUNITIES.map((option) => (
               <Pressable
                 key={option.id}
-                onPress={() => handleSelect(option.id, option.religion)}
+                onPress={() => handleSelect(option.id)}
                 style={({ pressed }) => [
                   styles.optionButton,
                   pressed && styles.optionButtonPressed,

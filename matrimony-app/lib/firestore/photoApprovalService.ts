@@ -107,11 +107,10 @@ export async function submitPhotoForApproval(
         {
           photoUrls,
           approvedPhotoUrls,
-          primaryPhotoUrl:
-            approvedPhotoUrls.find(Boolean) ||
-            photoUrls.find(Boolean) ||
-            profile.primaryPhotoUrl ||
-            '',
+          primaryPhotoUrl: approvedPhotoUrls.find(Boolean) || profile.primaryPhotoUrl || '',
+          ...(status === 'approved'
+            ? { 'listing.image': approvedPhotoUrls.find(Boolean) || '' }
+            : {}),
           updatedAt: now,
         },
         { merge: true },
@@ -197,6 +196,7 @@ export async function updatePhotoApprovalStatus(
         {
           approvedPhotoUrls,
           primaryPhotoUrl: approvedPhotoUrls.find(Boolean) || profile.primaryPhotoUrl || '',
+          'listing.image': approvedPhotoUrls.find(Boolean) || '',
           updatedAt: now,
         },
         { merge: true },

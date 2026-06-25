@@ -4,7 +4,7 @@ import { MemberProfile, getMemberProfileById } from '@/constants/images';
 import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import { getMockMemberBiodata } from '@/constants/memberBiodata';
 import { filterByRecommendedGender, resolveUserGender, type MatchGender } from '@/constants/matchFilters';
-import { parseProfilePhotos, PROFILE_PHOTOS_KEY, isRemotePhotoUri, resolveDisplayPhotoUri, resolvePortableListingPhotoUri, serializeProfilePhotos } from '@/constants/profilePhotos';
+import { PROFILE_PHOTOS_KEY, parseApprovedProfilePhotoUrls, resolveDisplayPhotoUri, resolvePortableListingPhotoUri, serializeProfilePhotos, serializeRemotePhotoUrls } from '@/constants/profilePhotos';
 import { hasCompletedProfile, applyDefaultRegistrationCommunity, prepareProfileForPublish } from '@/constants/profileCompletion';
 import { matchesRegistrationCommunity } from '@/constants/registrationCommunities';
 import {
@@ -105,17 +105,9 @@ function listingIdFromValues(values: Record<string, string>): string {
 }
 
 function memberFromValues(values: Record<string, string>, id: string): MemberProfile {
-  const remotePhotos = values.profilePhotoUrls?.split('|').filter(isRemotePhotoUri) ?? [];
-  const localPhotos = parseProfilePhotos(values[PROFILE_PHOTOS_KEY] ?? values.profilePhotos ?? '');
-  const portableImage = resolvePortableListingPhotoUri([
-    ...remotePhotos,
-    ...localPhotos,
-  ]);
-  const image = resolveDisplayPhotoUri(
-    portableImage ||
-      (Platform.OS === 'web' ? '' : localPhotos.find(Boolean) ?? ''),
-    Platform.OS === 'web' ? 'web' : 'native',
-  );
+  const approvedPhotos = parseApprovedProfilePhotoUrls(values.approvedProfilePhotoUrls);
+  const portableImage = resolvePortableListingPhotoUri(approvedPhotos);
+  const image = resolveDisplayPhotoUri(portableImage, Platform.OS === 'web' ? 'web' : 'native');
   const heightLabel = values.height ? values.height.replace('ft', "'") : '';
   const ageYear = values.dateOfBirth?.match(/(\d{4})/)?.[1];
   const age = ageYear
@@ -254,7 +246,9 @@ export async function publishProfileFromValues(
         ...biodataWithApproval,
         approvalStatus: remoteProfile.approvalStatus ?? biodataWithApproval.approvalStatus,
         profilePhotoUrls: (remoteProfile.photoUrls ?? []).join('|'),
+        approvedProfilePhotoUrls: serializeRemotePhotoUrls(remoteProfile.approvedPhotoUrls ?? []),
         [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(remoteProfile.photoUrls ?? []),
+        listingImage: resolvePortableListingPhotoUri(remoteProfile.approvedPhotoUrls ?? []),
         _profileUpdatedAt: String(remoteProfile.updatedAt ?? Date.now()),
       }
     : {

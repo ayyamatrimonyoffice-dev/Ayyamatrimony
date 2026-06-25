@@ -15,6 +15,7 @@ export const FIRESTORE_COLLECTIONS = {
   subscriptions: 'subscriptions',
   adminUsers: 'adminUsers',
   adminNotifications: 'adminNotifications',
+  registrationCounters: 'registrationCounters',
 } as const;
 
 export type ProfileAccountStatus = 'active' | 'blocked' | 'deleted';

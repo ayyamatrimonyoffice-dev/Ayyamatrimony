@@ -36,7 +36,7 @@ type HomeMatch = ReturnType<typeof useBrowsableMembers>[number];
 export default function HomeScreen() {
   const router = useRouter();
   const { translate, translateFormat, toggleLanguage, language } = useLanguage();
-  const { values } = useProfileForm();
+  const { values, refreshFromFirestore } = useProfileForm();
   const { isPaidMember, isPrimeViewActive, membershipViewMode, setMembershipViewMode, profilesAllowed } =
     useSubscription();
   const { canSeeMemberProfiles, canViewFullProfile } = useMemberAccess();
@@ -56,7 +56,8 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       void refreshApproval();
-    }, [refreshApproval]),
+      void refreshFromFirestore();
+    }, [refreshApproval, refreshFromFirestore]),
   );
 
   const handlePrimePress = () => {

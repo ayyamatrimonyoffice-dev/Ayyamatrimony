@@ -127,7 +127,8 @@ export default function AddPhotosScreen() {
           setValue(PROFILE_PHOTOS_KEY, mergedSerialized);
           setValue(PROFILE_PHOTOS_DRAFT_KEY, '');
           setValue('profilePhotoUrls', remoteUrls);
-          setUploadNotice(translate('photoAdded'));
+          setValue('listingImage', '');
+          setUploadNotice(translate('photoPendingReview'));
         } catch {
           if (uploadVersionRef.current !== uploadVersion) {
             return;
@@ -172,7 +173,8 @@ export default function AddPhotosScreen() {
           if (hasCompletedProfile(nextValues)) {
             void upsertProfileFromValues(nextValues, 'current-user', {
               published: true,
-              uploadPhotos: false,
+              uploadPhotos: true,
+              autoApprovePhotos: false,
             }).catch(() => undefined);
           }
         } catch {
