@@ -1,4 +1,4 @@
-package com.matrimony.app
+package com.thisai.ayyamatrimony
 
 import expo.modules.splashscreen.SplashScreenManager
 import android.os.Build

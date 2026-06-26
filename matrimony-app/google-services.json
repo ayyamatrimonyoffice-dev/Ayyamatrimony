@@ -1,21 +1,21 @@
 {
   "project_info": {
-    "project_number": "639617536980",
-    "project_id": "matrimony-mobile-app-8541d",
-    "storage_bucket": "matrimony-mobile-app-8541d.firebasestorage.app"
+    "project_number": "735219494861",
+    "project_id": "ayyamatrimonial",
+    "storage_bucket": "ayyamatrimonial.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:639617536980:android:REPLACE_WITH_YOUR_ANDROID_APP_ID",
+        "mobilesdk_app_id": "1:735219494861:android:10c72b5e64cabafee81e84",
         "android_client_info": {
-          "package_name": "com.matrimony.app"
+          "package_name": "com.thisai.ayyamatrimony"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyBLZ_BdZ1kJXqy6Qyj7HZYZ6ZzhV-q5z04"
+          "current_key": "AIzaSyAn5XAYmRhYhhH5_HdtCCjdQN29kk0C35s"
         }
       ],
       "services": {

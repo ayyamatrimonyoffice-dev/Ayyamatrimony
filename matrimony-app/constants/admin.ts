@@ -96,20 +96,7 @@ export function getAdminTabBarMetrics(bottomInset = 0): AdminTabBarMetrics {
   };
 }
 
-/** Inner tab bar style when using the pinned `AdminTabBar` wrapper on native. */
-export function getAdminTabBarInnerStyle(): ViewStyle {
-  return {
-    backgroundColor: 'transparent',
-    borderTopWidth: 0,
-    elevation: 0,
-    shadowOpacity: 0,
-    paddingTop: 0,
-    paddingBottom: 0,
-    height: ADMIN_TAB_BAR_CONTENT_HEIGHT,
-  };
-}
-
-/** Navigator tabBarStyle for web (standard document flow). */
+/** Navigator tabBarStyle — pinned to the bottom on native APK builds. */
 export function getAdminNavigatorTabBarStyle(bottomInset = 0): ViewStyle {
   const metrics = getAdminTabBarMetrics(bottomInset);
 
@@ -123,6 +110,15 @@ export function getAdminNavigatorTabBarStyle(bottomInset = 0): ViewStyle {
     paddingBottom: metrics.paddingBottom,
     width: '100%',
     alignSelf: 'stretch',
+    ...(Platform.OS !== 'web'
+      ? {
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 20,
+        }
+      : {}),
     ...Platform.select({
       android: { elevation: 12 },
       ios: {

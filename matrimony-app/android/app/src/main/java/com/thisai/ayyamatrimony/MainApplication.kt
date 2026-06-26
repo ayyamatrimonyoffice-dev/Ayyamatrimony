@@ -1,4 +1,4 @@
-package com.matrimony.app
+package com.thisai.ayyamatrimony
 
 import android.app.Application
 import android.content.res.Configuration

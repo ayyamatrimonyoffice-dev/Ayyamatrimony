@@ -6,8 +6,8 @@ const {
 const fs = require('fs');
 const path = require('path');
 
-const GOOGLE_SERVICES_VERSION = '4.4.4';
-const FIREBASE_BOM_VERSION = '34.14.1';
+const GOOGLE_SERVICES_VERSION = '4.5.0';
+const FIREBASE_BOM_VERSION = '34.15.0';
 
 function addClasspath(contents) {
   if (contents.includes('com.google.gms:google-services')) {
@@ -79,6 +79,7 @@ function withGoogleServices(config) {
   config = withAppBuildGradle(config, (config) => {
     if (config.modResults.language === 'groovy') {
       config.modResults.contents = addAppPlugin(config.modResults.contents);
+      config.modResults.contents = addFirebaseDependencies(config.modResults.contents);
     }
     return config;
   });

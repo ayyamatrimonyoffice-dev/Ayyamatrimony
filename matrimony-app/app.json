@@ -22,7 +22,7 @@
         "foregroundImage": "./assets/lotus-logo.png",
         "backgroundColor": "#570000"
       },
-      "package": "com.matrimony.app",
+      "package": "com.thisai.ayyamatrimony",
       "navigationBar": {
         "backgroundColor": "#FFFFFF",
         "barStyle": "dark-content"

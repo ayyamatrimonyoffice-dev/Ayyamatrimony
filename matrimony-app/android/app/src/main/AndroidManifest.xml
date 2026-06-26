@@ -26,7 +26,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="matrimony"/>
-        <data android:scheme="com.matrimony.app"/>
+        <data android:scheme="com.thisai.ayyamatrimony"/>
       </intent-filter>
     </activity>
   </application>

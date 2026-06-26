@@ -5,15 +5,26 @@ import type { Analytics } from 'firebase/analytics';
 import type { Firestore } from 'firebase/firestore';
 import type { FirebaseStorage } from 'firebase/storage';
 
-const firebaseConfig = {
-  apiKey: 'AIzaSyBLZ_BdZ1kJXqy6Qyj7HZYZ6ZzhV-q5z04',
-  authDomain: 'matrimony-mobile-app-8541d.firebaseapp.com',
-  projectId: 'matrimony-mobile-app-8541d',
-  storageBucket: 'matrimony-mobile-app-8541d.firebasestorage.app',
-  messagingSenderId: '639617536980',
-  appId: '1:639617536980:web:e0c444696d613a9783bc41',
-  measurementId: 'G-MN88BWXEQ2',
+const sharedFirebaseConfig = {
+  authDomain: 'ayyamatrimonial.firebaseapp.com',
+  projectId: 'ayyamatrimonial',
+  storageBucket: 'ayyamatrimonial.firebasestorage.app',
+  messagingSenderId: '735219494861',
 };
+
+const firebaseConfig = Platform.select({
+  android: {
+    ...sharedFirebaseConfig,
+    apiKey: 'AIzaSyAn5XAYmRhYhhH5_HdtCCjdQN29kk0C35s',
+    appId: '1:735219494861:android:10c72b5e64cabafee81e84',
+  },
+  default: {
+    ...sharedFirebaseConfig,
+    apiKey: 'AIzaSyBSxKe_LhI2Ped2SnQZgAxPkHuT10SqD2U',
+    appId: '1:735219494861:web:4e8fc32a7d3c86ece81e84',
+    measurementId: 'G-CKLYG6TNQ4',
+  },
+})!;
 
 function canUseFirebase(): boolean {
   return Platform.OS !== 'web' || typeof window !== 'undefined';

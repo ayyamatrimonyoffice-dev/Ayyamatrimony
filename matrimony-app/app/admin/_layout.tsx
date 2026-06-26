@@ -19,7 +19,7 @@ export default function AdminRootLayout() {
             <Stack
               screenOptions={{
                 headerShown: false,
-                contentStyle: { backgroundColor: adminColors.background },
+                contentStyle: { flex: 1, backgroundColor: adminColors.background },
                 animation: 'fade',
               }}
             >
