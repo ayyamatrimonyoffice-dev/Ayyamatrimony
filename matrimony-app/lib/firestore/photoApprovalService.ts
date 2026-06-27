@@ -481,7 +481,7 @@ export async function submitPhotoForApproval(
   },
 ): Promise<void> {
   const digits = phone.replace(/\D/g, '');
-  if (!digits || !options.photoUrl.trim()) {
+  if (!digits || !options.photoUrl.trim() || !isRemotePhotoUri(options.photoUrl.trim())) {
     return;
   }
 

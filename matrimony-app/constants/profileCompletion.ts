@@ -9,6 +9,32 @@ export function hasSavedBiodata(values: Record<string, string>): boolean {
   );
 }
 
+export type ProfileIncompleteField = 'fullName' | 'gender' | 'dateOfBirth' | 'community';
+
+export function getProfileIncompleteFields(values: Record<string, string>): ProfileIncompleteField[] {
+  const normalized = applyDefaultRegistrationCommunity(values);
+  const missing: ProfileIncompleteField[] = [];
+
+  if (!normalized.fullName?.trim()) {
+    missing.push('fullName');
+  }
+  if (normalized.gender !== 'male' && normalized.gender !== 'female') {
+    missing.push('gender');
+  }
+  if (!normalized.dateOfBirth?.trim()) {
+    missing.push('dateOfBirth');
+  }
+
+  const hasCommunity =
+    Boolean(normalized.registrationCommunity?.trim()) ||
+    Boolean(normalizeRegistrationReligionValue(normalized.religion ?? ''));
+  if (!hasCommunity) {
+    missing.push('community');
+  }
+
+  return missing;
+}
+
 export function hasCompletedProfile(values: Record<string, string>): boolean {
   const hasName = Boolean(values.fullName?.trim());
   const hasGender = values.gender === 'male' || values.gender === 'female';

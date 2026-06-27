@@ -54,7 +54,7 @@ import { useTamilTextInputProps } from '@/context/TamilInputContext';
 import { useProfileForm } from '@/context/ProfileFormContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { borderRadius, colors, fonts, spacing } from '@/constants/theme';
-import { applyDefaultRegistrationCommunity, hasCompletedProfile, prepareProfileForPublish } from '@/constants/profileCompletion';
+import { applyDefaultRegistrationCommunity, getProfileIncompleteFields, prepareProfileForPublish } from '@/constants/profileCompletion';
 import { CONTACT_PHONE_KEY, normalizePhoneDigits } from '@/constants/contactDetails';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import type { BiodataExportOptions } from '@/lib/biodataExport';
@@ -1362,6 +1362,32 @@ const actionBarShadow = Platform.select({
 
 function normalizeRegistrationReligion(stored: string): string {
   return normalizeRegistrationReligionValue(stored);
+}
+
+const PROFILE_INCOMPLETE_FIELD_LABELS = {
+  fullName: 'biodataFieldName',
+  gender: 'biodataFieldGender',
+  dateOfBirth: 'biodataFieldDateOfBirth',
+  community: 'religion',
+} as const satisfies Record<
+  import('@/constants/profileCompletion').ProfileIncompleteField,
+  keyof typeof import('@/constants/i18n').translations.en
+>;
+
+function formatProfileIncompleteMessage(
+  missing: ReturnType<typeof getProfileIncompleteFields>,
+  translate: (key: keyof typeof import('@/constants/i18n').translations.en) => string,
+  translateFormat: (
+    key: keyof typeof import('@/constants/i18n').translations.en,
+    vars: Record<string, string | number>,
+  ) => string,
+): string {
+  if (missing.length === 0) {
+    return translate('profileIncompleteSave');
+  }
+
+  const fields = missing.map((field) => translate(PROFILE_INCOMPLETE_FIELD_LABELS[field])).join(', ');
+  return translateFormat('profileIncompleteSaveFields', { fields });
 }
 
 function resolveStoredOptionValue(
@@ -5321,7 +5347,7 @@ export function CreateProfileBiodataForm({
   showAdminPhoneField = false,
 }: CreateProfileBiodataFormProps) {
   const dense = true;
-  const { translate, language } = useLanguage();
+  const { translate, translateFormat, language } = useLanguage();
   const { horizontalInset } = useResponsiveLayout();
   const { getValue, setValue, replaceValues, values, isReady } = useProfileForm();
   const [isSaving, setIsSaving] = useState(false);
@@ -5965,8 +5991,9 @@ export function CreateProfileBiodataForm({
       try {
         const profileValues = await persistForm();
         const readyValues = prepareProfileForPublish(profileValues);
-        if (!hasCompletedProfile(readyValues)) {
-          const message = translate('profileIncompleteSave');
+        const missingFields = getProfileIncompleteFields(readyValues);
+        if (missingFields.length > 0) {
+          const message = formatProfileIncompleteMessage(missingFields, translate, translateFormat);
           if (Platform.OS === 'web' && typeof window !== 'undefined') {
             window.alert(message);
           } else {
@@ -5996,6 +6023,7 @@ export function CreateProfileBiodataForm({
     persistForm,
     syncDraftToContext,
     translate,
+    translateFormat,
     validateOccupationFields,
     values.gender,
   ]);

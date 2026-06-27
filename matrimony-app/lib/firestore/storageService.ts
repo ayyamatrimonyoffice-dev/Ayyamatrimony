@@ -1,19 +1,16 @@
 import { Platform } from 'react-native';
 import * as FileSystem from 'expo-file-system';
-import { getDownloadURL, ref, uploadBytes, uploadString } from 'firebase/storage';
+import { getDownloadURL, ref, uploadBytes, uploadString, listAll } from 'firebase/storage';
 import { getFirebaseStorage } from '@/lib/firebase';
-import { isRemotePhotoUri } from '@/constants/profilePhotos';
+import { isRemotePhotoUri, MAX_PROFILE_PHOTOS } from '@/constants/profilePhotos';
 
 const UPLOAD_TIMEOUT_MS = 20000;
 const READ_URI_TIMEOUT_MS = 15000;
 
 let cloudPhotoUploadEnabled: boolean | null = null;
 
-/** Firebase Storage uploads need bucket CORS rules; web/local dev saves photos locally instead. */
+/** Upload profile photos to Firebase Storage so web admin entries appear on APK builds. */
 export function shouldAttemptCloudPhotoUpload(): boolean {
-  if (Platform.OS === 'web') {
-    return false;
-  }
   return cloudPhotoUploadEnabled !== false;
 }
 
@@ -80,6 +77,15 @@ function base64ToBlob(base64: string, mimeType = 'image/jpeg'): Blob {
     bytes[index] = binary.charCodeAt(index);
   }
   return new Blob([bytes], { type: mimeType });
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ''));
+    reader.onerror = () => reject(new Error('Unable to read selected photo.'));
+    reader.readAsDataURL(blob);
+  });
 }
 
 async function readNativePhotoAsBlob(uri: string): Promise<Blob> {
@@ -179,11 +185,21 @@ export async function uploadProfilePhoto(
     throw new Error('Selected photo is empty or unreadable.');
   }
 
-  await withTimeout(
-    uploadBytes(objectRef, blob, { contentType: 'image/jpeg' }),
-    UPLOAD_TIMEOUT_MS,
-    'Photo upload timed out. Please try again.',
-  );
+  if (Platform.OS === 'web') {
+    const dataUrl = await blobToDataUrl(blob);
+    await withTimeout(
+      uploadString(objectRef, dataUrl, 'data_url', { contentType: 'image/jpeg' }),
+      UPLOAD_TIMEOUT_MS,
+      'Photo upload timed out. Please try again.',
+    );
+  } else {
+    await withTimeout(
+      uploadBytes(objectRef, blob, { contentType: 'image/jpeg' }),
+      UPLOAD_TIMEOUT_MS,
+      'Photo upload timed out. Please try again.',
+    );
+  }
+
   cloudPhotoUploadEnabled = true;
   return getDownloadURL(objectRef);
 }
@@ -215,4 +231,45 @@ export async function uploadProfilePhotos(
   }
 
   return results;
+}
+
+/** Read cloud photo URLs from Storage — used on native when Firestore still has stale blob paths. */
+export async function fetchStoredProfilePhotoUrls(phone: string): Promise<string[]> {
+  if (Platform.OS === 'web') {
+    return Array.from({ length: MAX_PROFILE_PHOTOS }, () => '');
+  }
+
+  const storage = await getFirebaseStorage();
+  const digits = phone.replace(/\D/g, '');
+  if (!storage || !digits) {
+    return Array.from({ length: MAX_PROFILE_PHOTOS }, () => '');
+  }
+
+  const slots = Array.from({ length: MAX_PROFILE_PHOTOS }, () => '');
+  try {
+    const listing = await listAll(ref(storage, `profiles/${digits}/photos`));
+    await Promise.all(
+      listing.items.map(async (item) => {
+        const slotMatch = /^photo_(\d+)\.jpg$/i.exec(item.name);
+        if (!slotMatch) {
+          return;
+        }
+
+        const slot = Number(slotMatch[1]);
+        if (!Number.isInteger(slot) || slot < 0 || slot >= MAX_PROFILE_PHOTOS) {
+          return;
+        }
+
+        try {
+          slots[slot] = await getDownloadURL(item);
+        } catch {
+          // Ignore unreadable storage objects.
+        }
+      }),
+    );
+  } catch {
+    return slots;
+  }
+
+  return slots;
 }

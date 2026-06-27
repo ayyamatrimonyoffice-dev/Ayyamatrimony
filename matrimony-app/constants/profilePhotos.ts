@@ -39,8 +39,12 @@ export function isNativeDisplayablePhotoUri(uri: string): boolean {
   if (!trimmed) {
     return false;
   }
+  if (trimmed.startsWith('blob:')) {
+    return false;
+  }
   return (
-    isWebDisplayablePhotoUri(trimmed) ||
+    isRemotePhotoUri(trimmed) ||
+    trimmed.startsWith('data:') ||
     trimmed.startsWith('file://') ||
     trimmed.startsWith('content://')
   );
@@ -80,6 +84,11 @@ export function photosForPersistence(photos: string[]): string[] {
     const photo = photos[index] ?? '';
     return isRemotePhotoUri(photo) ? photo : '';
   });
+}
+
+/** Firestore profile docs must only store cloud URLs — never blob/file/data URIs. */
+export function remoteOnlyPhotoSlots(photos: string[]): string[] {
+  return photosForPersistence(photos);
 }
 
 export function serializePersistedProfilePhotos(photos: string[]): string {

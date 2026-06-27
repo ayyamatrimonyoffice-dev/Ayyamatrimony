@@ -24,7 +24,7 @@ import {
   photoApprovalDocId,
   profileDocIdFromPhone,
 } from '@/lib/firestore/collections';
-import { uploadProfilePhotos, shouldAttemptCloudPhotoUpload } from '@/lib/firestore/storageService';
+import { uploadProfilePhotos, shouldAttemptCloudPhotoUpload, fetchStoredProfilePhotoUrls } from '@/lib/firestore/storageService';
 import {
   ensurePendingPhotoApprovalDocs,
   listPhotoApprovals,
@@ -50,6 +50,7 @@ import {
   resolveApprovedProfilePhotoSlots,
   resolvePortableListingPhotoUri,
   resolveProfilePhotoSlots,
+  remoteOnlyPhotoSlots,
   serializeProfilePhotos,
   serializeRemotePhotoUrls,
 } from '@/constants/profilePhotos';
@@ -175,15 +176,17 @@ function profileDocFromValues(
       ? slotPhotoUrls[index]
       : '';
   });
+  const firestorePhotoUrls = remoteOnlyPhotoSlots(slotPhotoUrls);
+  const firestoreApprovedUrls = remoteOnlyPhotoSlots(approvedSlotUrls);
   const now = Date.now();
 
   const listing = buildListingFromValues(
     {
       ...values,
-      profilePhotoUrls: serializeRemotePhotoUrls(slotPhotoUrls),
-      [APPROVED_PROFILE_PHOTO_URLS_KEY]: serializeRemotePhotoUrls(approvedSlotUrls),
+      profilePhotoUrls: serializeRemotePhotoUrls(firestorePhotoUrls),
+      [APPROVED_PROFILE_PHOTO_URLS_KEY]: serializeRemotePhotoUrls(firestoreApprovedUrls),
       [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(
-        isAdminRegistration ? slotPhotoUrls : approvedSlotUrls,
+        isAdminRegistration ? firestorePhotoUrls : firestoreApprovedUrls,
       ),
     },
     listingIdFromValues(values),
@@ -199,18 +202,18 @@ function profileDocFromValues(
     biodata: {
       ...biodataForFirestore({
         ...values,
-        profilePhotoUrls: serializeRemotePhotoUrls(slotPhotoUrls),
-        [APPROVED_PROFILE_PHOTO_URLS_KEY]: serializeRemotePhotoUrls(approvedSlotUrls),
+        profilePhotoUrls: serializeRemotePhotoUrls(firestorePhotoUrls),
+        [APPROVED_PROFILE_PHOTO_URLS_KEY]: serializeRemotePhotoUrls(firestoreApprovedUrls),
         [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(
-          isAdminRegistration ? slotPhotoUrls : approvedSlotUrls,
+          isAdminRegistration ? firestorePhotoUrls : firestoreApprovedUrls,
         ),
       }),
       gender: resolvedGender,
       memberListingId: listingIdFromValues(values),
     },
-    photoUrls: slotPhotoUrls,
-    approvedPhotoUrls: approvedSlotUrls,
-    primaryPhotoUrl: approvedSlotUrls.find(isRemotePhotoUri) ?? '',
+    photoUrls: firestorePhotoUrls,
+    approvedPhotoUrls: firestoreApprovedUrls,
+    primaryPhotoUrl: firestoreApprovedUrls.find(isRemotePhotoUri) ?? '',
     registrationCommunity: values.registrationCommunity?.trim() ?? '',
     gender: resolvedGender,
     fullName: values.fullName?.trim() ?? '',
@@ -317,13 +320,13 @@ export async function upsertProfileFromValues(
               }),
         };
       } catch {
-        // Keep local photo URIs so profile save still succeeds; admin can approve later.
+        // Keep local photo URIs in app storage only — never persist blob/file paths to Firestore.
         nextValues = {
           ...nextValues,
           [PROFILE_PHOTOS_KEY]: serializeProfilePhotos(localPhotos),
           [PROFILE_PHOTOS_DRAFT_KEY]: serializeProfilePhotos(localPhotos),
         };
-        uploadedSlots = localPhotos;
+        uploadedSlots = remoteOnlyPhotoSlots(localPhotos);
       }
     } else {
       uploadedSlots = localPhotos;
@@ -348,7 +351,7 @@ export async function upsertProfileFromValues(
   const docRef = doc(db, FIRESTORE_COLLECTIONS.profiles, profileId);
   const existing = await getDocResilient(docRef);
   const existingData = existing?.exists() ? (existing.data() as FirestoreProfileDoc) : null;
-  const incomingHasPhotos = resolveListingPhotos(nextValues).some((uri) => uri.trim().length > 0);
+  const incomingHasPhotos = resolveListingPhotos(nextValues).some((uri) => isRemotePhotoUri(uri.trim()));
   if (existingData && !incomingHasPhotos) {
     nextValues = mergeProfilePhotosIntoBiodata(nextValues, existingData);
     if (!uploadedSlots.some(Boolean)) {
@@ -725,6 +728,25 @@ export async function hydrateLocalProfileFromFirestore(phone: string): Promise<R
     approvalPhotoSlots,
     approvedPhotoSlots,
   );
+
+  const hasRemotePhotos = remoteOnlyPhotoSlots(parseRemotePhotoUrls(biodata.profilePhotoUrls)).some(Boolean);
+  if (!hasRemotePhotos && Platform.OS !== 'web') {
+    const storageSlots = await fetchStoredProfilePhotoUrls(phone);
+    if (storageSlots.some(isRemotePhotoUri)) {
+      biodata = mergeProfilePhotosIntoBiodata(
+        biodata,
+        {
+          ...remote,
+          photoUrls: storageSlots,
+          approvedPhotoUrls: storageSlots,
+          primaryPhotoUrl: storageSlots.find(isRemotePhotoUri) ?? '',
+          listing: { ...remote.listing, image: storageSlots.find(isRemotePhotoUri) ?? '' },
+        },
+        storageSlots,
+        storageSlots,
+      );
+    }
+  }
 
   const approvalStatus = await fetchUserApprovalStatus(phone).catch(() => remote.approvalStatus ?? null);
   if (approvalStatus) {
