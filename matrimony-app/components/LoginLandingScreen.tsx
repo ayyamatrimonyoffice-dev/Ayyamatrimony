@@ -29,9 +29,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LanguageLogoToggle } from '@/components/LanguageLogoToggle';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import {
-  ADMIN_PHONE,
+  ADMIN_PIN_LENGTH,
   grantAdminSession,
   isAdminPhone,
+  isValidAdminPin,
+  normalizeAdminPin,
 } from '@/constants/admin';
 import {
   isValidPhoneNumber,
@@ -89,8 +91,10 @@ export function LoginLandingScreen() {
   const { clearActions } = useMatchActions();
   const { clearProfile, replaceValues } = useProfileForm();
   const [phone, setPhone] = useState('');
+  const [adminPin, setAdminPin] = useState('');
   const [busy, setBusy] = useState(false);
   const insets = useSafeAreaInsets();
+  const isAdminLogin = isAdminPhone(normalizePhoneDigits(phone));
 
   const scale = useSharedValue(1.0);
 
@@ -149,9 +153,20 @@ export function LoginLandingScreen() {
     router.replace('/create-profile');
   };
 
+  const requireValidAdminPin = () => {
+    if (!isValidAdminPin(adminPin)) {
+      Alert.alert(translate('adminPinTitle'), translate('adminInvalidPin'));
+      return false;
+    }
+    return true;
+  };
+
   const handleLogin = () => {
     const digits = normalizePhoneDigits(phone);
     if (isAdminPhone(digits)) {
+      if (!requireValidAdminPin()) {
+        return;
+      }
       void enterAdmin('/admin/(tabs)/' as Href);
       return;
     }
@@ -184,7 +199,7 @@ export function LoginLandingScreen() {
   const handleRegister = () => {
     const digits = normalizePhoneDigits(phone);
     if (isAdminPhone(digits)) {
-      Alert.alert('Admin', `Use Login with ${ADMIN_PHONE} to open the admin panel.`);
+      Alert.alert(translate('adminPinTitle'), translate('adminUseLoginForAdmin'));
       return;
     }
     if (!requireValidPhone()) return;
@@ -294,9 +309,29 @@ export function LoginLandingScreen() {
                 keyboardType="phone-pad"
                 maxLength={PHONE_DIGIT_LENGTH}
                 value={phone}
-                onChangeText={(text) => setPhone(normalizePhoneDigits(text))}
+                onChangeText={(text) => {
+                  setPhone(normalizePhoneDigits(text));
+                  if (!isAdminPhone(normalizePhoneDigits(text))) {
+                    setAdminPin('');
+                  }
+                }}
               />
             </View>
+            {isAdminLogin ? (
+              <View style={[styles.fieldBlock, styles.adminPinBlock]}>
+                <Text style={styles.fieldLabel}>{translate('adminPinLabel')}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder={translate('adminPinPlaceholder')}
+                  placeholderTextColor="rgba(100,70,60,0.4)"
+                  keyboardType="number-pad"
+                  maxLength={ADMIN_PIN_LENGTH}
+                  secureTextEntry
+                  value={adminPin}
+                  onChangeText={(text) => setAdminPin(normalizeAdminPin(text))}
+                />
+              </View>
+            ) : null}
           </View>
 
           {/* Buttons */}
@@ -471,6 +506,12 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   phoneInput: { flex: 1, minWidth: 0 },
+  adminPinBlock: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(184,135,42,0.15)',
+  },
   actions: { gap: 4, marginTop: 6 },
   registerButton: {
     minHeight: 36,

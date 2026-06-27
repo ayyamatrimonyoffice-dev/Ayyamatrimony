@@ -21,13 +21,25 @@ export const adminColors = {
 
 export const ADMIN_SESSION_KEY = 'ayya_admin_session_v1';
 
-/** Admin enters this number on the shared login screen — no OTP required. */
-export const ADMIN_PHONE = '9999999999';
+/** Admin enters this number on the shared login screen. */
+export const ADMIN_PHONE = '9543692900';
+
+/** Admin PIN required after entering the admin phone on the login screen. */
+export const ADMIN_PIN = '4321';
+export const ADMIN_PIN_LENGTH = 4;
 
 export const ADMIN_CREDENTIALS_HINT = `Admin phone: ${ADMIN_PHONE}`;
 
 export function isAdminPhone(phone: string): boolean {
   return phone.replace(/\D/g, '') === ADMIN_PHONE;
+}
+
+export function normalizeAdminPin(pin: string): string {
+  return pin.replace(/\D/g, '').slice(0, ADMIN_PIN_LENGTH);
+}
+
+export function isValidAdminPin(pin: string): boolean {
+  return normalizeAdminPin(pin) === ADMIN_PIN;
 }
 
 export async function grantAdminSession(): Promise<void> {
@@ -83,10 +95,10 @@ export function resolveAdminBottomInset(bottomInset = 0): number {
   return Platform.OS === 'android' ? 8 : Platform.OS === 'ios' ? 4 : 16;
 }
 
-export function getAdminTabBarMetrics(bottomInset = 0): AdminTabBarMetrics {
+export function getAdminTabBarMetrics(bottomInset = 0, tamilLabels = false): AdminTabBarMetrics {
   const paddingBottom = resolveAdminBottomInset(bottomInset);
   const paddingTop = ADMIN_TAB_BAR_TOP_PADDING;
-  const contentHeight = ADMIN_TAB_BAR_CONTENT_HEIGHT;
+  const contentHeight = tamilLabels ? 66 : ADMIN_TAB_BAR_CONTENT_HEIGHT;
 
   return {
     paddingTop,
@@ -96,9 +108,9 @@ export function getAdminTabBarMetrics(bottomInset = 0): AdminTabBarMetrics {
   };
 }
 
-/** Navigator tabBarStyle — pinned to the bottom on native APK builds. */
-export function getAdminNavigatorTabBarStyle(bottomInset = 0): ViewStyle {
-  const metrics = getAdminTabBarMetrics(bottomInset);
+/** Navigator tabBarStyle — fixed at the bottom via normal layout flow (not absolute). */
+export function getAdminNavigatorTabBarStyle(bottomInset = 0, tamilLabels = false): ViewStyle {
+  const metrics = getAdminTabBarMetrics(bottomInset, tamilLabels);
 
   return {
     backgroundColor: adminColors.surface,
@@ -110,15 +122,6 @@ export function getAdminNavigatorTabBarStyle(bottomInset = 0): ViewStyle {
     paddingBottom: metrics.paddingBottom,
     width: '100%',
     alignSelf: 'stretch',
-    ...(Platform.OS !== 'web'
-      ? {
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          zIndex: 20,
-        }
-      : {}),
     ...Platform.select({
       android: { elevation: 12 },
       ios: {
@@ -135,13 +138,13 @@ export function getAdminNavigatorTabBarStyle(bottomInset = 0): ViewStyle {
   };
 }
 
-export function getAdminFabBottom(bottomInset = 0): number {
-  return getAdminTabBarMetrics(bottomInset).height + ADMIN_FAB_GAP;
+export function getAdminFabBottom(bottomInset = 0, tamilLabels = false): number {
+  return getAdminTabBarMetrics(bottomInset, tamilLabels).height + ADMIN_FAB_GAP;
 }
 
 /** Bottom inset for scrollable admin scenes (matches tab bar footprint). */
 export function getAdminSceneBottomInset(bottomInset = 0): number {
-  return getAdminTabBarMetrics(bottomInset).height;
+  return Platform.OS === 'web' ? getAdminTabBarMetrics(bottomInset).height : 0;
 }
 
 /** Scroll content padding — native scenes already clear the pinned tab bar. */

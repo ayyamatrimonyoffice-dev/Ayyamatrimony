@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, Platform, StyleSheet, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { adminColors, getAdminFabBottom } from '@/constants/admin';
@@ -10,8 +10,9 @@ type AdminFabProps = {
 
 export function AdminFab({ onPress }: AdminFabProps) {
   const insets = useSafeAreaInsets();
-  const { translate } = useLanguage();
-  const bottom = getAdminFabBottom(insets.bottom);
+  const { translate, language } = useLanguage();
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 8 : 0);
+  const bottom = getAdminFabBottom(bottomInset, language === 'ta');
 
   return (
     <View style={[styles.wrap, { bottom }]} pointerEvents="box-none">

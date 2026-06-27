@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Modal,
   Platform,
@@ -13,6 +14,7 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { AdminEmptyState } from '@/components/admin/AdminEmptyState';
+import { AdminLanguageToggle } from '@/components/admin/AdminLanguageToggle';
 import { AdminScreenShell } from '@/components/admin/AdminScreenShell';
 import { adminColors } from '@/constants/admin';
 import { adminFilterLabelKeys } from '@/constants/adminLabels';
@@ -21,7 +23,7 @@ import { images } from '@/constants/images';
 import { getAdminProfilePhotoUri } from '@/constants/profilePhotos';
 import { useLanguage } from '@/context/LanguageContext';
 import { findHinduRegistrationStar, getRegistrationNatchathiramOptions } from '@/constants/registrationNumbers';
-import { listAllProfiles, buildPhotoApprovalSlotsByPhone } from '@/lib/firestore/profileService';
+import { deleteProfileByPhone, listAllProfiles, buildPhotoApprovalSlotsByPhone } from '@/lib/firestore/profileService';
 import type { FirestoreProfileDoc } from '@/lib/firestore/collections';
 
 type ProfileFilter = 'all' | 'male' | 'female';
@@ -208,7 +210,7 @@ function profileMatchesStar(profile: FirestoreProfileDoc, starFilter: string): b
 
 export default function AdminMatchesScreen() {
   const router = useRouter();
-  const { translate, language } = useLanguage();
+  const { translate, translateFormat, language } = useLanguage();
   const [profiles, setProfiles] = useState<FirestoreProfileDoc[]>([]);
   const [approvalSlotsByPhone, setApprovalSlotsByPhone] = useState<Map<string, string[]>>(
     () => new Map(),
@@ -217,6 +219,25 @@ export default function AdminMatchesScreen() {
   const [rasiFilter, setRasiFilter] = useState<HoroscopeFilter>('all');
   const [starFilter, setStarFilter] = useState<HoroscopeFilter>('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedPhones, setSelectedPhones] = useState<string[]>([]);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const exitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedPhones([]);
+  }, []);
+
+  const enterSelectionMode = useCallback(() => {
+    setSelectionMode(true);
+    setSelectedPhones([]);
+  }, []);
+
+  const toggleProfileSelection = useCallback((phone: string) => {
+    setSelectedPhones((current) =>
+      current.includes(phone) ? current.filter((entry) => entry !== phone) : [...current, phone],
+    );
+  }, []);
 
   const refresh = useCallback(async () => {
     setIsLoading(true);
@@ -240,6 +261,39 @@ export default function AdminMatchesScreen() {
       setIsLoading(false);
     }
   }, []);
+
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedPhones.length === 0 || isDeleting) {
+      return;
+    }
+
+    Alert.alert(
+      translate('adminMatchesDeleteMultipleTitle'),
+      translateFormat('adminMatchesDeleteMultipleBody', { count: selectedPhones.length }),
+      [
+        { text: translate('cancel'), style: 'cancel' },
+        {
+          text: translate('adminDelete'),
+          style: 'destructive',
+          onPress: () => {
+            setIsDeleting(true);
+            void Promise.all(selectedPhones.map((phone) => deleteProfileByPhone(phone)))
+              .then(() => {
+                Alert.alert(
+                  translate('adminMatchesDeleteMultipleTitle'),
+                  translateFormat('adminMatchesDeleteSuccess', { count: selectedPhones.length }),
+                );
+                exitSelectionMode();
+                return refresh();
+              })
+              .finally(() => {
+                setIsDeleting(false);
+              });
+          },
+        },
+      ],
+    );
+  }, [exitSelectionMode, isDeleting, refresh, selectedPhones, translate, translateFormat]);
 
   useFocusEffect(
     useCallback(() => {
@@ -295,8 +349,82 @@ export default function AdminMatchesScreen() {
     router.push(`/admin/view-profile/${phone}` as never);
   };
 
+  const handleProfilePress = (phone: string) => {
+    if (selectionMode) {
+      toggleProfileSelection(phone);
+      return;
+    }
+    openProfile(phone);
+  };
+
   return (
-    <AdminScreenShell title={translate('adminMatches')} showLanguageToggle>
+    <AdminScreenShell
+      title={translate('adminMatches')}
+      headerRight={
+        <View style={styles.headerActions}>
+          <Pressable
+            style={[
+              styles.headerDeleteBtn,
+              !isLoading && filteredProfiles.length === 0 && !selectionMode && styles.headerDeleteBtnDisabled,
+            ]}
+            onPress={() => {
+              if (!selectionMode && filteredProfiles.length === 0) {
+                return;
+              }
+              if (selectionMode) {
+                exitSelectionMode();
+              } else {
+                enterSelectionMode();
+              }
+            }}
+            disabled={!isLoading && filteredProfiles.length === 0 && !selectionMode}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={
+              selectionMode ? translate('adminMatchesCancelSelect') : translate('adminDelete')
+            }
+          >
+            <MaterialIcons
+              name={selectionMode ? 'close' : 'delete-outline'}
+              size={22}
+              color={selectionMode ? adminColors.text : adminColors.danger}
+            />
+          </Pressable>
+          <AdminLanguageToggle />
+        </View>
+      }
+      pinnedContent={
+        selectionMode ? (
+          <View style={styles.selectionBar}>
+            <Text style={styles.selectionCount}>
+              {selectedPhones.length > 0
+                ? translateFormat('adminMatchesDeleteSelected', { count: selectedPhones.length })
+                : translate('adminMatchesCancelSelect')}
+            </Text>
+            <View style={styles.selectionActions}>
+              <Pressable style={styles.selectionCancelBtn} onPress={exitSelectionMode} hitSlop={8}>
+                <Text style={styles.selectionCancelText}>{translate('adminMatchesCancelSelect')}</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.selectionDeleteBtn,
+                  (selectedPhones.length === 0 || isDeleting) && styles.selectionDeleteBtnDisabled,
+                ]}
+                onPress={handleDeleteSelected}
+                disabled={selectedPhones.length === 0 || isDeleting}
+                hitSlop={8}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={styles.selectionDeleteText}>{translate('adminDelete')}</Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        ) : null
+      }
+    >
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -346,12 +474,20 @@ export default function AdminMatchesScreen() {
         <View style={styles.grid}>
           {filteredProfiles.map((profile) => {
             const photo = profilePhoto(profile, approvalSlotsByPhone);
+            const isSelected = selectedPhones.includes(profile.phone);
             return (
               <Pressable
                 key={profile.phone}
-                style={styles.card}
-                onPress={() => openProfile(profile.phone)}
+                style={[styles.card, selectionMode && isSelected && styles.cardSelected]}
+                onPress={() => handleProfilePress(profile.phone)}
               >
+                {selectionMode ? (
+                  <View style={[styles.selectBox, isSelected && styles.selectBoxSelected]}>
+                    {isSelected ? (
+                      <MaterialIcons name="check" size={16} color="#fff" />
+                    ) : null}
+                  </View>
+                ) : null}
                 <View style={styles.cardImageWrap}>
                   {photo ? (
                     <Image source={{ uri: photo }} style={styles.cardImage} resizeMode="cover" />
@@ -374,7 +510,9 @@ export default function AdminMatchesScreen() {
                     {profile.listing?.age ? ` · ${profile.listing.age}` : ''}
                   </Text>
                 </View>
-                <MaterialIcons name="chevron-right" size={20} color={adminColors.textMuted} />
+                {selectionMode ? null : (
+                  <MaterialIcons name="chevron-right" size={20} color={adminColors.textMuted} />
+                )}
               </Pressable>
             );
           })}
@@ -470,6 +608,71 @@ const styles = StyleSheet.create({
     paddingVertical: 48,
     alignItems: 'center',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  headerDeleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: adminColors.background,
+  },
+  headerDeleteBtnDisabled: {
+    opacity: 0.35,
+  },
+  selectionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: adminColors.surface,
+    borderWidth: 1,
+    borderColor: adminColors.border,
+  },
+  selectionCount: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: adminColors.text,
+  },
+  selectionActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  selectionCancelBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  selectionCancelText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: adminColors.textMuted,
+  },
+  selectionDeleteBtn: {
+    minWidth: 72,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: adminColors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectionDeleteBtnDisabled: {
+    opacity: 0.45,
+  },
+  selectionDeleteText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#fff',
+  },
   grid: {
     gap: 10,
     paddingBottom: 16,
@@ -483,6 +686,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: adminColors.border,
     padding: 10,
+  },
+  cardSelected: {
+    borderColor: adminColors.primary,
+    backgroundColor: adminColors.primaryLight,
+  },
+  selectBox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: adminColors.border,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  selectBoxSelected: {
+    borderColor: adminColors.primary,
+    backgroundColor: adminColors.primary,
   },
   cardImageWrap: {
     width: 64,

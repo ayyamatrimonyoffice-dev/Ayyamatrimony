@@ -1,15 +1,11 @@
-import { ActivityIndicator, Platform, StyleSheet } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { Redirect, Tabs, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AdminFab } from '@/components/admin/AdminFab';
 import { useAdminAuth } from '@/context/AdminAuthContext';
 import { useLanguage } from '@/context/LanguageContext';
-import {
-  adminColors,
-  getAdminNavigatorTabBarStyle,
-  getAdminSceneBottomInset,
-} from '@/constants/admin';
+import { adminColors, getAdminNavigatorTabBarStyle } from '@/constants/admin';
 
 const TAB_ICON_SIZE = 22;
 
@@ -18,14 +14,15 @@ export default function AdminTabsLayout() {
   const { isReady, isAuthenticated } = useAdminAuth();
   const { translate } = useLanguage();
   const insets = useSafeAreaInsets();
-  const sceneBottomInset = getAdminSceneBottomInset(insets.bottom);
-  const isNative = Platform.OS !== 'web';
+  const { language } = useLanguage();
+  const bottomInset = Math.max(insets.bottom, Platform.OS === 'android' ? 8 : 0);
+  const tabBarStyle = getAdminNavigatorTabBarStyle(bottomInset, language === 'ta');
 
   if (!isReady) {
     return (
-      <SafeAreaView style={styles.loader} edges={['top', 'left', 'right', 'bottom']}>
+      <View style={styles.loader}>
         <ActivityIndicator size="large" color={adminColors.primary} />
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -34,21 +31,19 @@ export default function AdminTabsLayout() {
   }
 
   return (
-    <SafeAreaView style={styles.shell} edges={['top', 'left', 'right']}>
+    <View style={styles.shell}>
       <Tabs
+        style={styles.tabs}
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: adminColors.primary,
           tabBarInactiveTintColor: adminColors.textMuted,
-          tabBarStyle: getAdminNavigatorTabBarStyle(insets.bottom),
+          tabBarStyle: tabBarStyle,
           tabBarLabelStyle: styles.tabLabel,
           tabBarItemStyle: styles.tabItem,
           tabBarAllowFontScaling: false,
           safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
-          sceneContainerStyle: [
-            styles.scene,
-            isNative ? { paddingBottom: sceneBottomInset } : null,
-          ],
+          sceneContainerStyle: styles.scene,
         }}
       >
         <Tabs.Screen
@@ -107,7 +102,7 @@ export default function AdminTabsLayout() {
         />
       </Tabs>
       <AdminFab onPress={() => router.push('/admin/add-member')} />
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -115,6 +110,9 @@ const styles = StyleSheet.create({
   shell: {
     flex: 1,
     backgroundColor: adminColors.background,
+  },
+  tabs: {
+    flex: 1,
   },
   scene: {
     flex: 1,

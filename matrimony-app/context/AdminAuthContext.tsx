@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { ADMIN_SESSION_KEY, isAdminPhone } from '@/constants/admin';
+import { ADMIN_SESSION_KEY, isAdminPhone, isValidAdminPin } from '@/constants/admin';
 
 type AdminAuthContextValue = {
   isReady: boolean;
@@ -36,10 +36,13 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const signIn = useCallback(async (phone: string, _otp = '') => {
+  const signIn = useCallback(async (phone: string, otpOrPin = '') => {
     const normalizedPhone = phone.replace(/\D/g, '');
     if (!isAdminPhone(normalizedPhone)) {
       return { ok: false, message: 'Invalid admin phone number.' };
+    }
+    if (!isValidAdminPin(otpOrPin)) {
+      return { ok: false, message: 'Invalid admin PIN.' };
     }
     await AsyncStorage.setItem(ADMIN_SESSION_KEY, 'true');
     setIsAuthenticated(true);
