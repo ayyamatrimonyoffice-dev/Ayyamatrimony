@@ -20,10 +20,13 @@ import { resolveRegistrationNumber } from '@/lib/firestore/registrationNumberSer
 import { getDocResilient, getDocsResilient, isNetworkOnline } from '@/lib/firestore/readHelpers';
 import {
   FIRESTORE_COLLECTIONS,
+  approvalDocIdFromPhone,
   type FirestoreProfileDoc,
   photoApprovalDocId,
   profileDocIdFromPhone,
 } from '@/lib/firestore/collections';
+import { invalidateAdminCaches } from '@/lib/firestore/adminCache';
+import { removePublishedMemberByPhone } from '@/constants/memberDirectory';
 import { uploadProfilePhotos, shouldAttemptCloudPhotoUpload, fetchStoredProfilePhotoUrls } from '@/lib/firestore/storageService';
 import {
   ensurePendingPhotoApprovalDocs,
@@ -893,7 +896,46 @@ export async function updateProfileAccountStatus(
 }
 
 export async function deleteProfileByPhone(phone: string): Promise<void> {
-  await updateProfileAccountStatus(phone, 'deleted');
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) {
+    return;
+  }
+
+  const db = await getFirebaseFirestore();
+  const profileId = profileDocIdFromPhone(digits);
+  const now = Date.now();
+
+  if (db && profileId) {
+    await setDoc(
+      doc(db, FIRESTORE_COLLECTIONS.profiles, profileId),
+      {
+        accountStatus: 'deleted',
+        published: false,
+        browseHidden: true,
+        updatedAt: now,
+      },
+      { merge: true },
+    );
+
+    await setDoc(
+      doc(db, FIRESTORE_COLLECTIONS.approvals, approvalDocIdFromPhone(digits)),
+      { status: 'rejected', updatedAt: now },
+      { merge: true },
+    ).catch(() => undefined);
+
+    await Promise.all(
+      Array.from({ length: MAX_PROFILE_PHOTOS }, (_, slot) =>
+        setDoc(
+          doc(db, FIRESTORE_COLLECTIONS.photoApprovals, photoApprovalDocId(digits, slot)),
+          { status: 'rejected', updatedAt: now },
+          { merge: true },
+        ).catch(() => undefined),
+      ),
+    );
+  }
+
+  await removePublishedMemberByPhone(digits);
+  await invalidateAdminCaches();
 }
 
 export async function blockProfileByPhone(phone: string): Promise<void> {

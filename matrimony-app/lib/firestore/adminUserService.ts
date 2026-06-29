@@ -4,6 +4,7 @@ import { isAdminPhone } from '@/constants/admin';
 import { getFirebaseFirestore } from '@/lib/firebase';
 import { isNetworkOnline } from '@/lib/firestore/readHelpers';
 import { resolveUserApprovalStatus } from '@/lib/firestore/approvalService';
+import { collectDeletedProfilePhones, isDeletedProfilePhone } from '@/lib/firestore/profileFilters';
 import {
   FIRESTORE_COLLECTIONS,
   type FirestoreApprovalDoc,
@@ -71,6 +72,9 @@ export async function listAdminUsers(): Promise<AdminUserRecord[]> {
   }
 
   const usersByPhone = new Map<string, AdminUserRecord & { sortTime: number }>();
+  const deletedPhones = collectDeletedProfilePhones(
+    profileSnapshot.docs.map((entry) => entry.data() as FirestoreProfileDoc),
+  );
 
   for (const entry of profileSnapshot.docs) {
     const profile = entry.data() as FirestoreProfileDoc;
@@ -95,7 +99,7 @@ export async function listAdminUsers(): Promise<AdminUserRecord[]> {
   }
 
   for (const approval of approvalsByPhone.values()) {
-    if (usersByPhone.has(approval.phone)) {
+    if (usersByPhone.has(approval.phone) || isDeletedProfilePhone(approval.phone, deletedPhones)) {
       continue;
     }
 

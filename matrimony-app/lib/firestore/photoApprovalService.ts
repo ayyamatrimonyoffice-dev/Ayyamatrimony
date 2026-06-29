@@ -24,6 +24,7 @@ import {
 } from '@/lib/firestore/collections';
 import { createAdminNotification } from '@/lib/firestore/adminNotificationService';
 import { getDocResilient, getDocsResilient } from '@/lib/firestore/readHelpers';
+import { collectDeletedProfilePhones, isDeletedProfilePhone } from '@/lib/firestore/profileFilters';
 
 function formatDate(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString('en-GB', {
@@ -321,6 +322,7 @@ function mergePhotoApprovalRecords(
   approvalDocs: FirestorePhotoApprovalDoc[],
   profiles: FirestoreProfileDoc[],
   storageRecords: AdminPhotoApprovalRecord[] = [],
+  deletedPhones: Set<string> = new Set(),
 ): AdminPhotoApprovalRecord[] {
   const approvalDocById = new Map<string, FirestorePhotoApprovalDoc>();
   for (const entry of approvalDocs) {
@@ -344,7 +346,7 @@ function mergePhotoApprovalRecords(
 
   for (const entry of approvalDocs) {
     const phone = entry.phone.replace(/\D/g, '');
-    if (!phone) {
+    if (!phone || isDeletedProfilePhone(phone, deletedPhones)) {
       continue;
     }
 
@@ -422,7 +424,7 @@ function mergePhotoApprovalRecords(
   }
 
   for (const record of storageRecords) {
-    if (!record.photoUrl.trim()) {
+    if (!record.photoUrl.trim() || isDeletedProfilePhone(record.phone, deletedPhones)) {
       continue;
     }
 
@@ -622,8 +624,11 @@ export async function listPhotoApprovalsForPhone(
 
   const profiles =
     resolvedProfile && resolvedProfile.accountStatus !== 'deleted' ? [resolvedProfile] : [];
+  const deletedPhones = collectDeletedProfilePhones(
+    resolvedProfile ? [resolvedProfile] : [],
+  );
   const storageRecords = await listStoragePhotoApprovals(profiles);
-  return mergePhotoApprovalRecords(approvalDocs, profiles, storageRecords);
+  return mergePhotoApprovalRecords(approvalDocs, profiles, storageRecords, deletedPhones);
 }
 
 export async function listPhotoApprovals(
@@ -634,10 +639,12 @@ export async function listPhotoApprovals(
     return [];
   }
 
-  const profiles = await getDocsResilient<FirestoreProfileDoc>(db, FIRESTORE_COLLECTIONS.profiles, {
+  const allProfiles = await getDocsResilient<FirestoreProfileDoc>(db, FIRESTORE_COLLECTIONS.profiles, {
     orderByField: 'updatedAt',
     preferServer: true,
-  }).then((entries) => entries.filter((profile) => profile.accountStatus !== 'deleted'));
+  });
+  const deletedPhones = collectDeletedProfilePhones(allProfiles);
+  const profiles = allProfiles.filter((profile) => profile.accountStatus !== 'deleted');
 
   await Promise.all(
     profiles.map(async (profile) => {
@@ -673,7 +680,7 @@ export async function listPhotoApprovals(
   );
 
   const storageRecords = await listStoragePhotoApprovals(profiles);
-  const merged = mergePhotoApprovalRecords(approvalDocs, profiles, storageRecords);
+  const merged = mergePhotoApprovalRecords(approvalDocs, profiles, storageRecords, deletedPhones);
   return status ? merged.filter((entry) => entry.status === status) : merged;
 }
 

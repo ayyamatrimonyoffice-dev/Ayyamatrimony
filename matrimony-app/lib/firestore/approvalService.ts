@@ -4,6 +4,7 @@ import type { AdminApprovalRecord } from '@/constants/adminMockData';
 import { isAdminPhone } from '@/constants/admin';
 import { getFirebaseFirestore } from '@/lib/firebase';
 import { getDocResilient, getDocsResilient } from '@/lib/firestore/readHelpers';
+import { collectDeletedProfilePhones, isDeletedProfilePhone } from '@/lib/firestore/profileFilters';
 import {
   approvalDocIdFromPhone,
   FIRESTORE_COLLECTIONS,
@@ -181,12 +182,13 @@ function isSelfRegisteredProfile(profile: FirestoreProfileDoc): boolean {
 function mergeApprovalRecords(
   approvalDocs: FirestoreApprovalDoc[],
   profiles: FirestoreProfileDoc[],
+  deletedPhones: Set<string> = new Set(),
 ): AdminApprovalRecord[] {
   const records = new Map<string, { record: AdminApprovalRecord; sortTime: number }>();
 
   for (const entry of approvalDocs) {
     const phone = entry.phone.replace(/\D/g, '');
-    if (!phone || isAdminPhone(phone)) {
+    if (!phone || isAdminPhone(phone) || isDeletedProfilePhone(phone, deletedPhones)) {
       continue;
     }
     records.set(phone, {
@@ -251,9 +253,11 @@ export async function listApprovals(): Promise<AdminApprovalRecord[]> {
     db,
     FIRESTORE_COLLECTIONS.profiles,
     { orderByField: 'updatedAt', preferServer: true },
-  ).then((entries) => entries.filter((profile) => profile.accountStatus !== 'deleted'));
+  );
+  const deletedPhones = collectDeletedProfilePhones(profiles);
+  const activeProfiles = profiles.filter((profile) => profile.accountStatus !== 'deleted');
 
-  return mergeApprovalRecords(approvalDocs, profiles);
+  return mergeApprovalRecords(approvalDocs, activeProfiles, deletedPhones);
 }
 
 export async function updateApprovalStatus(

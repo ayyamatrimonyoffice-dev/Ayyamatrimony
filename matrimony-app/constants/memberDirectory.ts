@@ -156,6 +156,29 @@ export async function readPublishedMembers(): Promise<PublishedMember[]> {
   }
 }
 
+export async function removePublishedMemberByPhone(phone: string): Promise<void> {
+  const digits = phone.replace(/\D/g, '');
+  if (!digits) {
+    return;
+  }
+
+  const existing = await readLocalPublishedMembers();
+  const next = existing.filter((entry) => {
+    const entryPhone =
+      entry.biodata?.[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ||
+      entry.biodata?.phoneNumber?.replace(/\D/g, '') ||
+      entry.phoneNumber?.replace(/\D/g, '') ||
+      '';
+    return entryPhone !== digits;
+  });
+
+  if (next.length === existing.length) {
+    return;
+  }
+
+  await AsyncStorage.setItem(MEMBER_DIRECTORY_KEY, JSON.stringify(next.map(toStoredDirectory)));
+}
+
 export async function publishCurrentUserFromStorage(ownerKey = 'current-user'): Promise<PublishedMember | null> {
   const raw = await AsyncStorage.getItem('user_profile');
   if (!raw) {
