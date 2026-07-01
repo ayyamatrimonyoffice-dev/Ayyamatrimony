@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { ADMIN_SESSION_KEY, isAdminPhone, isValidAdminPin } from '@/constants/admin';
+import { ADMIN_SESSION_KEY, isAdminPhone, isValidAdminPin, readAdminSession } from '@/constants/admin';
 
 type AdminAuthContextValue = {
   isReady: boolean;
@@ -25,9 +25,9 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    void AsyncStorage.getItem(ADMIN_SESSION_KEY).then((value) => {
+    void readAdminSession().then((authenticated) => {
       if (mounted) {
-        setIsAuthenticated(value === 'true');
+        setIsAuthenticated(authenticated);
         setIsReady(true);
       }
     });

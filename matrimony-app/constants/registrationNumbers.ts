@@ -230,6 +230,74 @@ export function sanitizeRegistrationInput(text: string): string {
   return text.replace(/\D/g, '').slice(0, 7);
 }
 
+export function sanitizeRegistrationStarInput(text: string): string {
+  return text.replace(/\D/g, '').slice(0, 2);
+}
+
+export function sanitizeRegistrationSerialInput(text: string): string {
+  return text.replace(/\D/g, '').slice(0, 5);
+}
+
+/** Split a stored registration number for Hindu dual-box UI. */
+export function splitHinduRegistrationDisplay(fullNumber: string): {
+  starPart: string;
+  serialPart: string;
+} {
+  const digits = normalizeRegistrationNumber(fullNumber);
+  if (!digits) {
+    return { starPart: '', serialPart: '' };
+  }
+
+  const parsed = parseRegistrationNumberParts(digits);
+  if (parsed?.kind === 'hindu') {
+    return {
+      starPart: String(parsed.starNumber).padStart(2, '0'),
+      serialPart: String(parsed.globalSerial),
+    };
+  }
+
+  if (parsed?.kind === 'christian') {
+    return { starPart: '', serialPart: String(parsed.globalSerial) };
+  }
+
+  if (digits.length <= 2) {
+    return { starPart: digits, serialPart: '' };
+  }
+
+  return { starPart: digits.slice(0, 2), serialPart: digits.slice(2) };
+}
+
+/** Merge Hindu star + order boxes back into one stored registration number. */
+export function combineHinduRegistrationNumber(starPart: string, serialPart: string): string {
+  const star = sanitizeRegistrationStarInput(starPart);
+  const serial = sanitizeRegistrationSerialInput(serialPart);
+  if (!star && !serial) {
+    return '';
+  }
+  if (!serial) {
+    return star;
+  }
+  if (!star) {
+    return serial;
+  }
+  return `${star.padStart(2, '0')}${serial}`;
+}
+
+/** Serial-only display for RC / CSI Christian registration numbers. */
+export function getChristianSerialFromRegistration(fullNumber: string): string {
+  const digits = normalizeRegistrationNumber(fullNumber);
+  if (!digits) {
+    return '';
+  }
+
+  const parsed = parseRegistrationNumberParts(digits);
+  if (parsed?.kind === 'christian' || parsed?.kind === 'hindu') {
+    return String(parsed.globalSerial);
+  }
+
+  return digits;
+}
+
 export function registrationNumberMatchesReligion(number: string, religion: string): boolean {
   const parts = parseRegistrationNumberParts(number);
   if (!parts) {

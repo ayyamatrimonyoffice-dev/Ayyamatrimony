@@ -171,6 +171,7 @@ export default function AddPhotosScreen() {
           openLibraryOnMount
           libraryOnly
           showSkip={false}
+          maxPhotos={1}
         />
       </ScrollView>
     </SafeAreaView>

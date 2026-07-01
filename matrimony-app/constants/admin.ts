@@ -42,6 +42,11 @@ export function isValidAdminPin(pin: string): boolean {
   return normalizeAdminPin(pin) === ADMIN_PIN;
 }
 
+export async function readAdminSession(): Promise<boolean> {
+  const value = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+  return value === 'true';
+}
+
 export async function grantAdminSession(): Promise<void> {
   await AsyncStorage.setItem(ADMIN_SESSION_KEY, 'true');
 

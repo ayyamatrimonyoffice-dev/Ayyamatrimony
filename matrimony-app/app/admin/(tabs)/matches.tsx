@@ -18,7 +18,7 @@ import { AdminLanguageToggle } from '@/components/admin/AdminLanguageToggle';
 import { AdminScreenShell } from '@/components/admin/AdminScreenShell';
 import { adminColors } from '@/constants/admin';
 import { adminFilterLabelKeys } from '@/constants/adminLabels';
-import { getFormOptions } from '@/constants/formOptions';
+import { getFormOptions, getOptionLabel } from '@/constants/formOptions';
 import { images } from '@/constants/images';
 import { getAdminProfilePhotoUri } from '@/constants/profilePhotos';
 import { useLanguage } from '@/context/LanguageContext';
@@ -208,6 +208,13 @@ function profileMatchesStar(profile: FirestoreProfileDoc, starFilter: string): b
   return resolved?.id === starFilter;
 }
 
+function profileMatchesMarumanam(profile: FirestoreProfileDoc, marumanamOnly: boolean): boolean {
+  if (!marumanamOnly) {
+    return true;
+  }
+  return (profile.biodata?.maritalStatus ?? '').trim() === 'divorced';
+}
+
 export default function AdminMatchesScreen() {
   const router = useRouter();
   const { translate, translateFormat, language } = useLanguage();
@@ -218,6 +225,7 @@ export default function AdminMatchesScreen() {
   const [genderFilter, setGenderFilter] = useState<ProfileFilter>('all');
   const [rasiFilter, setRasiFilter] = useState<HoroscopeFilter>('all');
   const [starFilter, setStarFilter] = useState<HoroscopeFilter>('all');
+  const [marumanamFilterActive, setMarumanamFilterActive] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPhones, setSelectedPhones] = useState<string[]>([]);
@@ -341,9 +349,12 @@ export default function AdminMatchesScreen() {
       if (!profileMatchesStar(profile, starFilter)) {
         return false;
       }
+      if (!profileMatchesMarumanam(profile, marumanamFilterActive)) {
+        return false;
+      }
       return true;
     });
-  }, [genderFilter, profiles, rasiFilter, starFilter]);
+  }, [genderFilter, marumanamFilterActive, profiles, rasiFilter, starFilter]);
 
   const openProfile = (phone: string) => {
     router.push(`/admin/view-profile/${phone}` as never);
@@ -458,6 +469,15 @@ export default function AdminMatchesScreen() {
           options={starOptions}
           onValueChange={setStarFilter}
         />
+
+        <Pressable
+          style={[styles.chip, marumanamFilterActive && styles.chipActive]}
+          onPress={() => setMarumanamFilterActive((current) => !current)}
+        >
+          <Text style={[styles.chipText, marumanamFilterActive && styles.chipTextActive]}>
+            {getOptionLabel('maritalStatusBiodata', 'divorced', language)}
+          </Text>
+        </Pressable>
       </ScrollView>
 
       {isLoading ? (

@@ -162,6 +162,7 @@ export default function EditProfileScreen() {
           editable
           onSave={handleSave}
           onStepChange={setStep}
+          hideRegistrationNumberBar
         />
       </View>
     </SafeAreaView>

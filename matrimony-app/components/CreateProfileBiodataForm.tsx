@@ -26,6 +26,8 @@ import {
   TextInput,
   useWindowDimensions,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
@@ -37,12 +39,18 @@ import { getLogoUri, images } from '@/constants/images';
 import { Language, t, translations } from '@/constants/i18n';
 import { isChristianRegistration, type RegistrationCommunityId } from '@/constants/registrationCommunities';
 import {
+  combineHinduRegistrationNumber,
   findHinduRegistrationStar,
+  getChristianSerialFromRegistration,
   getRegistrationNatchathiramLabel,
   getRegistrationNatchathiramOptions,
   normalizeRegistrationNumber,
   normalizeRegistrationReligionValue,
   sanitizeRegistrationInput,
+  sanitizeRegistrationSerialInput,
+  sanitizeRegistrationStarInput,
+  splitHinduRegistrationDisplay,
+  REGISTRATION_SEQUENCE_START,
 } from '@/constants/registrationNumbers';
 import {
   previewRegistrationNumber,
@@ -148,7 +156,8 @@ const fieldShadow = Platform.select({
 
 const HOROSCOPE_SIZE = 4;
 const DETAIL_GRID_COUNT = 36;
-const DETAIL_GRID_ROW_SIZES = [12, 12, 12] as const;
+const DETAIL_GRID_ENTRY_ROW_SIZES = [9, 9, 9, 9] as const;
+const DETAIL_GRID_SUMMARY_ROW_SIZES = [18, 18] as const;
 const BIODATA_PRINT_STYLE_ID = 'biodata-print-style';
 
 const BIODATA_SUMMARY_SCREEN_CSS = `
@@ -555,9 +564,9 @@ const BIODATA_PRINT_CSS = `
     }
 
     body.biodata-print-hindu #biodata-print-detail-grid > div > div > div > div {
-      min-height: 7mm !important;
-      height: 7mm !important;
-      max-height: 7mm !important;
+      min-height: 8mm !important;
+      height: 8mm !important;
+      max-height: 8mm !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
@@ -1092,9 +1101,13 @@ function buildBiodataDraftValues({
 export function RegistrationNumberBar({
   editable,
   inline = false,
+  valueOverride,
+  labelMode = 'short',
 }: {
   editable: boolean;
   inline?: boolean;
+  valueOverride?: string;
+  labelMode?: 'short' | 'full';
 }) {
   const { translate } = useLanguage();
   const { getValue, setValue, isReady, values } = useProfileForm();
@@ -1177,29 +1190,95 @@ export function RegistrationNumberBar({
     [setValue],
   );
 
-  const registrationInputProps = {
-    value: registrationNumber,
-    onChangeText: handleChange,
+  const religion = normalizeRegistrationReligion(values.religion ?? getValue('religion'));
+  const isHindu = religion === 'hindu';
+  const displayedNumber = valueOverride?.trim() || registrationNumber;
+  const hinduParts = useMemo(
+    () => (isHindu ? splitHinduRegistrationDisplay(displayedNumber) : null),
+    [displayedNumber, isHindu],
+  );
+  const christianSerial = useMemo(
+    () => (!isHindu ? getChristianSerialFromRegistration(displayedNumber) : ''),
+    [displayedNumber, isHindu],
+  );
+
+  const handleHinduStarChange = useCallback(
+    (text: string) => {
+      const star = sanitizeRegistrationStarInput(text);
+      const serial = hinduParts?.serialPart ?? '';
+      handleChange(combineHinduRegistrationNumber(star, serial));
+    },
+    [handleChange, hinduParts?.serialPart],
+  );
+
+  const handleHinduSerialChange = useCallback(
+    (text: string) => {
+      const serial = sanitizeRegistrationSerialInput(text);
+      const star = hinduParts?.starPart ?? '';
+      handleChange(combineHinduRegistrationNumber(star, serial));
+    },
+    [handleChange, hinduParts?.starPart],
+  );
+
+  const handleChristianSerialChange = useCallback(
+    (text: string) => {
+      handleChange(sanitizeRegistrationSerialInput(text));
+    },
+    [handleChange],
+  );
+
+  const sharedInputProps = {
     editable,
     placeholderTextColor: PLACEHOLDER,
     keyboardType: 'number-pad' as const,
-    maxLength: 7,
   };
 
   return (
     <View style={[registrationHeaderStyles.wrap, inline && registrationHeaderStyles.wrapInline]}>
-      <View style={[registrationHeaderStyles.card, inline && registrationHeaderStyles.cardInline]}>
-        <Text
-          style={[registrationHeaderStyles.label, inline && registrationHeaderStyles.labelInline]}
-          numberOfLines={1}
-        >
-          {translate(inline ? 'biodataRegistrationNumberShort' : 'biodataRegistrationNumber')}
-        </Text>
-        {inline ? (
+      <View
+        style={[
+          registrationHeaderStyles.card,
+          inline && registrationHeaderStyles.cardInline,
+          inline && registrationHeaderStyles.cardBoxesOnly,
+          isHindu && registrationHeaderStyles.cardHindu,
+        ]}
+      >
+        {isHindu ? (
+          <View style={registrationHeaderStyles.hinduBoxes}>
+            <TextInput
+              style={[
+                registrationHeaderStyles.inputSquare,
+                inline && registrationHeaderStyles.inputSquareInline,
+              ]}
+              value={hinduParts?.starPart ?? ''}
+              onChangeText={handleHinduStarChange}
+              placeholder="00"
+              maxLength={2}
+              {...sharedInputProps}
+            />
+            <TextInput
+              style={[
+                registrationHeaderStyles.inputSquare,
+                registrationHeaderStyles.inputSquareSerial,
+                inline && registrationHeaderStyles.inputSquareInline,
+                inline && registrationHeaderStyles.inputSquareSerialInline,
+              ]}
+              value={hinduParts?.serialPart ?? ''}
+              onChangeText={handleHinduSerialChange}
+              placeholder={String(REGISTRATION_SEQUENCE_START)}
+              maxLength={5}
+              {...sharedInputProps}
+            />
+          </View>
+        ) : inline ? (
           <TextInput
             style={registrationHeaderStyles.inputInline}
-            {...registrationInputProps}
+            value={christianSerial}
+            onChangeText={handleChristianSerialChange}
+            placeholder={String(REGISTRATION_SEQUENCE_START)}
+            maxLength={5}
             numberOfLines={1}
+            {...sharedInputProps}
           />
         ) : (
           <ScrollView
@@ -1209,7 +1288,11 @@ export function RegistrationNumberBar({
           >
             <TextInput
               style={registrationHeaderStyles.input}
-              {...registrationInputProps}
+              value={christianSerial}
+              onChangeText={handleChristianSerialChange}
+              placeholder={String(REGISTRATION_SEQUENCE_START)}
+              maxLength={5}
+              {...sharedInputProps}
             />
           </ScrollView>
         )}
@@ -1264,6 +1347,22 @@ const registrationHeaderStyles = StyleSheet.create({
       },
     }),
   },
+  cardHindu: {
+    gap: 6,
+  },
+  cardBoxesOnly: {
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  hinduBoxes: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
   label: {
     color: colors.primary,
     fontSize: 11,
@@ -1292,7 +1391,8 @@ const registrationHeaderStyles = StyleSheet.create({
     textAlign: 'center',
   },
   inputInline: {
-    width: 52,
+    width: 64,
+    minWidth: 64,
     flexGrow: 0,
     flexShrink: 0,
     minHeight: 26,
@@ -1306,6 +1406,37 @@ const registrationHeaderStyles = StyleSheet.create({
     fontSize: 11,
     fontFamily: fonts.interSemi,
     textAlign: 'center',
+  },
+  inputSquare: {
+    width: 36,
+    height: 36,
+    minWidth: 36,
+    minHeight: 36,
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    borderRadius: 8,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: 'rgba(87, 0, 0, 0.12)',
+    color: colors.onSurface,
+    fontSize: 12,
+    fontFamily: fonts.interSemi,
+    textAlign: 'center',
+  },
+  inputSquareInline: {
+    width: 32,
+    height: 32,
+    minWidth: 32,
+    minHeight: 32,
+    fontSize: 11,
+  },
+  inputSquareSerial: {
+    width: 52,
+    minWidth: 52,
+  },
+  inputSquareSerialInline: {
+    width: 48,
+    minWidth: 48,
   },
 });
 
@@ -1454,8 +1585,71 @@ function resolveStoredOptionValue(
   return looseLabel?.value ?? trimmed;
 }
 
-function SectionCard({ children, dense }: { children: ReactNode; dense?: boolean }) {
-  return <View style={[styles.sectionCard, dense && styles.sectionCardDense]}>{children}</View>;
+type DasaPartField = 'dasaYear' | 'dasaMonth' | 'dasaDay';
+
+function dasaPartMax(field: DasaPartField): number {
+  if (field === 'dasaYear') {
+    return 20;
+  }
+  if (field === 'dasaMonth') {
+    return 12;
+  }
+  return 31;
+}
+
+/** Keep partial digits while typing — do not pad with leading zeros. */
+function normalizeDasaPartInput(field: DasaPartField, raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 2);
+  if (!digits) {
+    return '';
+  }
+
+  if (digits.length === 1) {
+    if (field === 'dasaYear' && digits === '0') {
+      return '';
+    }
+    return digits;
+  }
+
+  const num = Number.parseInt(digits, 10);
+  if (Number.isNaN(num) || num < 1) {
+    return field === 'dasaYear' ? '' : digits.startsWith('0') ? '0' : '';
+  }
+
+  const max = dasaPartMax(field);
+  if (num > max) {
+    return String(max);
+  }
+
+  return digits;
+}
+
+/** Clamp on blur — keep plain digits so a second digit can still be entered. */
+function finalizeDasaPartValue(field: DasaPartField, raw: string): string {
+  const digits = raw.replace(/\D/g, '').slice(0, 2);
+  if (!digits) {
+    return '';
+  }
+
+  const num = Number.parseInt(digits, 10);
+  if (Number.isNaN(num) || num < 1) {
+    return '';
+  }
+
+  const max = dasaPartMax(field);
+  return String(Math.min(num, max));
+}
+
+function SectionCard({
+  children,
+  dense,
+  style,
+}: {
+  children: ReactNode;
+  dense?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return <View style={[styles.sectionCard, dense && styles.sectionCardDense, style]}>{children}</View>;
 }
 
 function IconFieldShell({
@@ -1705,6 +1899,30 @@ function DasaBalanceFields({
   dense?: boolean;
 }) {
   const { language, translate } = useLanguage();
+  const [draftYear, setDraftYear] = useState(dasaYear);
+  const [draftMonth, setDraftMonth] = useState(dasaMonth);
+  const [draftDay, setDraftDay] = useState(dasaDay);
+
+  useEffect(() => {
+    setDraftYear(dasaYear);
+  }, [dasaYear]);
+
+  useEffect(() => {
+    setDraftMonth(dasaMonth);
+  }, [dasaMonth]);
+
+  useEffect(() => {
+    setDraftDay(dasaDay);
+  }, [dasaDay]);
+
+  const commitDasaPart = useCallback(
+    (field: DasaPartField, draft: string, setDraft: (value: string) => void) => {
+      const finalValue = finalizeDasaPartValue(field, draft);
+      setDraft(finalValue);
+      onFieldChange(field, finalValue);
+    },
+    [onFieldChange],
+  );
 
   const planetOptions = useMemo(() => getFormOptions('dasaPlanet', language), [language]);
   const yearOptions = useMemo(() => getFormOptions('dasaYear', language), [language]);
@@ -1803,10 +2021,14 @@ function DasaBalanceFields({
                 styles.dasaTextInput,
                 dense && styles.fieldInputDense,
               ]}
-              value={resolvedYear}
-              onChangeText={(value) => onFieldChange('dasaYear', value)}
+              value={draftYear}
+              onChangeText={(value) =>
+                setDraftYear(normalizeDasaPartInput('dasaYear', value))
+              }
+              onBlur={() => commitDasaPart('dasaYear', draftYear, setDraftYear)}
               placeholder={translate('selectDasaYear')}
-              keyboardType="number-pad"
+              keyboardType={Platform.OS === 'web' ? 'numeric' : 'number-pad'}
+              inputMode="numeric"
               maxLength={2}
             />
           </View>
@@ -1822,10 +2044,14 @@ function DasaBalanceFields({
                 styles.dasaTextInput,
                 dense && styles.fieldInputDense,
               ]}
-              value={resolvedMonth}
-              onChangeText={(value) => onFieldChange('dasaMonth', value)}
+              value={draftMonth}
+              onChangeText={(value) =>
+                setDraftMonth(normalizeDasaPartInput('dasaMonth', value))
+              }
+              onBlur={() => commitDasaPart('dasaMonth', draftMonth, setDraftMonth)}
               placeholder={translate('selectDasaMonth')}
-              keyboardType="number-pad"
+              keyboardType={Platform.OS === 'web' ? 'numeric' : 'number-pad'}
+              inputMode="numeric"
               maxLength={2}
             />
           </View>
@@ -1841,10 +2067,14 @@ function DasaBalanceFields({
                 styles.dasaTextInput,
                 dense && styles.fieldInputDense,
               ]}
-              value={resolvedDay}
-              onChangeText={(value) => onFieldChange('dasaDay', value)}
+              value={draftDay}
+              onChangeText={(value) =>
+                setDraftDay(normalizeDasaPartInput('dasaDay', value))
+              }
+              onBlur={() => commitDasaPart('dasaDay', draftDay, setDraftDay)}
               placeholder={translate('selectDasaDay')}
-              keyboardType="number-pad"
+              keyboardType={Platform.OS === 'web' ? 'numeric' : 'number-pad'}
+              inputMode="numeric"
               maxLength={2}
             />
           </View>
@@ -3055,6 +3285,8 @@ function DetailGrid({
   onCellChange,
   translate,
   footer,
+  rowSizes = DETAIL_GRID_ENTRY_ROW_SIZES,
+  summaryLayout = false,
 }: {
   cells: string[];
   editable: boolean;
@@ -3062,6 +3294,8 @@ function DetailGrid({
   onCellChange: (index: number, value: string) => void;
   translate: (key: string) => string;
   footer?: ReactNode;
+  rowSizes?: readonly number[];
+  summaryLayout?: boolean;
 }) {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]);
@@ -3132,7 +3366,7 @@ function DetailGrid({
       ) : null}
       <View style={styles.detailGridWrap}>
         <View style={[styles.detailGrid, footer ? styles.detailGridWithFooter : null]}>
-          {DETAIL_GRID_ROW_SIZES.map((rowSize, rowIndex) => {
+          {rowSizes.map((rowSize, rowIndex) => {
             const rowStart = cellOffset;
             const rowCells = cells.slice(rowStart, rowStart + rowSize);
             cellOffset += rowSize;
@@ -3150,6 +3384,7 @@ function DetailGrid({
                       style={[
                         styles.detailCellWrap,
                         dense && styles.detailCellWrapDense,
+                        summaryLayout && styles.detailCellWrapSummary,
                         editable && isCustomized && styles.detailCellWrapFilled,
                         isSelected && styles.detailCellWrapSelected,
                       ]}
@@ -3167,7 +3402,11 @@ function DetailGrid({
                         />
                       ) : (
                         <Text
-                          style={[styles.detailCellText, dense && styles.detailCellTextDense]}
+                          style={[
+                            styles.detailCellText,
+                            dense && styles.detailCellTextDense,
+                            summaryLayout && styles.detailCellTextSummary,
+                          ]}
                           numberOfLines={1}
                         >
                           {cell}
@@ -4153,6 +4392,8 @@ export function HoroscopeSection({
         editable={editable}
         dense={dense}
         translate={translate}
+        rowSizes={showSummaryMeta ? DETAIL_GRID_SUMMARY_ROW_SIZES : DETAIL_GRID_ENTRY_ROW_SIZES}
+        summaryLayout={Boolean(showSummaryMeta)}
         footer={
           showSummaryMeta ? (
             <ReviewSummaryMetaRow
@@ -5333,6 +5574,8 @@ type CreateProfileBiodataFormProps = {
   showAdminPhoneField?: boolean;
   /** Admin read-only profile view — show all cloud photo URLs. */
   adminViewProfile?: boolean;
+  /** Hide the top registration bar (parent screen already shows one). */
+  hideRegistrationNumberBar?: boolean;
 };
 
 function profileValuesSeedKey(profileValues: Record<string, string>): string {
@@ -5369,6 +5612,7 @@ export function CreateProfileBiodataForm({
   preferTamilKeyboard = false,
   showAdminPhoneField = false,
   adminViewProfile = false,
+  hideRegistrationNumberBar = false,
 }: CreateProfileBiodataFormProps) {
   const dense = true;
   const { translate, translateFormat, language } = useLanguage();
@@ -6187,6 +6431,7 @@ export function CreateProfileBiodataForm({
 
   const isReviewStep = step === 5;
   const isExtrasStep = step === 4;
+  const showTopRegistrationBar = !viewOnly && !isReviewStep && !hideRegistrationNumberBar;
   const isChristianReview = isReviewStep && isCurrentChristian;
   const isReviewActions = isReviewStep && !viewOnly;
   const reviewEditable = viewOnly ? false : editable;
@@ -6403,7 +6648,7 @@ export function CreateProfileBiodataForm({
         </View>
       </SectionCard>
 
-      <SectionCard dense={dense}>
+      <SectionCard dense={dense} style={styles.photoSectionCard}>
         <View style={styles.photoStepSection}>
           <ProfilePhotoUploadStep
             photos={photos}
@@ -6415,6 +6660,7 @@ export function CreateProfileBiodataForm({
             showSkip={false}
             libraryOnly
             skipNativeEditing
+            maxPhotos={1}
           />
         </View>
       </SectionCard>
@@ -6625,6 +6871,15 @@ export function CreateProfileBiodataForm({
             isReviewActions && IS_NATIVE && { paddingBottom: actionBarHeight + 24 },
           ]}
         >
+          {showTopRegistrationBar ? (
+            <View style={styles.topRegistrationBar}>
+              <RegistrationNumberBar
+                editable={editable}
+                valueOverride={form.registrationNumber}
+                labelMode="full"
+              />
+            </View>
+          ) : null}
           {biodataSheet}
         </ScrollView>
       )}
@@ -6937,6 +7192,10 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 130,
     alignItems: 'stretch',
+  },
+  topRegistrationBar: {
+    width: '100%',
+    marginBottom: spacing.sm,
   },
   scrollContentCompact: {
     paddingHorizontal: 10,
@@ -7666,8 +7925,15 @@ const styles = StyleSheet.create({
     overflow: 'visible',
   },
   photoStepSection: {
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
+    alignItems: 'center',
+    alignSelf: 'center',
+    padding: 0,
+  },
+  photoSectionCard: {
+    alignSelf: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    marginBottom: 2,
   },
   photoStepSectionAfterHoroscope: {
     marginTop: spacing.lg,
@@ -8356,12 +8622,15 @@ const styles = StyleSheet.create({
     borderStyle: 'solid',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 22,
+    minHeight: IS_NATIVE ? 30 : 26,
     minWidth: 0,
     backgroundColor: '#fff',
   },
   detailCellWrapDense: {
-    minHeight: 20,
+    minHeight: IS_NATIVE ? 28 : 24,
+  },
+  detailCellWrapSummary: {
+    minHeight: IS_NATIVE ? 24 : 22,
   },
   detailCellWrapFilled: {
     backgroundColor: '#F0E0F0',
@@ -8374,15 +8643,19 @@ const styles = StyleSheet.create({
   },
   detailCellText: {
     width: '100%',
-    fontSize: 9,
-    lineHeight: 12,
+    fontSize: IS_NATIVE ? 12 : 11,
+    lineHeight: IS_NATIVE ? 16 : 14,
     color: HOROSCOPE_RED,
     fontFamily: fonts.interSemi,
     textAlign: 'center',
   },
   detailCellTextDense: {
-    fontSize: 8,
-    lineHeight: 11,
+    fontSize: IS_NATIVE ? 11 : 10,
+    lineHeight: IS_NATIVE ? 15 : 13,
+  },
+  detailCellTextSummary: {
+    fontSize: IS_NATIVE ? 9 : 8,
+    lineHeight: IS_NATIVE ? 12 : 11,
   },
   detailCellTextFilled: {
     color: colors.primary,
@@ -8394,9 +8667,9 @@ const styles = StyleSheet.create({
   },
   detailCellInput: {
     width: '100%',
-    minHeight: 20,
-    fontSize: 9,
-    lineHeight: 12,
+    minHeight: IS_NATIVE ? 28 : 24,
+    fontSize: IS_NATIVE ? 12 : 11,
+    lineHeight: IS_NATIVE ? 16 : 14,
     color: colors.primary,
     fontFamily: fonts.interSemi,
     paddingHorizontal: 0,
@@ -8405,9 +8678,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   detailCellInputDense: {
-    minHeight: 18,
-    fontSize: 8,
-    lineHeight: 11,
+    minHeight: IS_NATIVE ? 26 : 22,
+    fontSize: IS_NATIVE ? 11 : 10,
+    lineHeight: IS_NATIVE ? 15 : 13,
   },
   actionBar: {
     position: 'absolute',

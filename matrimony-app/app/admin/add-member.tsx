@@ -3,7 +3,7 @@ import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from '
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CreateProfileBiodataForm } from '@/components/CreateProfileBiodataForm';
+import { CreateProfileBiodataForm, RegistrationNumberBar } from '@/components/CreateProfileBiodataForm';
 import { LanguageLogoToggle } from '@/components/LanguageLogoToggle';
 import { adminColors } from '@/constants/admin';
 import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
@@ -130,7 +130,10 @@ export default function AdminAddMemberScreen() {
             {isEditing ? translate('adminEditMember') : translate('adminAddMember')}
           </Text>
         </View>
-        <LanguageLogoToggle variant="maroon" compact dense />
+        <View style={styles.headerTrailing}>
+          <RegistrationNumberBar editable inline labelMode="full" />
+          <LanguageLogoToggle variant="maroon" compact dense />
+        </View>
       </View>
 
       <View style={styles.stepRow}>
@@ -147,6 +150,7 @@ export default function AdminAddMemberScreen() {
         editable
         preferTamilKeyboard
         showAdminPhoneField
+        hideRegistrationNumberBar
         profileValues={editProfileValues ?? undefined}
         onSave={handleSave}
         onStepChange={setStep}
@@ -190,6 +194,13 @@ const styles = StyleSheet.create({
   },
   headerText: {
     flex: 1,
+    minWidth: 0,
+  },
+  headerTrailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexShrink: 0,
   },
   title: {
     color: adminColors.text,

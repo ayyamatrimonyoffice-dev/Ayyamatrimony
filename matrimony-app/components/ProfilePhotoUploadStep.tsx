@@ -42,6 +42,8 @@ type ProfilePhotoUploadStepProps = {
   layoutWidth?: number;
   /** Skip native crop UI — avoids Android activity remount during biodata entry. */
   skipNativeEditing?: boolean;
+  /** How many upload slots to show (data still uses fixed profile photo slots). */
+  maxPhotos?: number;
 };
 
 async function ensurePermission(source: 'camera' | 'library'): Promise<boolean> {
@@ -293,19 +295,22 @@ function WebCameraCaptureModal({ visible, labels, onCapture, onClose }: WebCamer
 }
 
 const DEFAULT_SLOT_SIZE = Platform.OS === 'web' ? 108 : 100;
+const SINGLE_SLOT_EMPTY_SIZE = Platform.OS === 'web' ? 72 : 68;
+const SINGLE_SLOT_PREVIEW_WIDTH = Platform.OS === 'web' ? 112 : 104;
+const SINGLE_SLOT_PREVIEW_HEIGHT = Platform.OS === 'web' ? 148 : 138;
 const COMPACT_SLOT_MIN = 48;
 const COMPACT_SLOT_MAX = 72;
 const COMPACT_SLOT_GAP = 12;
 /** Compact biodata step uses nearly-square slots to save vertical space; uploads still crop to 3:4. */
 const COMPACT_HEIGHT_RATIO = 1.05;
 
-function resolveCompactSlotSize(layoutWidth: number): number {
+function resolveCompactSlotSize(layoutWidth: number, slotCount: number): number {
   const sidePadding = 24;
-  const gaps = COMPACT_SLOT_GAP * 2;
+  const gaps = COMPACT_SLOT_GAP * Math.max(0, slotCount - 1);
   const available = Math.max(layoutWidth - sidePadding, 180);
   return Math.max(
     COMPACT_SLOT_MIN,
-    Math.min(COMPACT_SLOT_MAX, Math.floor((available - gaps) / 3)),
+    Math.min(COMPACT_SLOT_MAX, Math.floor((available - gaps) / slotCount)),
   );
 }
 
@@ -321,9 +326,11 @@ export function ProfilePhotoUploadStep({
   compact = false,
   layoutWidth,
   skipNativeEditing = false,
+  maxPhotos = MAX_PROFILE_PHOTOS,
 }: ProfilePhotoUploadStepProps) {
   const { width: windowWidth } = useWindowDimensions();
   const baseWidth = layoutWidth ?? windowWidth;
+  const slotCount = Math.min(Math.max(1, maxPhotos), MAX_PROFILE_PHOTOS);
   const [sourcePickerSlot, setSourcePickerSlot] = useState<number | null>(null);
   const [webCameraSlot, setWebCameraSlot] = useState<number | null>(null);
   const openedLibraryOnMountRef = useRef(false);
@@ -464,26 +471,51 @@ export function ProfilePhotoUploadStep({
     [onChange],
   );
 
-  const slots = Array.from({ length: MAX_PROFILE_PHOTOS }, (_, index) => photos[index] ?? '');
-  const slotSize = compact ? resolveCompactSlotSize(baseWidth) : DEFAULT_SLOT_SIZE;
+  const slots = Array.from({ length: slotCount }, (_, index) => photos[index] ?? '');
+  const isSinglePhoto = slotCount === 1;
+  const hasSinglePhoto = isSinglePhoto && Boolean(slots[0]?.trim());
+  const slotSize = compact
+    ? resolveCompactSlotSize(baseWidth, slotCount)
+    : isSinglePhoto
+      ? hasSinglePhoto
+        ? SINGLE_SLOT_PREVIEW_WIDTH
+        : SINGLE_SLOT_EMPTY_SIZE
+      : DEFAULT_SLOT_SIZE;
   const slotHeight = compact
     ? Math.round(slotSize * COMPACT_HEIGHT_RATIO)
-    : Math.round(slotSize * (4 / 3));
+    : isSinglePhoto
+      ? hasSinglePhoto
+        ? SINGLE_SLOT_PREVIEW_HEIGHT
+        : SINGLE_SLOT_EMPTY_SIZE
+      : Math.round(slotSize * (4 / 3));
 
   return (
-    <View style={[styles.container, compact && styles.containerCompact]}>
-      <View style={[styles.grid, compact && styles.gridCompact]}>
+    <View style={[styles.container, compact && styles.containerCompact, isSinglePhoto && styles.containerSingle]}>
+      <View style={[styles.grid, compact && styles.gridCompact, isSinglePhoto && styles.gridSingle]}>
         {slots.map((uri, index) => (
           <View
             key={`photo-slot-${index}`}
             style={[
               styles.slotWrap,
-              compact ? styles.slotWrapFlex : styles.slotWrapRow,
-              compact && { width: slotSize, height: slotHeight, flexBasis: slotSize, maxWidth: slotSize },
+              compact && styles.slotWrapFlex,
+              !compact && !isSinglePhoto && styles.slotWrapRow,
+              isSinglePhoto && styles.slotWrapSingle,
+              (compact || isSinglePhoto) && {
+                width: slotSize,
+                height: slotHeight,
+                flexBasis: slotSize,
+                maxWidth: slotSize,
+              },
             ]}
           >
             {uri ? (
-              <View style={[styles.filledSlot, compact && styles.filledSlotCompact]}>
+              <View
+                style={[
+                  styles.filledSlot,
+                  compact && styles.filledSlotCompact,
+                  isSinglePhoto && styles.filledSlotSingle,
+                ]}
+              >
                 <Image source={{ uri }} style={styles.photo} resizeMode="cover" />
                 <Pressable
                   style={[styles.removeButton, compact && styles.removeButtonCompact]}
@@ -500,11 +532,25 @@ export function ProfilePhotoUploadStep({
               </View>
             ) : (
               <Pressable
-                style={[styles.emptySlot, compact && styles.emptySlotCompact]}
+                style={[
+                  styles.emptySlot,
+                  compact && styles.emptySlotCompact,
+                  isSinglePhoto && styles.emptySlotSingle,
+                ]}
                 onPress={() => openPicker(index)}
               >
-                <View style={[styles.iconCircle, compact && styles.iconCircleCompact]}>
-                  <MaterialIcons name="add-a-photo" size={compact ? 18 : 24} color={colors.primary} />
+                <View
+                  style={[
+                    styles.iconCircle,
+                    compact && styles.iconCircleCompact,
+                    isSinglePhoto && styles.iconCircleSingle,
+                  ]}
+                >
+                  <MaterialIcons
+                    name="add-a-photo"
+                    size={compact ? 18 : isSinglePhoto ? 20 : 24}
+                    color={colors.primary}
+                  />
                 </View>
               </Pressable>
             )}
@@ -564,6 +610,12 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     marginBottom: 0,
   },
+  containerSingle: {
+    gap: 0,
+    paddingBottom: 0,
+    marginBottom: 0,
+    alignSelf: 'center',
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'nowrap',
@@ -578,12 +630,23 @@ const styles = StyleSheet.create({
     width: '100%',
     minWidth: 0,
   },
+  gridSingle: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 'auto',
+    alignSelf: 'center',
+  },
   slotWrap: {},
   slotWrapRow: {
     flex: 1,
     minWidth: 0,
     maxWidth: DEFAULT_SLOT_SIZE,
     aspectRatio: 1.55,
+  },
+  slotWrapSingle: {
+    alignSelf: 'center',
+    overflow: 'hidden',
+    position: 'relative',
   },
   slotWrapFlex: {
     flexGrow: 0,
@@ -602,6 +665,11 @@ const styles = StyleSheet.create({
   emptySlotCompact: {
     borderRadius: 8,
   },
+  emptySlotSingle: {
+    ...StyleSheet.absoluteFillObject,
+    flex: undefined,
+    borderRadius: 10,
+  },
   iconCircle: {
     width: 48,
     height: 48,
@@ -615,6 +683,11 @@ const styles = StyleSheet.create({
     height: 28,
     borderRadius: 14,
   },
+  iconCircleSingle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+  },
   filledSlot: {
     flex: 1,
     borderRadius: 12,
@@ -625,6 +698,10 @@ const styles = StyleSheet.create({
   },
   filledSlotCompact: {
     borderRadius: 8,
+  },
+  filledSlotSingle: {
+    ...StyleSheet.absoluteFillObject,
+    flex: undefined,
   },
   photo: {
     ...StyleSheet.absoluteFillObject,
