@@ -42,6 +42,7 @@ import {
 } from '@/constants/profileDisplay';
 import { useBrowsableMembers } from '@/hooks/useBrowsableMembers';
 import { useMemberAccess } from '@/hooks/useMemberAccess';
+import { useWebLayout } from '@/hooks/useWebLayout';
 import { borderRadius, colors, fonts, spacing, typography } from '@/constants/theme';
 
 type HomeMatch = ReturnType<typeof useBrowsableMembers>[number];
@@ -58,7 +59,12 @@ export default function HomeScreen() {
   const recommendedMatches = useBrowsableMembers();
   const profileName = getProfileFirstName(values.fullName ?? '') || translate('profile');
   const avatarSource = getProfileAvatarSource(values, { includePendingUploads: true });
-  const recommendCardWidth = useWindowDimensions().width - spacing.containerMargin * 2;
+  const { width: windowWidth } = useWindowDimensions();
+  const { isWeb, isDesktop, contentMaxWidth } = useWebLayout();
+  const recommendCardWidth =
+    isWeb && isDesktop
+      ? Math.min(420, Math.floor((contentMaxWidth - spacing.containerMargin * 3) / 2))
+      : windowWidth - spacing.containerMargin * 2;
   const homeMatches = useMemo(() => {
     if (!isPaidMember) {
       return recommendedMatches;
@@ -227,6 +233,18 @@ export default function HomeScreen() {
             </Pressable>
           </View>
 
+          {isWeb && isDesktop ? (
+            <View style={styles.homePromoMatchGrid}>
+              {homeMatches.map((match) => (
+                <View key={`all-${match.id}`} style={styles.homePromoMatchGridItem}>
+                  <HomeAllMatchPreviewCard
+                    match={match}
+                    locked={!canViewFullProfile(match.id)}
+                  />
+                </View>
+              ))}
+            </View>
+          ) : (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -240,6 +258,7 @@ export default function HomeScreen() {
               />
             ))}
           </ScrollView>
+          )}
         </View>
         ) : null}
       </ScrollView>
@@ -1041,6 +1060,18 @@ const styles = StyleSheet.create({
   homePromoMatchList: {
     gap: spacing.sm,
     paddingHorizontal: spacing.containerMargin,
+  },
+  homePromoMatchGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    paddingHorizontal: spacing.containerMargin,
+  },
+  homePromoMatchGridItem: {
+    width: '18%',
+    minWidth: 132,
+    maxWidth: 180,
+    alignItems: 'center',
   },
   homePromoMatchCard: {
     width: 108,

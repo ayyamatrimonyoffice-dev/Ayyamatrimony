@@ -21,6 +21,7 @@ import { ProfileFormProvider } from '@/context/ProfileFormContext';
 import { SubscriptionProvider } from '@/context/SubscriptionContext';
 import { UserApprovalProvider } from '@/context/UserApprovalContext';
 import { MemberDirectoryProvider } from '@/context/MemberDirectoryContext';
+import { WebUserChrome } from '@/components/web/WebUserChrome';
 import { colors } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -45,6 +46,7 @@ export default function RootLayout() {
     <LanguageProvider>
       <ProfileFormProvider>
         <SubscriptionProvider>
+        <WebUserChrome>
         <UserApprovalProvider>
         <MemberDirectoryProvider>
         <ChatProvider>
@@ -86,6 +88,7 @@ export default function RootLayout() {
         </ChatProvider>
         </MemberDirectoryProvider>
         </UserApprovalProvider>
+        </WebUserChrome>
         </SubscriptionProvider>
       </ProfileFormProvider>
     </LanguageProvider>

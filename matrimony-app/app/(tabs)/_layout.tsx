@@ -14,6 +14,7 @@ import { CONTACT_PHONE_KEY } from '@/constants/contactDetails';
 import { useMemberDirectory } from '@/context/MemberDirectoryContext';
 import { images } from '@/constants/images';
 import { colors, typography } from '@/constants/theme';
+import { useWebLayout } from '@/hooks/useWebLayout';
 
 export default function TabLayout() {
   const router = useRouter();
@@ -28,6 +29,8 @@ export default function TabLayout() {
   const [profileHydrationChecked, setProfileHydrationChecked] = useState(false);
   const phone = values[CONTACT_PHONE_KEY]?.replace(/\D/g, '') ?? '';
   const hasLoggedInPhone = phone.length > 0;
+  const { isWeb, isDesktop } = useWebLayout();
+  const hideTabBarOnWeb = isWeb && isDesktop;
 
   useFocusEffect(
     useCallback(() => {
@@ -149,7 +152,14 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.onSurfaceVariant,
         safeAreaInsets: { top: 0, right: 0, bottom: 0, left: 0 },
-        tabBarStyle: {
+        tabBarStyle: hideTabBarOnWeb
+          ? {
+              display: 'none',
+              height: 0,
+              minHeight: 0,
+              overflow: 'hidden',
+            }
+          : {
           backgroundColor: 'rgba(255, 251, 249, 0.98)',
           borderTopColor: 'rgba(87, 0, 0, 0.08)',
           height: tabBodyHeight + tabPaddingBottom,

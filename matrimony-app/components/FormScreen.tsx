@@ -13,6 +13,7 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { FIXED_CASTE_VALUE, FormOptionsKey, getOptionLabel } from '@/constants/formOptions';
 import { useLanguage } from '@/context/LanguageContext';
 import { useGoBack } from '@/hooks/useGoBack';
+import { useWebLayout } from '@/hooks/useWebLayout';
 import { colors, spacing, typography } from '@/constants/theme';
 
 type FormTextFieldProps = {
@@ -113,6 +114,7 @@ type FormScreenProps = {
 export function FormScreen({ titleKey, children, onSave, successKey }: FormScreenProps) {
   const { translate } = useLanguage();
   const goBack = useGoBack('/(tabs)/profile');
+  const { isWeb, formMaxWidth } = useWebLayout();
 
   const handleSave = () => {
     onSave();
@@ -134,8 +136,10 @@ export function FormScreen({ titleKey, children, onSave, successKey }: FormScree
   return (
     <SafeAreaView style={styles.safeArea}>
       <AppHeader title={translate(titleKey)} showBack onBack={goBack} />
-      <View style={styles.content}>{children}</View>
-      <View style={styles.footer}>
+      <View style={[styles.content, isWeb && { alignSelf: 'center', width: '100%', maxWidth: formMaxWidth }]}>
+        {children}
+      </View>
+      <View style={[styles.footer, isWeb && { alignSelf: 'center', width: '100%', maxWidth: formMaxWidth }]}>
         <PrimaryButton label={translate('saveChanges')} onPress={handleSave} />
       </View>
     </SafeAreaView>

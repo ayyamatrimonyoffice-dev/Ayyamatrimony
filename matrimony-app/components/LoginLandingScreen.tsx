@@ -27,6 +27,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LanguageLogoToggle } from '@/components/LanguageLogoToggle';
+import { WebLoginPage } from '@/components/web/WebLoginPage';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import {
   ADMIN_PIN_LENGTH,
@@ -222,6 +223,77 @@ export function LoginLandingScreen() {
     })();
   };
 
+  const loginForm = (
+    <>
+      <View style={styles.inputCard}>
+        <View style={styles.phoneRow}>
+          <View style={styles.countryCode}>
+            <Text style={styles.countryCodeFlag}>🇮🇳</Text>
+            <Text style={styles.countryCodeText}>+91</Text>
+          </View>
+          <TextInput
+            style={[styles.input, styles.phoneInput]}
+            placeholder="Enter mobile number"
+            placeholderTextColor="rgba(100,70,60,0.4)"
+            keyboardType="phone-pad"
+            maxLength={PHONE_DIGIT_LENGTH}
+            value={phone}
+            onChangeText={(text) => {
+              setPhone(normalizePhoneDigits(text));
+              if (!isAdminPhone(normalizePhoneDigits(text))) {
+                setAdminPin('');
+              }
+            }}
+          />
+        </View>
+        {isAdminLogin ? (
+          <View style={[styles.fieldBlock, styles.adminPinBlock]}>
+            <Text style={styles.fieldLabel}>{translate('adminPinLabel')}</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={translate('adminPinPlaceholder')}
+              placeholderTextColor="rgba(100,70,60,0.4)"
+              keyboardType="number-pad"
+              maxLength={ADMIN_PIN_LENGTH}
+              secureTextEntry
+              value={adminPin}
+              onChangeText={(text) => setAdminPin(normalizeAdminPin(text))}
+            />
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.actions}>
+        <PrimaryButton
+          label="Register Free  →"
+          icon=""
+          variant="gold"
+          onPress={handleRegister}
+          disabled={busy}
+          style={styles.registerButton}
+          labelStyle={styles.registerLabel}
+        />
+        <View style={styles.loginRow}>
+          <View style={styles.thinDivider} />
+          <Text style={styles.loginDividerText}>Already have an account?</Text>
+          <View style={styles.thinDivider} />
+        </View>
+        <PrimaryButton
+          label={translate('login')}
+          variant="outline"
+          onPress={handleLogin}
+          disabled={busy}
+          style={styles.loginButton}
+          labelStyle={styles.loginLabel}
+        />
+      </View>
+    </>
+  );
+
+  if (Platform.OS === 'web') {
+    return <WebLoginPage form={loginForm} />;
+  }
+
   return (
     <View style={styles.container}>
       <StatusBar style="dark" />
@@ -287,79 +359,12 @@ export function LoginLandingScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Animated.View style={styles.bottomContent} entering={FadeInDown.duration(800).springify().delay(150)}>
-
-          {/* Decorative divider */}
           <View style={styles.formHeader}>
             <View style={styles.formDividerLine} />
             <Text style={styles.formHeaderText}>Enter Your Mobile</Text>
             <View style={styles.formDividerLine} />
           </View>
-
-          {/* Phone input card */}
-          <View style={styles.inputCard}>
-            <View style={styles.phoneRow}>
-              <View style={styles.countryCode}>
-                <Text style={styles.countryCodeFlag}>🇮🇳</Text>
-                <Text style={styles.countryCodeText}>+91</Text>
-              </View>
-              <TextInput
-                style={[styles.input, styles.phoneInput]}
-                placeholder="Enter mobile number"
-                placeholderTextColor="rgba(100,70,60,0.4)"
-                keyboardType="phone-pad"
-                maxLength={PHONE_DIGIT_LENGTH}
-                value={phone}
-                onChangeText={(text) => {
-                  setPhone(normalizePhoneDigits(text));
-                  if (!isAdminPhone(normalizePhoneDigits(text))) {
-                    setAdminPin('');
-                  }
-                }}
-              />
-            </View>
-            {isAdminLogin ? (
-              <View style={[styles.fieldBlock, styles.adminPinBlock]}>
-                <Text style={styles.fieldLabel}>{translate('adminPinLabel')}</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder={translate('adminPinPlaceholder')}
-                  placeholderTextColor="rgba(100,70,60,0.4)"
-                  keyboardType="number-pad"
-                  maxLength={ADMIN_PIN_LENGTH}
-                  secureTextEntry
-                  value={adminPin}
-                  onChangeText={(text) => setAdminPin(normalizeAdminPin(text))}
-                />
-              </View>
-            ) : null}
-          </View>
-
-          {/* Buttons */}
-          <View style={styles.actions}>
-            <PrimaryButton
-              label="Register Free  →"
-              icon=""
-              variant="gold"
-              onPress={handleRegister}
-              disabled={busy}
-              style={styles.registerButton}
-              labelStyle={styles.registerLabel}
-            />
-            <View style={styles.loginRow}>
-              <View style={styles.thinDivider} />
-              <Text style={styles.loginDividerText}>Already have an account?</Text>
-              <View style={styles.thinDivider} />
-            </View>
-            <PrimaryButton
-              label={translate('login')}
-              variant="outline"
-              onPress={handleLogin}
-              disabled={busy}
-              style={styles.loginButton}
-              labelStyle={styles.loginLabel}
-            />
-          </View>
-
+          {loginForm}
         </Animated.View>
       </KeyboardAvoidingView>
 
