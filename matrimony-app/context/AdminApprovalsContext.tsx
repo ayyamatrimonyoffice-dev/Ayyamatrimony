@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -14,12 +15,13 @@ import { getFirebaseFirestore } from '@/lib/firebase';
 import { listApprovals, updateApprovalStatus } from '@/lib/firestore/approvalService';
 
 const ADMIN_APPROVALS_KEY = 'ayya_admin_approvals_v1';
+const APPROVALS_REFRESH_STALE_MS = 30_000;
 
 type AdminApprovalsContextValue = {
   isReady: boolean;
   items: AdminApprovalRecord[];
   updateStatus: (id: string, status: AdminApprovalRecord['status']) => Promise<void>;
-  refresh: () => Promise<void>;
+  refresh: (options?: { force?: boolean }) => Promise<void>;
 };
 
 const AdminApprovalsContext = createContext<AdminApprovalsContextValue | null>(null);
@@ -42,8 +44,16 @@ export function AdminApprovalsProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated, isReady: authReady } = useAdminAuth();
   const [isReady, setIsReady] = useState(false);
   const [items, setItems] = useState<AdminApprovalRecord[]>([]);
+  const lastRefreshAtRef = useRef(0);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options?: { force?: boolean }) => {
+    const force = options?.force ?? false;
+    const now = Date.now();
+    if (!force && items.length > 0 && now - lastRefreshAtRef.current < APPROVALS_REFRESH_STALE_MS) {
+      setIsReady(true);
+      return;
+    }
+
     const cached = await readCachedApprovals();
     if (cached && cached.length > 0) {
       setItems(cached);
@@ -59,6 +69,7 @@ export function AdminApprovalsProvider({ children }: { children: ReactNode }) {
     try {
       const remote = await listApprovals();
       setItems(remote);
+      lastRefreshAtRef.current = Date.now();
       if (remote.length > 0) {
         await AsyncStorage.setItem(ADMIN_APPROVALS_KEY, JSON.stringify(remote));
       }
@@ -72,13 +83,13 @@ export function AdminApprovalsProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsReady(true);
     }
-  }, []);
+  }, [items.length]);
 
   useEffect(() => {
     if (!authReady || !isAuthenticated) {
       return;
     }
-    void refresh();
+    void refresh({ force: true });
   }, [authReady, isAuthenticated, refresh]);
 
   const updateStatus = useCallback(

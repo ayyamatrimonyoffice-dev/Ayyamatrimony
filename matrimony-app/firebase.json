@@ -17,6 +17,10 @@
     ],
     "rewrites": [
       {
+        "source": "/share/profile/**",
+        "function": "profileShare"
+      },
+      {
         "source": "**",
         "destination": "/index.html"
       }
@@ -35,5 +39,18 @@
   },
   "auth": {
     "providers": {}
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
 }

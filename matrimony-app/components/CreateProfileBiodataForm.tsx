@@ -46,6 +46,7 @@ import {
   getRegistrationNatchathiramOptions,
   normalizeRegistrationNumber,
   normalizeRegistrationReligionValue,
+  parseRegistrationNumberParts,
   sanitizeRegistrationInput,
   sanitizeRegistrationSerialInput,
   sanitizeRegistrationStarInput,
@@ -1114,16 +1115,27 @@ export function RegistrationNumberBar({
   const [registrationNumber, setRegistrationNumber] = useState(
     () => values.registrationNumber?.trim() ?? '',
   );
+  const [focusedField, setFocusedField] = useState<'star' | 'serial' | 'single' | null>(null);
+  const [draftStar, setDraftStar] = useState('');
+  const [draftSerial, setDraftSerial] = useState('');
+  const [draftSingle, setDraftSingle] = useState('');
+  const userEditedRef = useRef(false);
 
   useEffect(() => {
+    if (userEditedRef.current || focusedField) {
+      return;
+    }
     const stored = (values.registrationNumber ?? getValue('registrationNumber')).trim();
-    if (stored) {
+    if (stored !== registrationNumber) {
       setRegistrationNumber(stored);
     }
-  }, [getValue, values.registrationNumber]);
+  }, [focusedField, getValue, registrationNumber, values.registrationNumber]);
 
   useEffect(() => {
     if (!isReady) {
+      return;
+    }
+    if (userEditedRef.current || focusedField) {
       return;
     }
 
@@ -1136,7 +1148,7 @@ export function RegistrationNumberBar({
       const storedRegistration = (values.registrationNumber ?? getValue('registrationNumber')).trim();
 
       if (!religion) {
-        if (!cancelled) {
+        if (!cancelled && !storedRegistration) {
           setRegistrationNumber('');
         }
         return;
@@ -1146,7 +1158,7 @@ export function RegistrationNumberBar({
         storedRegistration &&
         shouldKeepRegistrationNumber(storedRegistration, religion, rasi, natchathiram)
       ) {
-        if (!cancelled) {
+        if (!cancelled && storedRegistration !== registrationNumber) {
           setRegistrationNumber(storedRegistration);
         }
         return;
@@ -1172,8 +1184,10 @@ export function RegistrationNumberBar({
       cancelled = true;
     };
   }, [
+    focusedField,
     getValue,
     isReady,
+    registrationNumber,
     setValue,
     values.natchathiram,
     values.rasi,
@@ -1184,6 +1198,7 @@ export function RegistrationNumberBar({
   const handleChange = useCallback(
     (text: string) => {
       const digits = sanitizeRegistrationInput(text);
+      userEditedRef.current = true;
       setRegistrationNumber(digits);
       setValue('registrationNumber', digits);
     },
@@ -1194,47 +1209,86 @@ export function RegistrationNumberBar({
   const isHindu = religion === 'hindu';
   const displayedNumber = valueOverride?.trim() || registrationNumber;
   const hinduParts = useMemo(
-    () => (isHindu ? splitHinduRegistrationDisplay(displayedNumber) : null),
-    [displayedNumber, isHindu],
+    () =>
+      isHindu
+        ? splitHinduRegistrationDisplay(displayedNumber, { padStar: !editable })
+        : null,
+    [displayedNumber, editable, isHindu],
   );
   const christianSerial = useMemo(
     () => (!isHindu ? getChristianSerialFromRegistration(displayedNumber) : ''),
     [displayedNumber, isHindu],
   );
 
+  const draftStarRef = useRef('');
+  const draftSerialRef = useRef('');
+
   const handleHinduStarChange = useCallback(
     (text: string) => {
       const star = sanitizeRegistrationStarInput(text);
-      const serial = hinduParts?.serialPart ?? '';
+      draftStarRef.current = star;
+      setDraftStar(star);
+      const serial =
+        focusedField === 'star' ? draftSerialRef.current : (hinduParts?.serialPart ?? '');
       handleChange(combineHinduRegistrationNumber(star, serial));
     },
-    [handleChange, hinduParts?.serialPart],
+    [focusedField, handleChange, hinduParts?.serialPart],
   );
 
   const handleHinduSerialChange = useCallback(
     (text: string) => {
       const serial = sanitizeRegistrationSerialInput(text);
-      const star = hinduParts?.starPart ?? '';
+      draftSerialRef.current = serial;
+      setDraftSerial(serial);
+      const star =
+        focusedField === 'serial' ? draftStarRef.current : (hinduParts?.starPart ?? '');
       handleChange(combineHinduRegistrationNumber(star, serial));
     },
-    [handleChange, hinduParts?.starPart],
+    [focusedField, handleChange, hinduParts?.starPart],
   );
 
   const handleChristianSerialChange = useCallback(
     (text: string) => {
-      handleChange(sanitizeRegistrationSerialInput(text));
+      const serial = sanitizeRegistrationSerialInput(text);
+      setDraftSingle(serial);
+      handleChange(serial);
     },
     [handleChange],
   );
 
+  const starInputValue =
+    focusedField === 'star' ? draftStar : (hinduParts?.starPart ?? '');
+  const serialInputValue =
+    focusedField === 'serial' ? draftSerial : (hinduParts?.serialPart ?? '');
+  const singleInputValue =
+    focusedField === 'single' ? draftSingle : christianSerial;
+
   const sharedInputProps = {
     editable,
+    readOnly: !editable,
     placeholderTextColor: PLACEHOLDER,
     keyboardType: 'number-pad' as const,
+    selectTextOnFocus: editable,
+    showSoftInputOnFocus: editable,
+    ...Platform.select({
+      android: {
+        includeFontPadding: false,
+        textAlignVertical: 'center' as const,
+      },
+      web: editable
+        ? {
+            cursor: 'text' as const,
+          }
+        : {},
+      default: {},
+    }),
   };
 
   return (
-    <View style={[registrationHeaderStyles.wrap, inline && registrationHeaderStyles.wrapInline]}>
+    <View
+      style={[registrationHeaderStyles.wrap, inline && registrationHeaderStyles.wrapInline]}
+      pointerEvents="box-none"
+    >
       <View
         style={[
           registrationHeaderStyles.card,
@@ -1249,9 +1303,20 @@ export function RegistrationNumberBar({
               style={[
                 registrationHeaderStyles.inputSquare,
                 inline && registrationHeaderStyles.inputSquareInline,
+                editable && registrationHeaderStyles.inputEditable,
               ]}
-              value={hinduParts?.starPart ?? ''}
+              value={starInputValue}
               onChangeText={handleHinduStarChange}
+              onFocus={() => {
+                const star = hinduParts?.starPart ?? '';
+                const serial = hinduParts?.serialPart ?? '';
+                draftStarRef.current = star;
+                draftSerialRef.current = serial;
+                setDraftStar(star);
+                setDraftSerial(serial);
+                setFocusedField('star');
+              }}
+              onBlur={() => setFocusedField(null)}
               placeholder="00"
               maxLength={2}
               {...sharedInputProps}
@@ -1262,9 +1327,20 @@ export function RegistrationNumberBar({
                 registrationHeaderStyles.inputSquareSerial,
                 inline && registrationHeaderStyles.inputSquareInline,
                 inline && registrationHeaderStyles.inputSquareSerialInline,
+                editable && registrationHeaderStyles.inputEditable,
               ]}
-              value={hinduParts?.serialPart ?? ''}
+              value={serialInputValue}
               onChangeText={handleHinduSerialChange}
+              onFocus={() => {
+                const star = hinduParts?.starPart ?? '';
+                const serial = hinduParts?.serialPart ?? '';
+                draftStarRef.current = star;
+                draftSerialRef.current = serial;
+                setDraftStar(star);
+                setDraftSerial(serial);
+                setFocusedField('serial');
+              }}
+              onBlur={() => setFocusedField(null)}
               placeholder={String(REGISTRATION_SEQUENCE_START)}
               maxLength={5}
               {...sharedInputProps}
@@ -1272,9 +1348,14 @@ export function RegistrationNumberBar({
           </View>
         ) : inline ? (
           <TextInput
-            style={registrationHeaderStyles.inputInline}
-            value={christianSerial}
+            style={[registrationHeaderStyles.inputInline, editable && registrationHeaderStyles.inputEditable]}
+            value={singleInputValue}
             onChangeText={handleChristianSerialChange}
+            onFocus={() => {
+              setDraftSingle(christianSerial);
+              setFocusedField('single');
+            }}
+            onBlur={() => setFocusedField(null)}
             placeholder={String(REGISTRATION_SEQUENCE_START)}
             maxLength={5}
             numberOfLines={1}
@@ -1287,9 +1368,14 @@ export function RegistrationNumberBar({
             contentContainerStyle={registrationHeaderStyles.scroll}
           >
             <TextInput
-              style={registrationHeaderStyles.input}
-              value={christianSerial}
+              style={[registrationHeaderStyles.input, editable && registrationHeaderStyles.inputEditable]}
+              value={singleInputValue}
               onChangeText={handleChristianSerialChange}
+              onFocus={() => {
+                setDraftSingle(christianSerial);
+                setFocusedField('single');
+              }}
+              onBlur={() => setFocusedField(null)}
               placeholder={String(REGISTRATION_SEQUENCE_START)}
               maxLength={5}
               {...sharedInputProps}
@@ -1333,6 +1419,9 @@ const registrationHeaderStyles = StyleSheet.create({
     paddingVertical: 3,
     paddingHorizontal: 6,
     borderRadius: 12,
+    width: 'auto',
+    maxWidth: 220,
+    alignSelf: 'flex-end',
     backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderWidth: 1,
     borderColor: 'rgba(87, 0, 0, 0.1)',
@@ -1395,15 +1484,17 @@ const registrationHeaderStyles = StyleSheet.create({
     minWidth: 64,
     flexGrow: 0,
     flexShrink: 0,
-    minHeight: 26,
+    minHeight: 36,
+    height: 36,
     paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingVertical: 0,
     borderRadius: 8,
     backgroundColor: colors.surfaceContainerLowest,
     borderWidth: 1,
     borderColor: 'rgba(87, 0, 0, 0.12)',
     color: colors.onSurface,
-    fontSize: 11,
+    fontSize: 12,
+    lineHeight: Platform.OS === 'android' ? 18 : 16,
     fontFamily: fonts.interSemi,
     textAlign: 'center',
   },
@@ -1424,19 +1515,28 @@ const registrationHeaderStyles = StyleSheet.create({
     textAlign: 'center',
   },
   inputSquareInline: {
-    width: 32,
-    height: 32,
-    minWidth: 32,
-    minHeight: 32,
-    fontSize: 11,
+    width: 36,
+    height: 36,
+    minWidth: 36,
+    minHeight: 36,
+    fontSize: 12,
+    lineHeight: Platform.OS === 'android' ? 18 : 16,
+    paddingVertical: 0,
   },
   inputSquareSerial: {
     width: 52,
     minWidth: 52,
   },
   inputSquareSerialInline: {
-    width: 48,
-    minWidth: 48,
+    width: 52,
+    minWidth: 52,
+    height: 36,
+    minHeight: 36,
+  },
+  inputEditable: {
+    backgroundColor: '#fff',
+    borderColor: 'rgba(87, 0, 0, 0.22)',
+    color: colors.onSurface,
   },
 });
 
@@ -5911,7 +6011,7 @@ export function CreateProfileBiodataForm({
     });
     setShowPhotoInBiodata(parseBiodataShowPhoto(readValue(BIODATA_SHOW_PHOTO_KEY)));
 
-    if (!profileValues) {
+    if (!profileValues && !editable) {
       void previewRegistrationNumber(
         normalizeRegistrationReligion(readValue('religion')),
         readValue('rasi'),
@@ -6048,7 +6148,7 @@ export function CreateProfileBiodataForm({
   }, [form.registrationNumber, getValue, values.registrationNumber]);
 
   const refreshRegistrationNumber = useCallback(async () => {
-    if (viewOnly || profileValues) {
+    if (viewOnly || profileValues || editable) {
       return;
     }
 
@@ -6079,6 +6179,7 @@ export function CreateProfileBiodataForm({
     setForm((current) => ({ ...current, registrationNumber: nextRegistration }));
     setValue('registrationNumber', nextRegistration);
   }, [
+    editable,
     form.natchathiram,
     form.rasi,
     form.registrationNumber,
@@ -6187,14 +6288,17 @@ export function CreateProfileBiodataForm({
     const photosToPersist = photosRef.current.some(Boolean) ? photosRef.current : photos;
 
     if (religion) {
-      const allocated = await resolveRegistrationNumber({
-        religion,
-        rasi,
-        natchathiram,
-        existingNumber: registrationNumber,
-      }).catch(() => registrationNumber);
-      if (allocated) {
-        registrationNumber = allocated;
+      const manualRegistration = editable && registrationNumber.trim() ? registrationNumber.trim() : '';
+      if (!manualRegistration) {
+        const allocated = await resolveRegistrationNumber({
+          religion,
+          rasi,
+          natchathiram,
+          existingNumber: registrationNumber,
+        }).catch(() => registrationNumber);
+        if (allocated) {
+          registrationNumber = allocated;
+        }
       }
     }
 
@@ -6217,6 +6321,7 @@ export function CreateProfileBiodataForm({
   }, [
     adminContactPhone,
     detailGrid,
+    editable,
     form,
     getValue,
     language,

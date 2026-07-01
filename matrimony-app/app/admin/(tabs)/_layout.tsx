@@ -34,6 +34,7 @@ export default function AdminTabsLayout() {
     <View style={styles.shell}>
       <Tabs
         style={styles.tabs}
+        detachInactiveScreens={false}
         screenOptions={{
           headerShown: false,
           tabBarActiveTintColor: adminColors.primary,

@@ -22,8 +22,9 @@ import { getFormOptions, getOptionLabel } from '@/constants/formOptions';
 import { images } from '@/constants/images';
 import { getAdminProfilePhotoUri } from '@/constants/profilePhotos';
 import { useLanguage } from '@/context/LanguageContext';
+import { useAdminProfiles } from '@/context/AdminProfilesContext';
 import { findHinduRegistrationStar, getRegistrationNatchathiramOptions } from '@/constants/registrationNumbers';
-import { deleteProfileByPhone, listAllProfiles, buildPhotoApprovalSlotsByPhone } from '@/lib/firestore/profileService';
+import { deleteProfileByPhone } from '@/lib/firestore/profileService';
 import type { FirestoreProfileDoc } from '@/lib/firestore/collections';
 
 type ProfileFilter = 'all' | 'male' | 'female';
@@ -218,15 +219,11 @@ function profileMatchesMarumanam(profile: FirestoreProfileDoc, marumanamOnly: bo
 export default function AdminMatchesScreen() {
   const router = useRouter();
   const { translate, translateFormat, language } = useLanguage();
-  const [profiles, setProfiles] = useState<FirestoreProfileDoc[]>([]);
-  const [approvalSlotsByPhone, setApprovalSlotsByPhone] = useState<Map<string, string[]>>(
-    () => new Map(),
-  );
+  const { profiles, approvalSlotsByPhone, isReady, refresh } = useAdminProfiles();
   const [genderFilter, setGenderFilter] = useState<ProfileFilter>('all');
   const [rasiFilter, setRasiFilter] = useState<HoroscopeFilter>('all');
   const [starFilter, setStarFilter] = useState<HoroscopeFilter>('all');
   const [marumanamFilterActive, setMarumanamFilterActive] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedPhones, setSelectedPhones] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -245,29 +242,6 @@ export default function AdminMatchesScreen() {
     setSelectedPhones((current) =>
       current.includes(phone) ? current.filter((entry) => entry !== phone) : [...current, phone],
     );
-  }, []);
-
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [entries, approvalSlots] = await Promise.all([
-        listAllProfiles(),
-        buildPhotoApprovalSlotsByPhone(),
-      ]);
-
-      setApprovalSlotsByPhone(approvalSlots);
-      setProfiles(
-        entries.filter(
-          (profile) =>
-            profile.published &&
-            profile.accountStatus !== 'blocked' &&
-            profile.accountStatus !== 'deleted' &&
-            profile.approvalStatus !== 'rejected',
-        ),
-      );
-    } finally {
-      setIsLoading(false);
-    }
   }, []);
 
   const handleDeleteSelected = useCallback(() => {
@@ -292,7 +266,7 @@ export default function AdminMatchesScreen() {
                   translateFormat('adminMatchesDeleteSuccess', { count: selectedPhones.length }),
                 );
                 exitSelectionMode();
-                return refresh();
+                return refresh({ force: true });
               })
               .finally(() => {
                 setIsDeleting(false);
@@ -308,6 +282,8 @@ export default function AdminMatchesScreen() {
       void refresh();
     }, [refresh]),
   );
+
+  const isLoading = !isReady && profiles.length === 0;
 
   const rasiOptions = useMemo(
     () => [
@@ -436,49 +412,49 @@ export default function AdminMatchesScreen() {
         ) : null
       }
     >
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filters}
-      >
-        {genderFilters.map((item) => {
-          const active = genderFilter === item;
-          return (
-            <Pressable
-              key={item}
-              style={[styles.chip, active && styles.chipActive]}
-              onPress={() => setGenderFilter(item)}
-            >
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {translate(adminFilterLabelKeys[item])}
-              </Text>
-            </Pressable>
-          );
-        })}
+      <View style={styles.filters}>
+        <View style={styles.filterRow}>
+          {genderFilters.map((item) => {
+            const active = genderFilter === item;
+            return (
+              <Pressable
+                key={item}
+                style={[styles.chip, active && styles.chipActive]}
+                onPress={() => setGenderFilter(item)}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                  {translate(adminFilterLabelKeys[item])}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
-        <FilterDropdownChip
-          label={translate('biodataFieldRasi')}
-          value={rasiFilter}
-          options={rasiOptions}
-          onValueChange={handleRasiFilterChange}
-        />
+        <View style={styles.filterRow}>
+          <FilterDropdownChip
+            label={translate('biodataFieldRasi')}
+            value={rasiFilter}
+            options={rasiOptions}
+            onValueChange={handleRasiFilterChange}
+          />
 
-        <FilterDropdownChip
-          label={translate('star')}
-          value={starFilter}
-          options={starOptions}
-          onValueChange={setStarFilter}
-        />
+          <FilterDropdownChip
+            label={translate('star')}
+            value={starFilter}
+            options={starOptions}
+            onValueChange={setStarFilter}
+          />
 
-        <Pressable
-          style={[styles.chip, marumanamFilterActive && styles.chipActive]}
-          onPress={() => setMarumanamFilterActive((current) => !current)}
-        >
-          <Text style={[styles.chipText, marumanamFilterActive && styles.chipTextActive]}>
-            {getOptionLabel('maritalStatusBiodata', 'divorced', language)}
-          </Text>
-        </Pressable>
-      </ScrollView>
+          <Pressable
+            style={[styles.chip, marumanamFilterActive && styles.chipActive]}
+            onPress={() => setMarumanamFilterActive((current) => !current)}
+          >
+            <Text style={[styles.chipText, marumanamFilterActive && styles.chipTextActive]}>
+              {getOptionLabel('maritalStatusBiodata', 'divorced', language)}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
 
       {isLoading ? (
         <View style={styles.loading}>
@@ -544,10 +520,14 @@ export default function AdminMatchesScreen() {
 
 const styles = StyleSheet.create({
   filters: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
     paddingBottom: 2,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   chip: {
     paddingHorizontal: 12,

@@ -24,6 +24,8 @@ import {
 } from '@/constants/profilePhotos';
 import { useLanguage } from '@/context/LanguageContext';
 import { fetchStoredProfilePhotoUrls } from '@/lib/firestore/storageService';
+import { shareProfileToWhatsApp } from '@/lib/profileShare';
+import { useProfileShareMeta } from '@/lib/useProfileShareMeta';
 import type { FirestoreProfileDoc } from '@/lib/firestore/collections';
 
 type AdminMatrimonyProfileViewProps = {
@@ -126,6 +128,20 @@ export function AdminMatrimonyProfileView({
   const genderLabel = profileValues.gender
     ? getOptionLabel('gender', profileValues.gender, language, profileValues.gender)
     : '';
+  const dateOfBirth = profileValues.dateOfBirth?.trim() ?? '';
+  const education = profileValues.education?.trim() ?? '';
+
+  const primarySharePhoto = profilePhotos.find((uri) => uri.startsWith('https://')) ?? profilePhotos[0];
+
+  useProfileShareMeta({
+    phone,
+    name,
+    photoUrl: primarySharePhoto,
+  });
+
+  const handleSharePress = () => {
+    void shareProfileToWhatsApp({ phone, name, translate });
+  };
 
   const handleBrowseHiddenToggle = (value: boolean) => {
     setHiddenFromBrowse(value);
@@ -152,6 +168,9 @@ export function AdminMatrimonyProfileView({
               style={styles.headerSwitch}
             />
           ) : null}
+          <Pressable onPress={handleSharePress} hitSlop={8} style={styles.shareBtn}>
+            <MaterialIcons name="share" size={18} color={adminColors.primary} />
+          </Pressable>
           <Pressable onPress={onEdit} hitSlop={8} style={styles.editBtn}>
             <MaterialIcons name="edit" size={18} color="#fff" />
             <Text style={styles.editBtnText}>{translate('adminEdit')}</Text>
@@ -192,6 +211,11 @@ export function AdminMatrimonyProfileView({
                 {communityLabel || genderLabel ? (
                   <Text style={styles.overlayMeta}>
                     {[communityLabel, genderLabel].filter(Boolean).join(' · ')}
+                  </Text>
+                ) : null}
+                {dateOfBirth || education ? (
+                  <Text style={styles.overlayMeta}>
+                    {[dateOfBirth, education].filter(Boolean).join(' · ')}
                   </Text>
                 ) : null}
               </>
@@ -258,6 +282,16 @@ const styles = StyleSheet.create({
   },
   headerSwitch: {
     transform: [{ scaleX: 0.9 }, { scaleY: 0.9 }],
+  },
+  shareBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: adminColors.background,
+    borderWidth: 1,
+    borderColor: adminColors.border,
   },
   editBtn: {
     flexDirection: 'row',

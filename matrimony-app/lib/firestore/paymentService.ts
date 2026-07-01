@@ -12,7 +12,7 @@ import {
 } from '@/lib/firestore/collections';
 import { grantVerifiedPaymentBatch } from '@/lib/firestore/subscriptionService';
 import { createAdminNotification } from '@/lib/firestore/adminNotificationService';
-import { fetchProfileByPhone } from '@/lib/firestore/profileService';
+import { listAllProfiles } from '@/lib/firestore/profileService';
 import { getDocResilient, getDocsResilient } from '@/lib/firestore/readHelpers';
 
 function formatDate(timestamp: number): string {
@@ -50,16 +50,39 @@ function toAdminPaymentRecord(entry: FirestorePaymentDoc): AdminPaymentRecord {
 }
 
 async function enrichPaymentRecords(entries: AdminPaymentRecord[]): Promise<AdminPaymentRecord[]> {
-  return Promise.all(
-    entries.map(async (entry) => {
-      const profile = await fetchProfileByPhone(entry.phone);
-      return {
-        ...entry,
-        profileApprovalStatus: profile?.approvalStatus ?? null,
-        paidBatches: profile?.paidBatches ?? 0,
-      };
-    }),
-  );
+  if (entries.length === 0) {
+    return entries;
+  }
+
+  const profilesByPhone = new Map<string, { approvalStatus?: string | null; paidBatches?: number }>();
+  try {
+    const profiles = await listAllProfiles();
+    for (const profile of profiles) {
+      const digits = profile.phone.replace(/\D/g, '');
+      if (!digits) {
+        continue;
+      }
+      profilesByPhone.set(digits, {
+        approvalStatus: profile.approvalStatus ?? null,
+        paidBatches: profile.paidBatches ?? 0,
+      });
+    }
+  } catch {
+    return entries;
+  }
+
+  return entries.map((entry) => {
+    const profile = profilesByPhone.get(entry.phone.replace(/\D/g, ''));
+    if (!profile) {
+      return entry;
+    }
+    return {
+      ...entry,
+      profileApprovalStatus:
+        (profile.approvalStatus as AdminPaymentRecord['profileApprovalStatus']) ?? null,
+      paidBatches: profile.paidBatches ?? 0,
+    };
+  });
 }
 
 export async function submitPaymentRequest(
@@ -117,7 +140,7 @@ export async function listPayments(
   let docs: FirestorePaymentDoc[] = await getDocsResilient<FirestorePaymentDoc>(
     db,
     FIRESTORE_COLLECTIONS.payments,
-    { orderByField: 'updatedAt', preferServer: true },
+    { orderByField: 'updatedAt', preferServer: false },
   );
 
   const entries = docs

@@ -11,7 +11,7 @@
     "web:preview": "expo export --platform web --output-dir dist && npx --yes serve dist -s -l 8081",
     "build:web": "expo export --platform web --output-dir dist",
     "build:apk": "cd android && gradlew.bat assembleRelease",
-    "deploy": "npm run build:web && firebase deploy --only hosting",
+    "deploy": "npm run build:web && firebase deploy --only hosting,functions",
     "deploy:storage-cors": "gcloud storage buckets update gs://ayyamatrimonial.firebasestorage.app --cors-file=storage.cors.json"
   },
   "dependencies": {

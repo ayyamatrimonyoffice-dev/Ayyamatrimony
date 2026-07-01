@@ -3,7 +3,9 @@ import { Stack } from 'expo-router';
 import { AdminApprovalsProvider } from '@/context/AdminApprovalsContext';
 import { AdminAuthProvider } from '@/context/AdminAuthContext';
 import { AdminNotificationsProvider } from '@/context/AdminNotificationsContext';
+import { AdminPaymentsProvider } from '@/context/AdminPaymentsContext';
 import { AdminPhotoApprovalsProvider } from '@/context/AdminPhotoApprovalsContext';
+import { AdminProfilesProvider } from '@/context/AdminProfilesContext';
 import { adminColors } from '@/constants/admin';
 
 export default function AdminRootLayout() {
@@ -15,23 +17,27 @@ export default function AdminRootLayout() {
     <AdminAuthProvider>
       <AdminApprovalsProvider>
         <AdminPhotoApprovalsProvider>
-          <AdminNotificationsProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { flex: 1, backgroundColor: adminColors.background },
-                animation: 'fade',
-              }}
-            >
-              <Stack.Screen name="index" />
-              <Stack.Screen name="login" />
-              <Stack.Screen name="notifications" />
-              <Stack.Screen name="add-member" />
-              <Stack.Screen name="user/[phone]" />
-              <Stack.Screen name="view-profile/[phone]" />
-              <Stack.Screen name="(tabs)" />
-            </Stack>
-          </AdminNotificationsProvider>
+          <AdminPaymentsProvider>
+            <AdminProfilesProvider>
+              <AdminNotificationsProvider>
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    contentStyle: { flex: 1, backgroundColor: adminColors.background },
+                    animation: 'fade',
+                  }}
+                >
+                  <Stack.Screen name="index" />
+                  <Stack.Screen name="login" />
+                  <Stack.Screen name="notifications" />
+                  <Stack.Screen name="add-member" />
+                  <Stack.Screen name="user/[phone]" />
+                  <Stack.Screen name="view-profile/[phone]" />
+                  <Stack.Screen name="(tabs)" />
+                </Stack>
+              </AdminNotificationsProvider>
+            </AdminProfilesProvider>
+          </AdminPaymentsProvider>
         </AdminPhotoApprovalsProvider>
       </AdminApprovalsProvider>
     </AdminAuthProvider>

@@ -224,45 +224,27 @@ export default function CreateProfileScreen() {
         >
 
           <View style={styles.pageHeaderRow}>
-
             <Pressable
-
               onPress={handleBackToLogin}
-
               hitSlop={10}
-
               style={({ pressed }) => [styles.backButton, pressed && styles.backButtonPressed]}
-
               accessibilityRole="button"
-
               accessibilityLabel={translate('back')}
-
             >
-
               <MaterialIcons name="arrow-back" size={20} color={colors.primary} />
-
             </Pressable>
 
             <View style={styles.brandBlock}>
-
               <View style={styles.brandLogoWrap}>
-
                 <Image source={images.logo} style={styles.brandLogo} resizeMode="contain" />
-
               </View>
-
               <Text style={styles.brandName} numberOfLines={1} ellipsizeMode="tail">
-
                 {translate('matrimony')}
-
               </Text>
-
             </View>
 
             <RegistrationNumberBar editable inline />
-
             <LanguageLogoToggle variant="maroon" compact dense />
-
           </View>
 
         </LinearGradient>
@@ -281,12 +263,14 @@ export default function CreateProfileScreen() {
 
       </View>
 
-      <CreateProfileBiodataForm
-        editable
-        onSave={handleSave}
-        onStepChange={setStep}
-        hideRegistrationNumberBar
-      />
+      <View style={styles.formWrap}>
+        <CreateProfileBiodataForm
+          editable
+          onSave={handleSave}
+          onStepChange={setStep}
+          hideRegistrationNumberBar
+        />
+      </View>
 
     </SafeAreaView>
 
@@ -315,6 +299,14 @@ const styles = StyleSheet.create({
     flex: 1,
 
     backgroundColor: '#F3F7FC',
+
+  },
+
+  formWrap: {
+
+    flex: 1,
+
+    minHeight: 0,
 
   },
 
@@ -363,15 +355,11 @@ const styles = StyleSheet.create({
   },
 
   pageHeaderRow: {
-
     flexDirection: 'row',
-
     alignItems: 'center',
-
     gap: 8,
-
+    minWidth: 0,
   },
-
   backButton: {
 
     width: 32,

@@ -144,7 +144,6 @@ export default function EditProfileScreen() {
             </View>
 
             <RegistrationNumberBar editable inline />
-
             <LanguageLogoToggle variant="maroon" compact dense />
           </View>
         </LinearGradient>
@@ -210,6 +209,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    minWidth: 0,
   },
   backButton: {
     width: 32,

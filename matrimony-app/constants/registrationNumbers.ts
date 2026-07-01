@@ -239,10 +239,14 @@ export function sanitizeRegistrationSerialInput(text: string): string {
 }
 
 /** Split a stored registration number for Hindu dual-box UI. */
-export function splitHinduRegistrationDisplay(fullNumber: string): {
+export function splitHinduRegistrationDisplay(
+  fullNumber: string,
+  options: { padStar?: boolean } = {},
+): {
   starPart: string;
   serialPart: string;
 } {
+  const padStar = options.padStar ?? true;
   const digits = normalizeRegistrationNumber(fullNumber);
   if (!digits) {
     return { starPart: '', serialPart: '' };
@@ -250,8 +254,9 @@ export function splitHinduRegistrationDisplay(fullNumber: string): {
 
   const parsed = parseRegistrationNumberParts(digits);
   if (parsed?.kind === 'hindu') {
+    const starText = String(parsed.starNumber);
     return {
-      starPart: String(parsed.starNumber).padStart(2, '0'),
+      starPart: padStar ? starText.padStart(2, '0') : starText,
       serialPart: String(parsed.globalSerial),
     };
   }

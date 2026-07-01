@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { CreateProfileBiodataForm, RegistrationNumberBar } from '@/components/CreateProfileBiodataForm';
 import { LanguageLogoToggle } from '@/components/LanguageLogoToggle';
 import { adminColors } from '@/constants/admin';
@@ -20,7 +20,6 @@ import { resetCloudPhotoUploadAvailability } from '@/lib/firestore/storageServic
 
 export default function AdminAddMemberScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { phone: editPhone } = useLocalSearchParams<{ phone?: string }>();
   const { isReady: authReady, isAuthenticated } = useAdminAuth();
   const { translate } = useLanguage();
@@ -121,12 +120,12 @@ export default function AdminAddMemberScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 8) }]}>
+      <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.back()} hitSlop={8}>
           <MaterialIcons name="arrow-back" size={22} color={adminColors.text} />
         </Pressable>
         <View style={styles.headerText}>
-          <Text style={styles.title}>
+          <Text style={styles.title} numberOfLines={1} ellipsizeMode="tail">
             {isEditing ? translate('adminEditMember') : translate('adminAddMember')}
           </Text>
         </View>
@@ -145,7 +144,8 @@ export default function AdminAddMemberScreen() {
         ))}
       </View>
 
-      <CreateProfileBiodataForm
+      <View style={styles.formWrap}>
+        <CreateProfileBiodataForm
         key={isEditing ? `edit-${editPhone}-${editProfileValues?._profileUpdatedAt ?? '0'}` : 'new-member'}
         editable
         preferTamilKeyboard
@@ -155,6 +155,7 @@ export default function AdminAddMemberScreen() {
         onSave={handleSave}
         onStepChange={setStep}
       />
+      </View>
     </SafeAreaView>
   );
 }
@@ -167,9 +168,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     backgroundColor: adminColors.surface,
     borderBottomWidth: 1,
     borderBottomColor: adminColors.border,
@@ -185,12 +186,13 @@ const styles = StyleSheet.create({
     }),
   },
   backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: adminColors.background,
+    flexShrink: 0,
   },
   headerText: {
     flex: 1,
@@ -199,12 +201,16 @@ const styles = StyleSheet.create({
   headerTrailing: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     flexShrink: 0,
+  },
+  formWrap: {
+    flex: 1,
+    minHeight: 0,
   },
   title: {
     color: adminColors.text,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
   },
   stepRow: {

@@ -24,31 +24,23 @@ export default function AdminUsersScreen() {
   const [filter, setFilter] = useState<ApprovalFilter>(
     view === 'approved' ? 'approved' : view === 'rejected' ? 'rejected' : 'pending',
   );
-  const { items: approvals, updateStatus, refresh: refreshApprovals } = useAdminApprovals();
+  const { items: approvals, updateStatus, refresh: refreshApprovals, isReady: approvalsReady } =
+    useAdminApprovals();
   const {
     items: photoItems,
     updateStatus: updatePhotoStatus,
     refresh: refreshPhotos,
     isReady: photosReady,
   } = useAdminPhotoApprovals();
-  const [isLoading, setIsLoading] = useState(true);
-
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      await Promise.allSettled([refreshApprovals(), refreshPhotos()]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [refreshApprovals, refreshPhotos]);
 
   useFocusEffect(
     useCallback(() => {
       if (view === 'photos') {
         setSection('photos');
       }
-      void refresh();
-    }, [refresh, view]),
+      void refreshApprovals();
+      void refreshPhotos();
+    }, [refreshApprovals, refreshPhotos, view]),
   );
 
   const filteredApprovals = useMemo(() => {
@@ -83,7 +75,8 @@ export default function AdminUsersScreen() {
           status: translate(adminStatusLabelKey(status)),
         }),
       );
-      void refresh();
+      void refreshApprovals({ force: true });
+      void refreshPhotos({ force: true });
     });
   };
 
@@ -92,7 +85,9 @@ export default function AdminUsersScreen() {
   };
 
   const handlePhotoApprove = (item: (typeof photoItems)[number]) => {
-    void updatePhotoStatus(item.id, 'approved').then(() => void refresh());
+    void updatePhotoStatus(item.id, 'approved').then(() => {
+      void refreshPhotos({ force: true });
+    });
   };
 
   const handlePhotoReject = (item: (typeof photoItems)[number]) => {
@@ -104,7 +99,9 @@ export default function AdminUsersScreen() {
         onPress: () => {
           void updatePhotoStatus(item.id, 'rejected', {
             rejectReason: translate('adminPhotoRejectReason'),
-          }).then(() => void refresh());
+          }).then(() => {
+            void refreshPhotos({ force: true });
+          });
         },
       },
     ]);
@@ -164,7 +161,8 @@ export default function AdminUsersScreen() {
         })}
       </View>
 
-      {isLoading || (section === 'photos' && !photosReady) ? (
+      {(section === 'profiles' && !approvalsReady && approvals.length === 0) ||
+      (section === 'photos' && !photosReady && photoItems.length === 0) ? (
         <View style={styles.loading}>
           <ActivityIndicator size="large" color={adminColors.primary} />
         </View>
@@ -211,12 +209,6 @@ export default function AdminUsersScreen() {
               {item.status === 'pending' ? (
                 <View style={styles.actions}>
                   <Pressable
-                    style={[styles.actionButton, styles.viewButton]}
-                    onPress={() => openProfile(item.phone)}
-                  >
-                    <Text style={styles.viewText}>{translate('adminViewProfile')}</Text>
-                  </Pressable>
-                  <Pressable
                     style={[styles.actionButton, styles.approveButton]}
                     onPress={() => updateItemStatus(item.id, 'approved')}
                   >
@@ -229,14 +221,7 @@ export default function AdminUsersScreen() {
                     <Text style={styles.rejectText}>{translate('adminReject')}</Text>
                   </Pressable>
                 </View>
-              ) : (
-                <Pressable
-                  style={[styles.actionButton, styles.viewButton, styles.viewButtonSolo]}
-                  onPress={() => openProfile(item.phone)}
-                >
-                  <Text style={styles.viewText}>{translate('adminViewProfile')}</Text>
-                </Pressable>
-              )}
+              ) : null}
             </View>
           ))}
         </View>
@@ -262,12 +247,6 @@ export default function AdminUsersScreen() {
               {item.status === 'pending' ? (
                 <View style={styles.actions}>
                   <Pressable
-                    style={[styles.actionButton, styles.viewButton]}
-                    onPress={() => openProfile(item.phone)}
-                  >
-                    <Text style={styles.viewText}>{translate('adminViewProfile')}</Text>
-                  </Pressable>
-                  <Pressable
                     style={[styles.actionButton, styles.approveButton]}
                     onPress={() => handlePhotoApprove(item)}
                   >
@@ -280,14 +259,7 @@ export default function AdminUsersScreen() {
                     <Text style={styles.rejectText}>{translate('adminReject')}</Text>
                   </Pressable>
                 </View>
-              ) : (
-                <Pressable
-                  style={[styles.actionButton, styles.viewButton, styles.viewButtonSolo]}
-                  onPress={() => openProfile(item.phone)}
-                >
-                  <Text style={styles.viewText}>{translate('adminViewProfile')}</Text>
-                </Pressable>
-              )}
+              ) : null}
             </View>
           ))}
         </View>
@@ -384,15 +356,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
   },
-  viewButton: {
-    backgroundColor: adminColors.surface,
-    borderColor: adminColors.border,
-  },
-  viewButtonSolo: {
-    flex: 0,
-    alignSelf: 'flex-start',
-    paddingHorizontal: 16,
-  },
   approveButton: {
     backgroundColor: `${adminColors.success}14`,
     borderColor: `${adminColors.success}55`,
@@ -400,11 +363,6 @@ const styles = StyleSheet.create({
   rejectButton: {
     backgroundColor: `${adminColors.danger}10`,
     borderColor: `${adminColors.danger}44`,
-  },
-  viewText: {
-    color: adminColors.text,
-    fontWeight: '700',
-    fontSize: 12,
   },
   approveText: {
     color: adminColors.success,

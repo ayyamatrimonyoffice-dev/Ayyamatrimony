@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { AdminEmptyState } from '@/components/admin/AdminEmptyState';
@@ -6,14 +6,11 @@ import { AdminListItem } from '@/components/admin/AdminListItem';
 import { AdminScreenShell } from '@/components/admin/AdminScreenShell';
 import { adminColors } from '@/constants/admin';
 import { adminFilterLabelKeys, adminStatusLabelKey } from '@/constants/adminLabels';
+import { useAdminPayments } from '@/context/AdminPaymentsContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { updateApprovalStatus } from '@/lib/firestore/approvalService';
 import { approvalDocIdFromPhone } from '@/lib/firestore/collections';
-import {
-  listPayments,
-  updatePaymentStatus,
-  type AdminPaymentRecord,
-} from '@/lib/firestore/paymentService';
+import { updatePaymentStatus, type AdminPaymentRecord } from '@/lib/firestore/paymentService';
 
 const paymentFilters: Array<'all' | AdminPaymentRecord['status']> = [
   'pending',
@@ -32,31 +29,21 @@ function filterEmptyMessageKey(filter: 'all' | AdminPaymentRecord['status']) {
 export default function AdminPaymentsScreen() {
   const router = useRouter();
   const { translate, translateFormat } = useLanguage();
-  const [items, setItems] = useState<AdminPaymentRecord[]>([]);
+  const { items: allItems, isReady, refresh } = useAdminPayments();
   const [filter, setFilter] = useState<'all' | AdminPaymentRecord['status']>('pending');
-  const [isLoading, setIsLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const entries = await listPayments(filter === 'all' ? undefined : filter);
-      setItems(entries);
-    } catch {
-      // Keep the last loaded payment list if Firestore is temporarily unavailable.
-    } finally {
-      setIsLoading(false);
+  const items = useMemo(() => {
+    if (filter === 'all') {
+      return allItems;
     }
-  }, [filter]);
+    return allItems.filter((entry) => entry.status === filter);
+  }, [allItems, filter]);
 
   useFocusEffect(
     useCallback(() => {
       void refresh();
     }, [refresh]),
   );
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
 
   const showSuccess = useCallback(
     (message: string) => {
@@ -93,8 +80,9 @@ export default function AdminPaymentsScreen() {
       }
       setFilter('verified');
       showSuccess(translate('adminPaymentVerifiedSuccess'));
+      void refresh({ force: true });
     },
-    [showError, showSuccess, translate],
+    [refresh, showError, showSuccess, translate],
   );
 
   const handleVerify = (item: AdminPaymentRecord) => {
@@ -124,7 +112,7 @@ export default function AdminPaymentsScreen() {
         showError(translate('adminPaymentVerifyFailed'));
         return;
       }
-      void refresh();
+      void refresh({ force: true });
     };
 
     if (Platform.OS === 'web') {
@@ -146,7 +134,7 @@ export default function AdminPaymentsScreen() {
 
   const handleApproveProfile = async (phone: string) => {
     await updateApprovalStatus(approvalDocIdFromPhone(phone), 'approved');
-    void refresh();
+    void refresh({ force: true });
   };
 
   const openProfile = (phone: string) => {
@@ -168,6 +156,8 @@ export default function AdminPaymentsScreen() {
       status: translate(statusKey),
     });
   }, [filter, translate]);
+
+  const showLoading = !isReady && allItems.length === 0;
 
   const filterBar = (
     <View style={styles.filters}>
@@ -197,7 +187,7 @@ export default function AdminPaymentsScreen() {
       showLanguageToggle
       pinnedContent={filterBar}
     >
-      {isLoading ? (
+      {showLoading ? (
         <View style={styles.loading}>
           <ActivityIndicator size="large" color={adminColors.primary} />
         </View>
